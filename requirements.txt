@@ -1,0 +1,4 @@
+psutil
+send2trash
+winshell
+pywin32
