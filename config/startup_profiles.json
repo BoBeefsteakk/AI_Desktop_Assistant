@@ -1,0 +1,18 @@
+{
+  "study": [
+    {
+      "name": "VS Code",
+      "path": "code",
+      "args": []
+    },
+    {
+      "name": "Chrome",
+      "path": "chrome",
+      "args": [
+        "https://chat.openai.com"
+      ]
+    }
+  ],
+  "game": [],
+  "work": []
+}

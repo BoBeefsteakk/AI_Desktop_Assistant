@@ -12,6 +12,14 @@ from tools.browser_cache_cleaner import run_browser_cache_cleaner
 from tools.game_booster import run_game_booster
 from tools.natural_command import run_natural_command
 
+# Storage / Advisor tools
+from tools.folder_size_analyzer import run_folder_size_analyzer
+from tools.large_file_finder import run_large_file_finder
+from tools.system_advisor import run_system_advisor
+
+
+EXIT_COMMANDS = ["0", "out", "exit", "quit", "thoat", "thoát"]
+
 
 def main():
     while True:
@@ -31,12 +39,20 @@ def main():
 10. Game booster safe
 11. Nhap lenh tu nhien
 
+12. Folder Size Analyzer
+13. Large File Finder
+14. System Advisor
+
 0. Thoat
 
 ====================================================
 """)
 
         choice = input("Nhap lua chon: ").strip()
+
+        if choice.lower() in EXIT_COMMANDS:
+            print("Da thoat assistant.")
+            break
 
         if choice == "1":
             check_disk()
@@ -71,16 +87,15 @@ def main():
 
         elif choice == "11":
             run_natural_command()
-        
-        exit_commands = ["0", "out", "exit", "quit", "thoat", "thoát"]
 
-        if choice.lower() in exit_commands:
-            print("Da thoat assistant.")
-            break
+        elif choice == "12":
+            run_folder_size_analyzer()
 
-        elif choice == "0":
-            print("Da thoat.")
-            break
+        elif choice == "13":
+            run_large_file_finder()
+
+        elif choice == "14":
+            run_system_advisor()
 
         else:
             print("Lua chon khong hop le.")
