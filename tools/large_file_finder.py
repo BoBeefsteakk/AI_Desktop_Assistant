@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .safety_utils import format_size, save_report
 from .assistant_logger import log_action
-
+from tools.file_location_opener import open_file_location
 
 SKIP_DIR_NAMES = {
     "$recycle.bin",
@@ -164,6 +164,30 @@ def run_large_file_finder() -> None:
         }
     )
 
+    open_large_file_menu(results)
+
+def open_large_file_menu(large_files):
+    if not large_files:
+        return
+
+    while True:
+        choice = input("\nNhập số thứ tự file muốn mở vị trí, hoặc 0 để thoát: ")
+
+        if choice == "0":
+            break
+
+        if not choice.isdigit():
+            print("Vui lòng nhập số hợp lệ.")
+            continue
+
+        index = int(choice) - 1
+
+        if index < 0 or index >= len(large_files):
+            print("Số thứ tự không tồn tại.")
+            continue
+
+        file_path = large_files[index]["path"]
+        open_file_location(file_path)
 
 if __name__ == "__main__":
     run_large_file_finder()
