@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import send2trash
 
-from .safety_utils import format_size, ask_yes_no, save_report, is_system_path
+from tools.core.safety_utils import format_size, ask_yes_no, save_report, is_system_path
 
 DEFAULT_JUNK_EXTENSIONS = (".tmp", ".log", ".bak", ".old", ".temp")
 

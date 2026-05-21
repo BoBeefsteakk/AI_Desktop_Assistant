@@ -4,7 +4,7 @@ import os
 import shutil
 from pathlib import Path
 
-from .safety_utils import format_size, ask_yes_no, save_report
+from tools.core.safety_utils import format_size, ask_yes_no, save_report
 
 def get_browser_cache_paths() -> list[Path]:
     local = Path(os.environ.get("LOCALAPPDATA", ""))

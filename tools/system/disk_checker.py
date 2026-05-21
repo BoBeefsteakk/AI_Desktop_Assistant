@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import psutil
-from .safety_utils import format_size
+from tools.core.safety_utils import format_size
 
 def check_disk() -> None:
     print("\n========== THONG TIN O CUNG ==========\n")

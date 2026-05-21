@@ -1,21 +1,21 @@
-from tools.disk_checker import check_disk
-from tools.process_monitor import show_top_process
-from tools.recycle_bin_cleaner import clear_recycle_bin
-from tools.junk_file_cleaner import run_junk_cleaner
-from tools.duplicate_finder import run_duplicate_finder
-from tools.media_organizer import run_media_organizer
+from tools.system.disk_checker import check_disk
+from tools.system.process_monitor import show_top_process
+from tools.system.recycle_bin_cleaner import clear_recycle_bin
+from tools.system.junk_file_cleaner import run_junk_cleaner
+from tools.system.browser_cache_cleaner import run_browser_cache_cleaner
+from tools.system.game_booster import run_game_booster
 
-# V2 tools
-from tools.file_indexer import run_file_indexer
-from tools.startup_launcher import run_startup_launcher
-from tools.browser_cache_cleaner import run_browser_cache_cleaner
-from tools.game_booster import run_game_booster
-from tools.natural_command import run_natural_command
+from tools.storage.duplicate_finder import run_duplicate_finder
+from tools.storage.media_organizer import run_media_organizer
+from tools.storage.folder_size_analyzer import run_folder_size_analyzer
+from tools.storage.large_file_finder import run_large_file_finder
+from tools.storage.system_advisor import run_system_advisor
 
-# Storage / Advisor tools
-from tools.folder_size_analyzer import run_folder_size_analyzer
-from tools.large_file_finder import run_large_file_finder
-from tools.system_advisor import run_system_advisor
+from tools.search.file_indexer import run_file_indexer
+from tools.search.natural_command import run_natural_command
+
+from tools.automation.startup_launcher import run_startup_launcher
+from tools.core.tool_tester import run_tool_tester
 
 
 EXIT_COMMANDS = ["0", "out", "exit", "quit", "thoat", "thoát"]
@@ -42,6 +42,7 @@ def main():
 12. Folder Size Analyzer
 13. Large File Finder
 14. System Advisor
+15. Tool Tester
 
 0. Thoat
 
@@ -96,6 +97,9 @@ def main():
 
         elif choice == "14":
             run_system_advisor()
+
+        elif choice == "15":
+            run_tool_tester()
 
         else:
             print("Lua chon khong hop le.")

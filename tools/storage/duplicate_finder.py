@@ -6,7 +6,7 @@ from pathlib import Path
 
 import send2trash
 
-from .safety_utils import format_size, ask_yes_no, save_report, is_system_path
+from tools.core.safety_utils import format_size, ask_yes_no, save_report, is_system_path
 
 def file_hash(path: Path, chunk_size: int = 1024 * 1024) -> str | None:
     h = hashlib.sha256()

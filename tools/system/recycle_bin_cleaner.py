@@ -5,7 +5,7 @@ try:
 except ImportError:
     winshell = None
 
-from .safety_utils import ask_yes_no
+from tools.core.safety_utils import ask_yes_no
 
 def clear_recycle_bin() -> None:
     if winshell is None:

@@ -3,8 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 import send2trash
 
-from .safety_utils import ask_yes_no, save_report
-from .assistant_logger import log_action
+from tools.core.safety_utils import ask_yes_no, save_report
+from tools.core.assistant_logger import log_action
 
 SKIP_NAMES = {
     "$Recycle.Bin", "System Volume Information", ".git", "__pycache__"

@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .folder_size_analyzer import analyze_top_folders
-from .large_file_finder import find_large_files
-from .process_monitor import get_top_processes
-from .safety_utils import format_size, save_report
-from .assistant_logger import log_action
+from tools.storage.folder_size_analyzer import analyze_top_folders
+from tools.storage.large_file_finder import find_large_files
+from tools.system.process_monitor import get_top_processes
+from tools.core.safety_utils import format_size, save_report
+from tools.core.assistant_logger import log_action
 
 
 def print_divider() -> None:

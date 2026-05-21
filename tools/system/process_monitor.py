@@ -3,7 +3,7 @@ from __future__ import annotations
 import time
 import psutil
 
-from .safety_utils import format_size
+from tools.core.safety_utils import format_size
 
 
 def get_top_processes(limit: int = 15, sort_by: str = "ram") -> list[dict]:

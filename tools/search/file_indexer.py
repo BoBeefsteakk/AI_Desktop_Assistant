@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 from datetime import datetime
 
-from .safety_utils import format_size, save_report, ask_yes_no
+from tools.core.safety_utils import format_size, save_report
 
 APP_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = APP_DIR / "data"

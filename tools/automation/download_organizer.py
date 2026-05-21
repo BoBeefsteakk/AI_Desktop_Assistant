@@ -5,8 +5,8 @@ import shutil
 from pathlib import Path
 from datetime import datetime
 
-from .safety_utils import ask_yes_no, safe_move, save_manifest, restore_from_manifest, format_size
-from .assistant_logger import log_action
+from tools.core.safety_utils import safe_move, format_size, save_manifest, restore_from_manifest
+from tools.core.assistant_logger import log_action
 
 DOWNLOADS_DIR = Path.home() / "Downloads"
 

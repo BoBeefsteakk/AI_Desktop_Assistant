@@ -7,96 +7,21 @@ from pathlib import Path
 
 
 TOOLS_TO_TEST = [
-    {
-        "name": "Disk Checker",
-        "module": "tools.disk_checker",
-        "function": "check_disk",
-        "risk": "safe",
-    },
-    {
-        "name": "Process Monitor",
-        "module": "tools.process_monitor",
-        "function": "show_top_process",
-        "risk": "safe",
-    },
-    {
-        "name": "Recycle Bin Cleaner",
-        "module": "tools.recycle_bin_cleaner",
-        "function": "clear_recycle_bin",
-        "risk": "dangerous",
-    },
-    {
-        "name": "Junk File Cleaner",
-        "module": "tools.junk_file_cleaner",
-        "function": "run_junk_cleaner",
-        "risk": "dangerous",
-    },
-    {
-        "name": "Duplicate Finder",
-        "module": "tools.duplicate_finder",
-        "function": "run_duplicate_finder",
-        "risk": "dangerous",
-    },
-    {
-        "name": "Media Organizer",
-        "module": "tools.media_organizer",
-        "function": "run_media_organizer",
-        "risk": "medium",
-    },
-    {
-        "name": "File Indexer",
-        "module": "tools.file_indexer",
-        "function": "run_file_indexer",
-        "risk": "safe",
-    },
-    {
-        "name": "Startup Launcher",
-        "module": "tools.startup_launcher",
-        "function": "run_startup_launcher",
-        "risk": "medium",
-    },
-    {
-        "name": "Browser Cache Cleaner",
-        "module": "tools.browser_cache_cleaner",
-        "function": "run_browser_cache_cleaner",
-        "risk": "dangerous",
-    },
-    {
-        "name": "Game Booster",
-        "module": "tools.game_booster",
-        "function": "run_game_booster",
-        "risk": "medium",
-    },
-    {
-        "name": "Natural Command",
-        "module": "tools.natural_command",
-        "function": "run_natural_command",
-        "risk": "safe",
-    },
-    {
-        "name": "Folder Size Analyzer",
-        "module": "tools.folder_size_analyzer",
-        "function": "run_folder_size_analyzer",
-        "risk": "safe",
-    },
-    {
-        "name": "Large File Finder",
-        "module": "tools.large_file_finder",
-        "function": "run_large_file_finder",
-        "risk": "safe",
-    },
-    {
-        "name": "System Advisor",
-        "module": "tools.system_advisor",
-        "function": "run_system_advisor",
-        "risk": "safe",
-    },
-    {
-        "name": "File Location Opener",
-        "module": "tools.file_location_opener",
-        "function": "open_file_location",
-        "risk": "safe",
-    },
+    {"name": "Disk Checker", "module": "tools.system.disk_checker", "function": "check_disk", "risk": "safe"},
+    {"name": "Process Monitor", "module": "tools.system.process_monitor", "function": "show_top_process", "risk": "safe"},
+    {"name": "Recycle Bin Cleaner", "module": "tools.system.recycle_bin_cleaner", "function": "clear_recycle_bin", "risk": "dangerous"},
+    {"name": "Junk File Cleaner", "module": "tools.system.junk_file_cleaner", "function": "run_junk_cleaner", "risk": "dangerous"},
+    {"name": "Duplicate Finder", "module": "tools.storage.duplicate_finder", "function": "run_duplicate_finder", "risk": "dangerous"},
+    {"name": "Media Organizer", "module": "tools.storage.media_organizer", "function": "run_media_organizer", "risk": "medium"},
+    {"name": "File Indexer", "module": "tools.search.file_indexer", "function": "run_file_indexer", "risk": "safe"},
+    {"name": "Startup Launcher", "module": "tools.automation.startup_launcher", "function": "run_startup_launcher", "risk": "medium"},
+    {"name": "Browser Cache Cleaner", "module": "tools.system.browser_cache_cleaner", "function": "run_browser_cache_cleaner", "risk": "dangerous"},
+    {"name": "Game Booster", "module": "tools.system.game_booster", "function": "run_game_booster", "risk": "medium"},
+    {"name": "Natural Command", "module": "tools.search.natural_command", "function": "run_natural_command", "risk": "safe"},
+    {"name": "Folder Size Analyzer", "module": "tools.storage.folder_size_analyzer", "function": "run_folder_size_analyzer", "risk": "safe"},
+    {"name": "Large File Finder", "module": "tools.storage.large_file_finder", "function": "run_large_file_finder", "risk": "safe"},
+    {"name": "System Advisor", "module": "tools.storage.system_advisor", "function": "run_system_advisor", "risk": "safe"},
+    {"name": "File Location Opener", "module": "tools.core.file_location_opener", "function": "open_file_location", "risk": "safe"},
 ]
 
 

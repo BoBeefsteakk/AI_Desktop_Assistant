@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .safety_utils import safe_move, save_manifest, restore_from_manifest, ask_yes_no
+from tools.core.safety_utils import safe_move, save_manifest, restore_from_manifest, ask_yes_no
 
 MEDIA_EXTENSIONS = (
     ".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v",

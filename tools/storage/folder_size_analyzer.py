@@ -3,8 +3,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from .safety_utils import format_size, save_report
-from .assistant_logger import log_action
+from tools.core.safety_utils import format_size, save_report
+from tools.core.assistant_logger import log_action
 
 
 SKIP_DIR_NAMES = {

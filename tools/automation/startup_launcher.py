@@ -4,7 +4,7 @@ import json
 import subprocess
 from pathlib import Path
 
-from .safety_utils import ask_yes_no
+from tools.core.safety_utils import ask_yes_no
 
 APP_DIR = Path(__file__).resolve().parents[1]
 CONFIG_DIR = APP_DIR / "config"

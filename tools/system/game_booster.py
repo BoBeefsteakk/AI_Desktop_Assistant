@@ -6,7 +6,7 @@ import time
 
 import psutil
 
-from .safety_utils import ask_yes_no
+from tools.core.safety_utils import ask_yes_no
 
 BACKGROUND_APPS = {
     "OneDrive.exe",
