@@ -4,6 +4,8 @@ from pathlib import Path
 
 from tools.core.safety_utils import safe_move, save_manifest, restore_from_manifest, ask_yes_no
 
+from config.settings import DEFAULT_DOWNLOAD_FOLDER
+
 MEDIA_EXTENSIONS = (
     ".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v",
     ".mp3", ".wav", ".flac", ".aac", ".m4a"
@@ -49,7 +51,7 @@ def run_media_organizer() -> None:
     choice = input("Chon: ").strip()
 
     if choice == "1":
-        folder = input("Nhap folder goc: ").strip().strip('"') or "D:\\"
+        folder = input("Nhap folder goc: ").strip().strip('"') or DEFAULT_DOWNLOAD_FOLDER
         recursive = ask_yes_no("Quet ca folder con?", default=False)
         organize_media(folder, recursive=recursive)
     elif choice == "2":

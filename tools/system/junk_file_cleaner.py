@@ -5,6 +5,7 @@ from pathlib import Path
 import send2trash
 
 from tools.core.safety_utils import format_size, ask_yes_no, save_report, is_system_path
+from config.settings import DEFAULT_SCAN_FOLDER
 
 DEFAULT_JUNK_EXTENSIONS = (".tmp", ".log", ".bak", ".old", ".temp")
 
@@ -79,7 +80,7 @@ def delete_junk_files(files: list[dict]) -> None:
     print(f"Da dua {deleted}/{len(files)} file vao Recycle Bin.")
 
 def run_junk_cleaner() -> None:
-    folder = input("Nhap folder can quet: ").strip().strip('"') or "D:\\"
+    folder = input("Nhap folder can quet: ").strip().strip('"') or DEFAULT_SCAN_FOLDER
     recursive = ask_yes_no("Quet ca folder con?", default=False)
     include_empty = ask_yes_no("Bao gom file rong 0KB?", default=False)
 

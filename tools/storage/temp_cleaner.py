@@ -6,6 +6,18 @@ from pathlib import Path
 
 from tools.core.safety_utils import format_size, ask_yes_no, save_report
 from tools.core.assistant_logger import log_action
+from config.settings import SAFE_SYSTEM_FOLDERS
+SKIP_DIR_NAMES = {name.lower() for name in SAFE_SYSTEM_FOLDERS}
+
+
+def is_safe_temp_path(path: Path) -> bool:
+    lower_path = str(path).lower()
+
+    for skip_name in SKIP_DIR_NAMES:
+        if skip_name.lower() in lower_path and "temp" not in lower_path:
+            return False
+
+    return True
 
 def get_temp_paths() -> list[Path]:
     paths = []
@@ -16,7 +28,7 @@ def get_temp_paths() -> list[Path]:
     for p in [user_temp, local_temp, r"C:\Windows\Temp"]:
         if p:
             path = Path(p)
-            if path.exists() and path not in paths:
+            if path.exists() and path not in paths and is_safe_temp_path(path):
                 paths.append(path)
 
     return paths

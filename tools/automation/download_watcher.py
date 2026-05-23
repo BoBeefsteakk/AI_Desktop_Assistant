@@ -5,6 +5,7 @@ import time
 import shutil
 from pathlib import Path
 from datetime import datetime
+from config.settings import DEFAULT_DOWNLOAD_FOLDER, WATCHER_SCAN_INTERVAL
 
 try:
     from watchdog.observers import Observer
@@ -20,7 +21,7 @@ except ImportError:
 # CAU HINH
 # ============================================================
 
-DOWNLOADS_DIR = Path(r"D:\Downloads")
+DOWNLOADS_DIR = Path(DEFAULT_DOWNLOAD_FOLDER)
 
 # File moi tai ve se duoc gom vao:
 # Downloads/YYYY-MM-DD/Loai_file/file.ext
@@ -283,7 +284,7 @@ def run_download_watcher() -> None:
 
     try:
         while True:
-            time.sleep(1)
+            time.sleep(WATCHER_SCAN_INTERVAL)
 
     except KeyboardInterrupt:
         observer.stop()

@@ -6,6 +6,11 @@ from pathlib import Path
 from tools.core.safety_utils import format_size, save_report
 from tools.core.assistant_logger import log_action
 from tools.core.file_location_opener import open_file_location
+from config.settings import (
+    DEFAULT_SCAN_FOLDER,
+    DEFAULT_LARGE_FILE_MB,
+    DEFAULT_RESULT_LIMIT,
+)
 
 SKIP_DIR_NAMES = {
     "$recycle.bin",
@@ -126,19 +131,19 @@ def show_large_files(results: list[dict]) -> None:
 def run_large_file_finder() -> None:
     folder = input(
         "Nhap o dia/folder can scan [D:\\]: "
-    ).strip().strip('"') or "D:\\"
+    ).strip().strip('"') or DEFAULT_SCAN_FOLDER
 
     raw_size = input(
         "Tim file lon hon bao nhieu? VD: 500mb | 2gb [500mb]: "
     ).strip()
 
-    min_size_mb = parse_size_to_mb(raw_size, default_mb=500)
+    min_size_mb = parse_size_to_mb(raw_size, default_mb=DEFAULT_LARGE_FILE_MB)
 
     raw_limit = input(
         "Hien thi top bao nhieu file? [50]: "
     ).strip()
 
-    limit = int(raw_limit) if raw_limit.isdigit() else 50
+    limit = int(raw_limit) if raw_limit.isdigit() else DEFAULT_RESULT_LIMIT
 
     results = find_large_files(
         folder,

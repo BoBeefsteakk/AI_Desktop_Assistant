@@ -7,7 +7,11 @@ from tools.storage.large_file_finder import find_large_files
 from tools.system.process_monitor import get_top_processes
 from tools.core.safety_utils import format_size, save_report
 from tools.core.assistant_logger import log_action
-
+from config.settings import (
+    DEFAULT_SCAN_FOLDER,
+    DEFAULT_LARGE_FILE_MB,
+    DEFAULT_RESULT_LIMIT,
+)
 
 def print_divider() -> None:
     print("=" * 70)
@@ -98,7 +102,7 @@ def build_recommendations(
 
         heavy_processes = [
             item for item in processes
-            if item["memory_bytes"] >= 500 * 1024 * 1024
+            if item["memory_bytes"] >= DEFAULT_LARGE_FILE_MB
         ]
 
         if heavy_processes:
@@ -122,17 +126,20 @@ def run_system_advisor() -> None:
     print_divider()
 
     root_drive = input(
-        "Nhap o dia can phan tich [D:\\]: "
-    ).strip().strip('"') or "D:\\"
+        "Nhap o dia can phan tich: "
+    ).strip().strip('"') or DEFAULT_SCAN_FOLDER
 
     print("\nDang phan tich folder nang...")
-    top_folders = analyze_top_folders(root_drive, limit=10)
+    top_folders = analyze_top_folders(
+        root_drive,
+        limit=DEFAULT_RESULT_LIMIT
+    )
 
     print("\nDang phan tich file lon...")
     large_files = find_large_files(
         root_drive,
-        min_size_mb=1024,
-        limit=15
+        min_size_mb=DEFAULT_LARGE_FILE_MB,
+        limit=DEFAULT_RESULT_LIMIT
     )
 
     print("\nDang phan tich process...")

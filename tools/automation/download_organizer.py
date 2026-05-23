@@ -7,8 +7,9 @@ from datetime import datetime
 
 from tools.core.safety_utils import safe_move, format_size, save_manifest, restore_from_manifest
 from tools.core.assistant_logger import log_action
+from config.settings import DEFAULT_DOWNLOAD_FOLDER, WATCHER_SCAN_INTERVAL
 
-DOWNLOADS_DIR = Path.home() / "Downloads"
+DOWNLOADS_DIR = Path(DEFAULT_DOWNLOAD_FOLDER)
 
 FILE_CATEGORIES = {
     "Anh": {
