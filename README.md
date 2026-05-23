@@ -28,36 +28,34 @@ AI Desktop Assistant là bộ công cụ local hỗ trợ quản lý file, phân
 - File Indexer
 - Natural Command
 
-## Cấu trúc project
+## Project Structure
 
-```text
-AI_Desktop_Assistant_Optimized/
+```txt
+AI_Desktop_Assistant/
 ├── main.py
-├── tools/
-│   ├── system_advisor.py
-│   ├── folder_size_analyzer.py
-│   ├── large_file_finder.py
-│   ├── process_monitor.py
-│   ├── download_watcher.py
-│   └── ...
-├── reports/
-├── backups/
-├── logs/
-├── data/
 ├── requirements.txt
-└── README.md
+├── README.md
+├── config/
+│   └── settings.py
+├── reports/
+├── logs/
+└── tools/
+    ├── automation/
+    ├── core/
+    ├── search/
+    ├── storage/
+    └── system/
 
 ## Tiến độ hiện tại
 
-| Hạng mục | Trạng thái |
-|---|---|
-| Cấu trúc project | Done |
-| Tool hệ thống cơ bản | Done |
-| Download Watcher | Done |
-| Storage Analyzer | Done |
-| System Advisor | Done |
-| README.md | Done |
-| Open file location | Next |
-| Update main.py | Next |
-| Test toàn bộ tool | Next |
-| Refactor tools | Later |
+Module	Status
+Main CLI Menu	Done
+System Tools	Done
+Storage Tools	Done
+Automation Tools	Done
+Search Tools	Done
+Core Utilities	Done
+Tool Tester	Passed 15/15
+Refactor Tools Folder	Done
+Config System	Next
+UI Desktop	Later
