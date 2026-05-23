@@ -7,7 +7,16 @@ import send2trash
 from tools.core.safety_utils import format_size, ask_yes_no, save_report, is_system_path
 from config.settings import DEFAULT_SCAN_FOLDER
 
+from tools.core.report_manager import create_report
+
 DEFAULT_JUNK_EXTENSIONS = (".tmp", ".log", ".bak", ".old", ".temp")
+
+SKIP_FILES = {
+    "dumpstack.log.tmp",
+    "pagefile.sys",
+    "hiberfil.sys",
+    "swapfile.sys",
+}
 
 def scan_junk_files(
     folder: str,
@@ -30,7 +39,7 @@ def scan_junk_files(
 
     for path in iterator:
         try:
-            if not path.is_file():
+            if path.name.lower() in SKIP_FILES:
                 continue
 
             suffix_match = path.name.lower().endswith(extensions) if extensions else False
@@ -78,6 +87,28 @@ def delete_junk_files(files: list[dict]) -> None:
             print(f"Loi: {item['path']} | {e}")
 
     print(f"Da dua {deleted}/{len(files)} file vao Recycle Bin.")
+
+    total_size = sum(item["size"] for item in files)
+
+    report = create_report(
+        tool_name="junk_file_cleaner",
+        status="success",
+        input_data={
+            "selected_count": len(files),
+        },
+        results={
+            "deleted_count": deleted,
+            "failed_count": len(files) - deleted,
+            "total_size": total_size,
+            "files": files,
+        },
+        recommendations=[
+            "Files were moved to Recycle Bin, not permanently deleted.",
+            "Review Recycle Bin before emptying it.",
+        ],
+    )
+
+    print(f"Report: {report}")
 
 def run_junk_cleaner() -> None:
     folder = input("Nhap folder can quet: ").strip().strip('"') or DEFAULT_SCAN_FOLDER

@@ -5,13 +5,14 @@ from pathlib import Path
 from tools.storage.folder_size_analyzer import analyze_top_folders
 from tools.storage.large_file_finder import find_large_files
 from tools.system.process_monitor import get_top_processes
-from tools.core.safety_utils import format_size, save_report
+from tools.core.safety_utils import format_size
 from tools.core.assistant_logger import log_action
 from config.settings import (
     DEFAULT_SCAN_FOLDER,
     DEFAULT_LARGE_FILE_MB,
     DEFAULT_RESULT_LIMIT,
 )
+from tools.core.report_manager import create_report
 
 def print_divider() -> None:
     print("=" * 70)
@@ -195,7 +196,21 @@ def run_system_advisor() -> None:
         "recommendations": recommendations,
     }
 
-    report = save_report("system_advisor", report_data)
+    report = create_report(
+    tool_name="system_advisor",
+    status="success",
+    input_data={
+        "root_drive": root_drive,
+        "large_file_threshold_mb": DEFAULT_LARGE_FILE_MB,
+        "result_limit": DEFAULT_RESULT_LIMIT,
+    },
+    results={
+            "top_folders": top_folders,
+            "large_files": large_files,
+            "processes": processes,
+        },
+        recommendations=recommendations,
+    )
 
     print_divider()
     print(f"Da luu report: {report}")

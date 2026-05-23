@@ -6,6 +6,8 @@ from tools.core.safety_utils import safe_move, save_manifest, restore_from_manif
 
 from config.settings import DEFAULT_DOWNLOAD_FOLDER
 
+from tools.core.report_manager import create_report
+
 MEDIA_EXTENSIONS = (
     ".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v",
     ".mp3", ".wav", ".flac", ".aac", ".m4a"
@@ -40,8 +42,29 @@ def organize_media(folder: str, target_folder_name: str = "Tat_ca_media", recurs
 
     if records:
         manifest = save_manifest("media_organizer_backup", records)
+
+        report = create_report(
+            tool_name="media_organizer",
+            status="success",
+            input_data={
+                "folder": str(root),
+                "target_folder": str(target),
+                "recursive": recursive,
+            },
+            results={
+                "moved_count": len(records),
+                "moved_files": records,
+                "manifest": str(manifest),
+            },
+            recommendations=[
+                "Use restore option if files were moved incorrectly.",
+                "Review backup manifest before deleting it.",
+            ],
+        )
+
         print(f"\nDa gom {len(records)} file.")
         print(f"Backup manifest: {manifest}")
+        print(f"Report: {report}")
     else:
         print("Khong co media can gom.")
 

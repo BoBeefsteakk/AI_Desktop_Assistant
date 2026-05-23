@@ -11,6 +11,7 @@ from config.settings import (
     DEFAULT_LARGE_FILE_MB,
     DEFAULT_RESULT_LIMIT,
 )
+from tools.core.report_manager import create_report
 
 SKIP_DIR_NAMES = {
     "$recycle.bin",
@@ -153,7 +154,20 @@ def run_large_file_finder() -> None:
 
     show_large_files(results)
 
-    report = save_report("large_file_finder", results)
+    report = create_report(
+    tool_name="large_file_finder",
+    status="success",
+    input_data={
+        "folder": folder,
+        "min_size_mb": min_size_mb,
+        "limit": limit,
+    },
+    results=results,
+    recommendations=[
+            "Review large files manually before deleting.",
+            "Use open_file_location before cleanup.",
+        ]
+    )
 
     print(f"\nDa luu report: {report}")
 
