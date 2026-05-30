@@ -203,6 +203,27 @@ DEFAULT_USER_SETTINGS: dict[str, Any] = {
         "timeout_seconds": 300,
         "prefer_for_system_advisor": False,
     },
+    "external_apps": {
+        "enabled": True,
+        "default_timeout_seconds": 30,
+        "paths": {
+            "everything_app": r"D:\SearchEverything\Everything\Everything.exe",
+            "everything_cli": r"{BASE_DIR}\external\everything\es.exe",
+            "seven_zip": r"C:\Program Files\7-Zip\7z.exe",
+            "smartctl": r"C:\Program Files\smartmontools\bin\smartctl.exe",
+            "crystaldiskinfo": r"C:\Program Files\CrystalDiskInfo\DiskInfo64.exe",
+            "exiftool": r"{BASE_DIR}\external\exiftool\exiftool.exe",
+            "ffmpeg": r"{BASE_DIR}\external\ffmpeg\bin\ffmpeg.exe",
+            "ffprobe": r"{BASE_DIR}\external\ffmpeg\bin\ffprobe.exe",
+            "rclone": r"{BASE_DIR}\external\rclone\rclone.exe",
+            "sysinternals_autoruns": r"{BASE_DIR}\external\sysinternals\autorunsc64.exe",
+            "sysinternals_handle": r"{BASE_DIR}\external\sysinternals\handle64.exe",
+            "sysinternals_procexp": r"{BASE_DIR}\external\sysinternals\procexp64.exe",
+            "sysinternals_rammap": r"{BASE_DIR}\external\sysinternals\RAMMap64.exe",
+            "sysinternals_du": r"{BASE_DIR}\external\sysinternals\du64.exe",
+            "sysinternals_sigcheck": r"{BASE_DIR}\external\sysinternals\sigcheck64.exe",
+        },
+    },
 }
 
 
@@ -367,6 +388,13 @@ def validate_user_settings() -> dict[str, Any]:
     if wiztree_enabled and not wiztree_exe.exists():
         warnings.append(f"WizTree executable does not exist: {wiztree_exe}")
 
+    if get_bool_setting("external_apps.enabled", True):
+        external_app_paths = get_setting_dict("external_apps.paths")
+        for app_name, raw_path in external_app_paths.items():
+            app_path = expand_config_path(str(raw_path))
+            if not app_path.exists():
+                warnings.append(f"External app does not exist: {app_name} -> {app_path}")
+
     return {
         "status": "valid" if not issues else "invalid",
         "config_file": str(USER_SETTINGS_FILE),
@@ -399,6 +427,12 @@ def get_config_snapshot() -> dict[str, Any]:
             "available": WIZTREE_EXE_PATH.exists(),
             "export_dir": str(WIZTREE_EXPORT_DIR),
             "prefer_for_system_advisor": WIZTREE_PREFER_FOR_SYSTEM_ADVISOR,
+        },
+        "external_apps": {
+            "enabled": EXTERNAL_APPS_ENABLED,
+            "configured_count": len(EXTERNAL_APP_PATHS),
+            "available_count": sum(1 for path in EXTERNAL_APP_PATHS.values() if path.exists()),
+            "paths": {name: str(path) for name, path in EXTERNAL_APP_PATHS.items()},
         },
     }
 
@@ -484,6 +518,17 @@ WIZTREE_TIMEOUT_SECONDS = get_int_setting("wiztree.timeout_seconds", 300)
 WIZTREE_PREFER_FOR_SYSTEM_ADVISOR = get_bool_setting("wiztree.prefer_for_system_advisor", False)
 
 WIZTREE_EXPORT_DIR.mkdir(parents=True, exist_ok=True)
+
+# =========================
+# EXTERNAL APP SETTINGS
+# =========================
+
+EXTERNAL_APPS_ENABLED = get_bool_setting("external_apps.enabled", True)
+EXTERNAL_APP_TIMEOUT_SECONDS = get_int_setting("external_apps.default_timeout_seconds", 30)
+EXTERNAL_APP_PATHS = {
+    name: expand_config_path(str(path))
+    for name, path in get_setting_dict("external_apps.paths").items()
+}
 
 # =========================
 # LOG SETTINGS

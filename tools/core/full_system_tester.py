@@ -16,6 +16,7 @@ from tools.core.report_manager import (
     read_recent_report_index,
     validate_report_file,
 )
+from tools.core.external_apps import get_external_apps_status
 from tools.core.risk_classifier import PROTECTED, classify_file_risk
 from tools.core.safe_executor import safe_delete
 from tools.core.safety_utils import safe_move, save_manifest
@@ -120,6 +121,7 @@ def test_main_menu_coverage() -> dict[str, Any]:
         "Undo Manager",
         "Full System Tester",
         "WizTree Adapter",
+        "External Apps Manager",
     ]
     missing = [label for label in expected if label not in main_text]
 
@@ -148,6 +150,7 @@ def test_config_health() -> dict[str, Any]:
         "download_watcher",
         "media_organizer",
         "wiztree",
+        "external_apps",
     }
     missing = sorted(required_top_level - set(data))
     assert_condition(not missing, f"user_settings.json missing sections: {missing}")
@@ -361,6 +364,19 @@ def test_wiztree_adapter_sample_csv() -> dict[str, Any]:
         cleanup_sandbox(sandbox)
 
 
+def test_external_apps_registry() -> dict[str, Any]:
+    status = get_external_apps_status(include_versions=False)
+    missing = [
+        item for item in status["apps"]
+        if not item["available"]
+    ]
+
+    assert_condition(status["enabled"], "External apps registry should be enabled.")
+    assert_condition(not missing, f"External apps missing configured paths: {missing}")
+
+    return status
+
+
 def test_dependency_health() -> dict[str, Any]:
     modules = ["psutil", "send2trash", "watchdog"]
     results = []
@@ -406,6 +422,7 @@ FULL_SYSTEM_TESTS: list[tuple[str, Callable[[], dict[str, Any]]]] = [
     ("Undo Manager Roundtrip", test_undo_manager_roundtrip),
     ("Behavior Suite Subprocess", test_behavior_suite_subprocess),
     ("WizTree Adapter Sample CSV", test_wiztree_adapter_sample_csv),
+    ("External Apps Registry", test_external_apps_registry),
     ("Dependency Health", test_dependency_health),
     ("Git Submodule Health", test_git_submodule_health),
 ]

@@ -24,6 +24,7 @@ from tools.core.assistant_logger import run_assistant_logger
 from tools.core.audit_center import run_audit_center
 from tools.core.behavior_tester import run_behavior_tester
 from tools.core.config_manager import run_config_manager
+from tools.core.external_apps import run_external_apps_manager
 from tools.core.full_system_tester import run_full_system_tester
 from tools.core.tool_tester import run_tool_tester
 from tools.core.undo_manager import run_undo_manager
@@ -65,6 +66,7 @@ def main():
 24. Undo Manager
 25. Full System Tester
 26. WizTree Adapter
+27. External Apps Manager
 
 0. Thoat
 
@@ -155,6 +157,9 @@ def main():
 
         elif choice == "26":
             run_wiztree_adapter()
+
+        elif choice == "27":
+            run_external_apps_manager()
 
         else:
             print("Lua chon khong hop le.")

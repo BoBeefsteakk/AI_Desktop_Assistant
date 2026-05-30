@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from tools.core.assistant_logger import log_action
+from tools.core.external_apps import summarize_media_metadata
 from tools.core.risk_classifier import classify_file_risk, PROTECTED
 from tools.core.safety_utils import (
     ask_yes_no,
@@ -90,6 +91,92 @@ def show_media_files(files: list[dict]) -> None:
     print("-" * 90)
     print(f"Tong file: {len(files)}")
     print(f"Tong dung luong: {format_size(total_size)}")
+
+
+def scan_media_metadata(
+    folder: str,
+    recursive: bool = False,
+    limit: int = 30,
+) -> dict:
+    files = scan_media_files(folder, recursive=recursive)
+    selected_files = files[:limit]
+    metadata_results = []
+
+    print("\n========== MEDIA METADATA ==========")
+    if not selected_files:
+        print("Khong co media de doc metadata.")
+
+    for item in selected_files:
+        metadata = summarize_media_metadata(item["path"])
+        summary = metadata["summary"]
+        metadata_results.append({
+            **item,
+            "metadata": summary,
+            "metadata_status": metadata["status"],
+        })
+
+        duration = summary.get("duration_seconds") or "unknown"
+        video_codec = summary.get("video_codec") or "-"
+        audio_codec = summary.get("audio_codec") or "-"
+        resolution = "-"
+        if summary.get("width") and summary.get("height"):
+            resolution = f"{summary['width']}x{summary['height']}"
+
+        print(f"{Path(item['path']).name}")
+        print(f"  Status    : {metadata['status']}")
+        print(f"  Type      : {summary.get('file_type') or summary.get('format_name') or '-'}")
+        print(f"  Duration  : {duration}")
+        print(f"  Video     : {video_codec} | {resolution}")
+        print(f"  Audio     : {audio_codec}")
+        print(f"  Path      : {item['path']}")
+
+    report = create_report(
+        tool_name="media_metadata",
+        action="scan_metadata",
+        status="success",
+        risk_level="safe",
+        input_data={
+            "folder": folder,
+            "recursive": recursive,
+            "limit": limit,
+        },
+        results={
+            "found_count": len(files),
+            "scanned_count": len(metadata_results),
+            "records": metadata_results,
+        },
+        recommendations=[
+            "Metadata scan is read-only.",
+            "Use Media Organizer move flow only after reviewing the file list.",
+        ],
+        summary={
+            "found_count": len(files),
+            "scanned_count": len(metadata_results),
+            "undo_available": False,
+        },
+        undo_available=False,
+        tags=["media", "metadata", "external_apps"],
+    )
+
+    log_action(
+        "media_organizer",
+        "scan_media_metadata",
+        "success",
+        {
+            "folder": folder,
+            "found_count": len(files),
+            "scanned_count": len(metadata_results),
+            "report": str(report),
+        },
+    )
+
+    print(f"Report: {report}")
+    return {
+        "found_count": len(files),
+        "scanned_count": len(metadata_results),
+        "records": metadata_results,
+        "report": str(report),
+    }
 
 
 def choose_media_files_to_move(files: list[dict]) -> list[dict]:
@@ -356,6 +443,7 @@ def restore_media_from_manifest(manifest_path: str) -> None:
 def run_media_organizer() -> None:
     print("1. Gom media")
     print("2. Restore tu backup manifest")
+    print("3. Doc metadata media (ExifTool/FFprobe, read-only)")
     choice = input("Chon: ").strip()
 
     if choice == "1":
@@ -365,6 +453,12 @@ def run_media_organizer() -> None:
     elif choice == "2":
         manifest = input("Nhap duong dan file backup manifest .json: ").strip().strip('"')
         restore_media_from_manifest(manifest)
+    elif choice == "3":
+        folder = input("Nhap folder goc: ").strip().strip('"') or DEFAULT_DOWNLOAD_FOLDER
+        recursive = ask_yes_no("Quet ca folder con?", default=False)
+        raw_limit = input("Doc metadata toi da bao nhieu file? [30]: ").strip()
+        limit = int(raw_limit) if raw_limit.isdigit() else 30
+        scan_media_metadata(folder, recursive=recursive, limit=limit)
     else:
         print("Lua chon khong hop le.")
 

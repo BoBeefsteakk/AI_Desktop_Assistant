@@ -5,6 +5,7 @@ import psutil
 
 from config.settings import RAM_CRITICAL_PERCENT, RAM_WARNING_PERCENT
 from tools.core.assistant_logger import log_action
+from tools.core.external_apps import is_external_app_available
 from tools.core.report_manager import create_report
 from tools.core.safety_utils import format_size
 
@@ -87,6 +88,17 @@ def show_top_process(limit: int = 15, sort_by: str = "ram") -> None:
         print("-" * 90)
         print(f"RAM toan he thong dang dung: {processes[0]['system_memory_percent']:.1f}%")
 
+    external_helpers = {
+        "process_explorer": is_external_app_available("sysinternals_procexp"),
+        "handle": is_external_app_available("sysinternals_handle"),
+        "rammap": is_external_app_available("sysinternals_rammap"),
+    }
+    if any(external_helpers.values()):
+        print("\nSysinternals helpers available:")
+        for name, available in external_helpers.items():
+            if available:
+                print(f"- {name}")
+
     recommendations = []
     if processes:
         system_ram = processes[0]["system_memory_percent"]
@@ -103,9 +115,11 @@ def show_top_process(limit: int = 15, sort_by: str = "ram") -> None:
             "sort_by": sort_by,
             "ram_warning_percent": RAM_WARNING_PERCENT,
             "ram_critical_percent": RAM_CRITICAL_PERCENT,
+            "external_helpers": external_helpers,
         },
         results=processes,
         recommendations=recommendations,
+        tags=["process", "external_apps"] if any(external_helpers.values()) else ["process"],
     )
 
     log_action(
@@ -116,6 +130,7 @@ def show_top_process(limit: int = 15, sort_by: str = "ram") -> None:
             "limit": limit,
             "sort_by": sort_by,
             "process_count": len(processes),
+            "external_helpers": external_helpers,
             "report": str(report),
         },
     )

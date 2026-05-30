@@ -4,6 +4,7 @@ import psutil
 
 from config.settings import DISK_CRITICAL_PERCENT, DISK_WARNING_PERCENT
 from tools.core.assistant_logger import log_action
+from tools.core.external_apps import get_smartctl_health, is_external_app_available
 from tools.core.report_manager import create_report
 from tools.core.safety_utils import format_size
 
@@ -73,11 +74,42 @@ def check_disk() -> None:
 
         print("-" * 50)
 
+    smart_health = {
+        "status": "unavailable",
+        "device_count": 0,
+        "checked_count": 0,
+        "devices": [],
+    }
+
+    if is_external_app_available("smartctl"):
+        print("\n========== SMART HEALTH (smartctl) ==========\n")
+        smart_health = get_smartctl_health()
+        if smart_health["devices"]:
+            for device in smart_health["devices"]:
+                passed = device.get("smart_passed")
+                health_text = "PASS" if passed is True else "WARN" if passed is False else "UNKNOWN"
+                temp = device.get("temperature")
+                temp_text = f" | Temp: {temp} C" if temp is not None else ""
+                print(
+                    f"[{health_text}] {device.get('device')} | "
+                    f"{device.get('model') or device.get('comment') or 'Unknown'}"
+                    f"{temp_text}"
+                )
+        else:
+            print("Khong doc duoc SMART device hoac can quyen cao hon.")
+
     recommendations = [
         disk["recommendation"]
         for disk in disks
         if disk["status"] != "ok"
     ]
+
+    failed_smart = [
+        item for item in smart_health.get("devices", [])
+        if item.get("smart_passed") is False
+    ]
+    if failed_smart:
+        recommendations.append("Co o dia SMART health khong PASS. Nen backup du lieu quan trong som.")
 
     report = create_report(
         tool_name="disk_checker",
@@ -85,8 +117,12 @@ def check_disk() -> None:
         input_data={
             "warning_percent": DISK_WARNING_PERCENT,
             "critical_percent": DISK_CRITICAL_PERCENT,
+            "smartctl_available": is_external_app_available("smartctl"),
         },
-        results=disks,
+        results={
+            "disks": disks,
+            "smart_health": smart_health,
+        },
         recommendations=recommendations,
     )
 
@@ -98,6 +134,7 @@ def check_disk() -> None:
             "disk_count": len(disks),
             "warning_count": sum(1 for disk in disks if disk["status"] == "warning"),
             "critical_count": sum(1 for disk in disks if disk["status"] == "critical"),
+            "smart_checked_count": smart_health.get("checked_count", 0),
             "report": str(report),
         },
     )

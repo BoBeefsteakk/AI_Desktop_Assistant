@@ -308,5 +308,26 @@
         "use_admin": false,
         "timeout_seconds": 300,
         "prefer_for_system_advisor": false
+    },
+    "external_apps": {
+        "enabled": true,
+        "default_timeout_seconds": 30,
+        "paths": {
+            "everything_app": "D:\\SearchEverything\\Everything\\Everything.exe",
+            "everything_cli": "{BASE_DIR}\\external\\everything\\es.exe",
+            "seven_zip": "C:\\Program Files\\7-Zip\\7z.exe",
+            "smartctl": "C:\\Program Files\\smartmontools\\bin\\smartctl.exe",
+            "crystaldiskinfo": "C:\\Program Files\\CrystalDiskInfo\\DiskInfo64.exe",
+            "exiftool": "{BASE_DIR}\\external\\exiftool\\exiftool.exe",
+            "ffmpeg": "{BASE_DIR}\\external\\ffmpeg\\bin\\ffmpeg.exe",
+            "ffprobe": "{BASE_DIR}\\external\\ffmpeg\\bin\\ffprobe.exe",
+            "rclone": "{BASE_DIR}\\external\\rclone\\rclone.exe",
+            "sysinternals_autoruns": "{BASE_DIR}\\external\\sysinternals\\autorunsc64.exe",
+            "sysinternals_handle": "{BASE_DIR}\\external\\sysinternals\\handle64.exe",
+            "sysinternals_procexp": "{BASE_DIR}\\external\\sysinternals\\procexp64.exe",
+            "sysinternals_rammap": "{BASE_DIR}\\external\\sysinternals\\RAMMap64.exe",
+            "sysinternals_du": "{BASE_DIR}\\external\\sysinternals\\du64.exe",
+            "sysinternals_sigcheck": "{BASE_DIR}\\external\\sysinternals\\sigcheck64.exe"
+        }
     }
 }

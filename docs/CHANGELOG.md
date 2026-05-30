@@ -126,14 +126,15 @@ Nâng cấp:
 * **thay đổi** Thêm Undo Manager
 * **thay đổi** Thêm Full System Tester
 * **thay đổi** Thêm WizTree Adapter
+* **thay đổi** Thêm External Apps Manager
 * Chuyển Tool Tester sang mục 21
 
 ### Tool Tester
 
 **thay đổi** Mở rộng:
 
-* Kiểm tra 26 tool
-* Passed: 26
+* Kiểm tra 27 tool
+* Passed: 27
 * Failed: 0
 
 ### Behavior Tester
@@ -189,6 +190,7 @@ Nâng cấp:
 * Disk Checker và Process Monitor dùng warning/critical threshold từ config
 * Thêm `tools/core/config_manager.py`
 * **thay đổi** Thêm nhóm `wiztree` cho exe_path, export_dir, timeout, use_admin và tùy chọn dùng trong System Advisor
+* **thay đổi** Thêm nhóm `external_apps` cho Everything, smartctl, Sysinternals, 7-Zip, ExifTool, FFmpeg, rclone
 
 ### WizTree Adapter
 
@@ -200,6 +202,17 @@ Nâng cấp:
 * Parse CSV thành top folders và large files
 * System Advisor có thể dùng WizTree để scan nhanh và fallback về Python scanner nếu lỗi
 * Full System Tester kiểm tra parser bằng CSV mẫu trong sandbox, không chạy scan thật
+
+### External Apps Integration
+
+**thay đổi** Móc app ngoài vào tool theo hướng read-only:
+
+* Thêm `tools/core/external_apps.py`
+* File Indexer và Natural Command dùng Everything CLI để search nhanh, fallback về local index
+* Disk Checker đọc thêm SMART health qua smartctl nếu khả dụng
+* Media Organizer có chế độ đọc metadata bằng ExifTool/FFprobe, không move file
+* Process Monitor ghi nhận Sysinternals helpers sẵn có
+* External Apps Manager xem status/version và xuất report
 
 ### Audit System
 
@@ -245,9 +258,10 @@ Nâng cấp:
 * Undo Manager roundtrip
 * Behavior suite subprocess
 * **thay đổi** WizTree Adapter sample CSV
+* **thay đổi** External Apps Registry
 * Dependency health
 * Git submodule health
-* Passed: 14
+* Passed: 15
 * Failed: 0
 
 ### Repository Layout
@@ -263,7 +277,7 @@ Nâng cấp:
 
 Tool Tester:
 
-Passed: 26
+Passed: 27
 
 Failed: 0
 
@@ -275,7 +289,7 @@ Failed: 0
 
 Full System Tester:
 
-Passed: 14
+Passed: 15
 
 Failed: 0
 

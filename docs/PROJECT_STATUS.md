@@ -190,7 +190,7 @@ Chức năng:
 
 **thay đổi** Kết quả hiện tại:
 
-Passed: 26
+Passed: 27
 Failed: 0
 
 ---
@@ -207,6 +207,26 @@ Chức năng:
 * Parse CSV thành top folders và large files dùng chung với System Advisor
 * Không xóa, không move, không thay đổi dữ liệu người dùng
 * System Advisor có thể hỏi để dùng WizTree, nếu lỗi thì fallback về Python scanner
+
+---
+
+### External Apps Integration
+
+**thay đổi** Đã thêm lớp tích hợp app ngoài read-only qua `tools/core/external_apps.py`.
+
+Đã móc vào tool:
+
+* Everything CLI dùng cho File Indexer và Natural Command `find ...`, fallback về local index nếu lỗi
+* smartctl dùng trong Disk Checker để đọc SMART health nếu có quyền và thiết bị hỗ trợ
+* ExifTool và FFprobe dùng trong Media Organizer chế độ đọc metadata riêng, không move file
+* Sysinternals được nhận diện trong Process Monitor để report biết có Process Explorer/Handle/RAMMap sẵn
+* External Apps Manager hiển thị trạng thái/version và xuất report app ngoài
+
+Nguyên tắc:
+
+* Không app ngoài nào được tự xóa/move dữ liệu
+* App ngoài chỉ tăng tốc scan, đọc metadata hoặc bổ sung health snapshot
+* Path app ngoài nằm trong `config/user_settings.json`
 
 ---
 
@@ -286,6 +306,7 @@ Process Monitor:
 * Undo Manager
 * Full System Tester
 * **thay đổi** WizTree Adapter
+* **thay đổi** External Apps Manager
 
 ---
 
@@ -298,6 +319,7 @@ Process Monitor:
 * Gom Downloads path, default scan folder, thresholds, protected folders
 * Gom browser cache templates, watcher timing, file categories, media extensions
 * **thay đổi** Gom cấu hình WizTree: enabled, exe_path, export_dir, timeout, use_admin, prefer_for_system_advisor
+* **thay đổi** Gom cấu hình external_apps: Everything, smartctl, Sysinternals, 7-Zip, ExifTool, FFmpeg, rclone
 * Risk Classifier, Browser Cache Cleaner, Download Organizer, Download Watcher, Media Organizer, Disk Checker, Process Monitor, File Indexer dùng config tập trung
 * Thêm Config Manager để xem summary, validate và xuất report config
 
@@ -354,10 +376,11 @@ Process Monitor:
 * Kiểm tra dependency chính
 * Kiểm tra `git submodule status`
 * **thay đổi** Kiểm tra WizTree Adapter bằng CSV mẫu trong sandbox, không chạy scan thật
+* **thay đổi** Kiểm tra External Apps Registry đủ path cấu hình
 
 Kết quả hiện tại:
 
-Passed: 14
+Passed: 15
 Failed: 0
 
 ---
@@ -411,6 +434,7 @@ Lý do:
 * Undo System nền tảng
 * Full System Tester
 * **thay đổi** WizTree Adapter read-only
+* **thay đổi** External Apps Integration
 
 Cần làm tiếp để ổn định tool tổng:
 

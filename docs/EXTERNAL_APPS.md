@@ -45,3 +45,17 @@
 **thay đổi** App dạng installer có service/shell integration nên cài vào vị trí mặc định hoặc vị trí riêng ổn định, rồi ghi lại path chính trong bảng trên.
 
 **thay đổi** Thư mục `D:\tool\external\` bị ignore khỏi git để không đưa file exe/zip vào repository.
+
+## Tích Hợp Vào Tool
+
+**thay đổi** Các app ngoài hiện được móc qua `tools/core/external_apps.py` và cấu hình trong `config/user_settings.json`.
+
+| App | Tool đang dùng | Cách dùng |
+| --- | --- | --- |
+| Everything CLI | File Indexer, Natural Command | Search nhanh trước, fallback local index nếu lỗi. |
+| smartctl | Disk Checker | Đọc SMART health read-only. |
+| ExifTool | Media Organizer | Đọc metadata media read-only. |
+| FFprobe | Media Organizer | Đọc duration/codec/resolution read-only. |
+| Sysinternals | Process Monitor | Ghi nhận helper sẵn sàng cho diagnostics. |
+| 7-Zip | External Apps Registry | Sẵn sàng cho archive validation sau này. |
+| rclone | External Apps Registry | Sẵn sàng cho backup/sync sau này. |

@@ -39,6 +39,7 @@ Hoàn thành
 * **thay đổi** Undo Manager nền tảng
 * **thay đổi** Full System Tester siêu tổng hợp
 * **thay đổi** WizTree Adapter read-only để scan dung lượng nhanh qua CSV
+* **thay đổi** External Apps Integration cho Everything, smartctl, Sysinternals, ExifTool, FFmpeg, rclone
 
 Cần rà soát tiếp:
 
@@ -111,7 +112,8 @@ Một lệnh test tổng hợp trước khi refactor lớn hoặc feed assistant
 * Compile/import/config/safety/report/audit/undo/behavior/dependency/git checks
 * **thay đổi** Report schema validation
 * **thay đổi** WizTree Adapter sample CSV test
-* Full System Tester hiện pass 14/14
+* **thay đổi** External Apps Registry test
+* Full System Tester hiện pass 15/15
 
 ---
 

@@ -6,6 +6,7 @@ from pathlib import Path
 from datetime import datetime
 
 from config.settings import DATA_DIR, DEFAULT_SCAN_FOLDER, SAFE_SYSTEM_FOLDERS
+from tools.core.external_apps import search_everything
 from tools.core.safety_utils import format_size, save_report
 
 INDEX_FILE = DATA_DIR / "file_index.json"
@@ -81,6 +82,27 @@ def search_file_index(keyword: str, index_path: str | Path = INDEX_FILE, limit: 
     results.sort(key=lambda x: x["modified"], reverse=True)
     return results[:limit]
 
+
+def search_files(keyword: str, limit: int = 30, prefer_everything: bool = True) -> dict:
+    if prefer_everything:
+        everything_result = search_everything(keyword, limit=limit)
+        if everything_result["status"] == "success":
+            return {
+                "status": "success",
+                "source": "everything",
+                "results": everything_result["results"],
+                "fallback_used": False,
+            }
+
+    index_results = search_file_index(keyword, limit=limit)
+    return {
+        "status": "success",
+        "source": "local_index",
+        "results": index_results,
+        "fallback_used": prefer_everything,
+    }
+
+
 def show_search_results(results: list[dict]) -> None:
     if not results:
         print("Khong tim thay file phu hop.")
@@ -92,6 +114,8 @@ def show_search_results(results: list[dict]) -> None:
         print(f"    Size: {format_size(item['size'])}")
         print(f"    Path: {item['path']}")
         print(f"    Modified: {item['modified']}")
+        if item.get("source"):
+            print(f"    Source: {item['source']}")
 
 def run_file_indexer() -> None:
     while True:
@@ -110,13 +134,14 @@ def run_file_indexer() -> None:
 
         elif choice == "2":
             keyword = input("Nhap ten file/cum tu can tim: ").strip()
-            results = search_file_index(keyword)
-            show_search_results(results)
+            search_result = search_files(keyword)
+            print(f"Source: {search_result['source']}")
+            show_search_results(search_result["results"])
 
         elif choice == "3":
             keyword = input("Nhap ten file/cum tu can tim: ").strip()
-            results = search_file_index(keyword, limit=200)
-            report = save_report("file_search_results", results)
+            search_result = search_files(keyword, limit=200)
+            report = save_report("file_search_results", search_result)
             print(f"Da luu report: {report}")
 
         elif choice == "0":

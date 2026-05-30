@@ -40,6 +40,11 @@ def show_config_summary() -> None:
     print(f"Downloads        : {DEFAULT_DOWNLOAD_FOLDER}")
     print(f"Protected folders: {snapshot['protected_dir_count']}")
     print(f"Browser templates: {snapshot['browser_cache_path_count']}")
+    print(
+        "External apps   : "
+        f"{snapshot['external_apps']['available_count']}/"
+        f"{snapshot['external_apps']['configured_count']}"
+    )
 
     if validation["issues"]:
         print("\nIssues:")

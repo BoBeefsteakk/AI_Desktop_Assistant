@@ -45,6 +45,7 @@ Bao gồm:
 * risk_classifier.py
 * safe_executor.py
 * safety_utils.py
+* **thay đổi** external_apps.py
 * tool_tester.py
 * **thay đổi** behavior_tester.py
 * **thay đổi** config_manager.py
@@ -272,6 +273,15 @@ WizTree Adapter:
 * Có thể cấp dữ liệu cho System Advisor
 * Nếu adapter lỗi, tool phải fallback hoặc dừng an toàn
 
+**thay đổi** External Apps Registry:
+
+* `tools/core/external_apps.py` quản lý path, status, version và lệnh gọi app ngoài
+* Everything CLI dùng cho search nhanh
+* smartctl dùng cho disk health
+* ExifTool/FFprobe dùng cho media metadata
+* Sysinternals được nhận diện cho process/startup diagnostics
+* 7-Zip/rclone sẵn trong registry cho archive/backup flow sau này
+
 ---
 
 ## Config Layer
@@ -293,6 +303,7 @@ Các nhóm đã gom:
 * File categories
 * Media extensions
 * **thay đổi** WizTree executable path, export folder, timeout và tùy chọn System Advisor
+* **thay đổi** External app paths và default timeout
 
 ---
 

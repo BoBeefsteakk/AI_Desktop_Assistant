@@ -12,7 +12,7 @@ from tools.storage.media_organizer import run_media_organizer
 
 from tools.search.file_indexer import (
     run_file_indexer,
-    search_file_index,
+    search_files,
     show_search_results,
 )
 from tools.automation.startup_launcher import run_startup_launcher
@@ -52,8 +52,9 @@ def handle_command(command: str) -> bool:
 
     elif cmd.startswith("find ") or cmd.startswith("tìm "):
         keyword = command.split(" ", 1)[1]
-        results = search_file_index(keyword)
-        show_search_results(results)
+        search_result = search_files(keyword)
+        print(f"Source: {search_result['source']}")
+        show_search_results(search_result["results"])
 
     elif "index" in cmd:
         run_file_indexer()
