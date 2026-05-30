@@ -125,14 +125,15 @@ Nâng cấp:
 * **thay đổi** Thêm Audit Center
 * **thay đổi** Thêm Undo Manager
 * **thay đổi** Thêm Full System Tester
+* **thay đổi** Thêm WizTree Adapter
 * Chuyển Tool Tester sang mục 21
 
 ### Tool Tester
 
 **thay đổi** Mở rộng:
 
-* Kiểm tra 25 tool
-* Passed: 25
+* Kiểm tra 26 tool
+* Passed: 26
 * Failed: 0
 
 ### Behavior Tester
@@ -187,6 +188,18 @@ Nâng cấp:
 * Download Organizer, Download Watcher, Media Organizer dùng category/extension từ config
 * Disk Checker và Process Monitor dùng warning/critical threshold từ config
 * Thêm `tools/core/config_manager.py`
+* **thay đổi** Thêm nhóm `wiztree` cho exe_path, export_dir, timeout, use_admin và tùy chọn dùng trong System Advisor
+
+### WizTree Adapter
+
+**thay đổi** Thêm adapter WizTree read-only:
+
+* Thêm `tools/storage/wiztree_adapter.py`
+* Tự đọc executable từ config, mặc định `D:\WizTree\WizTree\WizTree64.exe`
+* Export CSV vào `data/wiztree_exports`
+* Parse CSV thành top folders và large files
+* System Advisor có thể dùng WizTree để scan nhanh và fallback về Python scanner nếu lỗi
+* Full System Tester kiểm tra parser bằng CSV mẫu trong sandbox, không chạy scan thật
 
 ### Audit System
 
@@ -231,9 +244,10 @@ Nâng cấp:
 * Audit Center health
 * Undo Manager roundtrip
 * Behavior suite subprocess
+* **thay đổi** WizTree Adapter sample CSV
 * Dependency health
 * Git submodule health
-* Passed: 13
+* Passed: 14
 * Failed: 0
 
 ### Repository Layout
@@ -249,7 +263,7 @@ Nâng cấp:
 
 Tool Tester:
 
-Passed: 25
+Passed: 26
 
 Failed: 0
 
@@ -261,7 +275,7 @@ Failed: 0
 
 Full System Tester:
 
-Passed: 13
+Passed: 14
 
 Failed: 0
 

@@ -38,6 +38,7 @@ Hoàn thành
 * **thay đổi** Audit Center và report index nền tảng
 * **thay đổi** Undo Manager nền tảng
 * **thay đổi** Full System Tester siêu tổng hợp
+* **thay đổi** WizTree Adapter read-only để scan dung lượng nhanh qua CSV
 
 Cần rà soát tiếp:
 
@@ -109,7 +110,8 @@ Một lệnh test tổng hợp trước khi refactor lớn hoặc feed assistant
 
 * Compile/import/config/safety/report/audit/undo/behavior/dependency/git checks
 * **thay đổi** Report schema validation
-* Full System Tester hiện pass 13/13
+* **thay đổi** WizTree Adapter sample CSV test
+* Full System Tester hiện pass 14/14
 
 ---
 

@@ -31,6 +31,7 @@ TOOLS_TO_TEST = [
     {"name": "Config Manager", "module": "tools.core.config_manager", "function": "run_config_manager", "risk": "safe"},
     {"name": "Undo Manager", "module": "tools.core.undo_manager", "function": "run_undo_manager", "risk": "medium"},
     {"name": "Full System Tester", "module": "tools.core.full_system_tester", "function": "run_full_system_tester", "risk": "safe"},
+    {"name": "WizTree Adapter", "module": "tools.storage.wiztree_adapter", "function": "run_wiztree_adapter", "risk": "safe"},
     {"name": "File Location Opener", "module": "tools.core.file_location_opener", "function": "open_file_location", "risk": "safe"},
 ]
 

@@ -190,8 +190,23 @@ Chức năng:
 
 **thay đổi** Kết quả hiện tại:
 
-Passed: 25
+Passed: 26
 Failed: 0
+
+---
+
+### WizTree Adapter
+
+**thay đổi** Đã tích hợp WizTree theo hướng read-only adapter.
+
+Chức năng:
+
+* Đọc cấu hình từ `config/user_settings.json`
+* Tự nhận `D:\WizTree\WizTree\WizTree64.exe` nếu còn đúng đường dẫn
+* Export CSV vào `D:\tool\data\wiztree_exports`
+* Parse CSV thành top folders và large files dùng chung với System Advisor
+* Không xóa, không move, không thay đổi dữ liệu người dùng
+* System Advisor có thể hỏi để dùng WizTree, nếu lỗi thì fallback về Python scanner
 
 ---
 
@@ -270,6 +285,7 @@ Process Monitor:
 * Audit Center
 * Undo Manager
 * Full System Tester
+* **thay đổi** WizTree Adapter
 
 ---
 
@@ -281,6 +297,7 @@ Process Monitor:
 * `config/settings.py` tự merge default an toàn với user override
 * Gom Downloads path, default scan folder, thresholds, protected folders
 * Gom browser cache templates, watcher timing, file categories, media extensions
+* **thay đổi** Gom cấu hình WizTree: enabled, exe_path, export_dir, timeout, use_admin, prefer_for_system_advisor
 * Risk Classifier, Browser Cache Cleaner, Download Organizer, Download Watcher, Media Organizer, Disk Checker, Process Monitor, File Indexer dùng config tập trung
 * Thêm Config Manager để xem summary, validate và xuất report config
 
@@ -336,10 +353,11 @@ Process Monitor:
 * Chạy Behavior Tester như subprocess
 * Kiểm tra dependency chính
 * Kiểm tra `git submodule status`
+* **thay đổi** Kiểm tra WizTree Adapter bằng CSV mẫu trong sandbox, không chạy scan thật
 
 Kết quả hiện tại:
 
-Passed: 13
+Passed: 14
 Failed: 0
 
 ---
@@ -392,6 +410,7 @@ Lý do:
 * Audit System nền tảng
 * Undo System nền tảng
 * Full System Tester
+* **thay đổi** WizTree Adapter read-only
 
 Cần làm tiếp để ổn định tool tổng:
 

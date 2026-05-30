@@ -5,7 +5,7 @@ from pathlib import Path
 from tools.storage.folder_size_analyzer import analyze_top_folders
 from tools.storage.large_file_finder import find_large_files
 from tools.system.process_monitor import get_top_processes
-from tools.core.safety_utils import format_size
+from tools.core.safety_utils import ask_yes_no, format_size
 from tools.core.assistant_logger import log_action
 from config.settings import (
     DEFAULT_SCAN_FOLDER,
@@ -13,8 +13,10 @@ from config.settings import (
     DEFAULT_RESULT_LIMIT,
     RAM_CRITICAL_PERCENT,
     RAM_WARNING_PERCENT,
+    WIZTREE_PREFER_FOR_SYSTEM_ADVISOR,
 )
 from tools.core.report_manager import create_report
+from tools.storage.wiztree_adapter import is_wiztree_available, scan_storage_with_wiztree
 
 def print_divider() -> None:
     print("=" * 70)
@@ -133,18 +135,54 @@ def run_system_advisor() -> None:
         "Nhap o dia can phan tich: "
     ).strip().strip('"') or DEFAULT_SCAN_FOLDER
 
-    print("\nDang phan tich folder nang...")
-    top_folders = analyze_top_folders(
-        root_drive,
-        limit=DEFAULT_RESULT_LIMIT
-    )
+    storage_provider = "python"
+    storage_scan_report = None
+    wiztree_status = "unavailable"
 
-    print("\nDang phan tich file lon...")
-    large_files = find_large_files(
-        root_drive,
-        min_size_mb=DEFAULT_LARGE_FILE_MB,
-        limit=DEFAULT_RESULT_LIMIT
-    )
+    if is_wiztree_available():
+        wiztree_status = "available"
+        use_wiztree = ask_yes_no(
+            "Dung WizTree de scan nhanh dung luong? Adapter chi doc CSV",
+            default=WIZTREE_PREFER_FOR_SYSTEM_ADVISOR,
+        )
+
+        if use_wiztree:
+            print("\nDang phan tich dung luong bang WizTree...")
+            wiztree_result = scan_storage_with_wiztree(
+                root_drive,
+                min_size_mb=DEFAULT_LARGE_FILE_MB,
+                limit=DEFAULT_RESULT_LIMIT,
+                create_tool_report=True,
+            )
+
+            if wiztree_result["status"] == "success":
+                top_folders = wiztree_result["top_folders"]
+                large_files = wiztree_result["large_files"]
+                storage_provider = "wiztree"
+                storage_scan_report = wiztree_result.get("report")
+                wiztree_status = "success"
+            else:
+                wiztree_status = wiztree_result["status"]
+                print(
+                    f"WizTree khong scan duoc ({wiztree_status}), "
+                    "fallback sang Python scanner."
+                )
+        else:
+            wiztree_status = "skipped"
+
+    if storage_provider == "python":
+        print("\nDang phan tich folder nang...")
+        top_folders = analyze_top_folders(
+            root_drive,
+            limit=DEFAULT_RESULT_LIMIT
+        )
+
+        print("\nDang phan tich file lon...")
+        large_files = find_large_files(
+            root_drive,
+            min_size_mb=DEFAULT_LARGE_FILE_MB,
+            limit=DEFAULT_RESULT_LIMIT
+        )
 
     print("\nDang phan tich process...")
     processes = get_top_processes(limit=10, sort_by="ram")
@@ -200,8 +238,12 @@ def run_system_advisor() -> None:
             "result_limit": DEFAULT_RESULT_LIMIT,
             "ram_warning_percent": RAM_WARNING_PERCENT,
             "ram_critical_percent": RAM_CRITICAL_PERCENT,
+            "storage_provider": storage_provider,
+            "wiztree_status": wiztree_status,
         },
         results={
+            "storage_provider": storage_provider,
+            "storage_scan_report": storage_scan_report,
             "top_folders": top_folders,
             "large_files": large_files,
             "processes": processes,
@@ -220,6 +262,8 @@ def run_system_advisor() -> None:
             "root_drive": root_drive,
             "report": str(report),
             "recommendation_count": len(recommendations),
+            "storage_provider": storage_provider,
+            "wiztree_status": wiztree_status,
         }
     )
 

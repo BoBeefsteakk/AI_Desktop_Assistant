@@ -195,6 +195,14 @@ DEFAULT_USER_SETTINGS: dict[str, Any] = {
             ".m4a",
         ],
     },
+    "wiztree": {
+        "enabled": True,
+        "exe_path": r"D:\WizTree\WizTree\WizTree64.exe",
+        "export_dir": "{BASE_DIR}/data/wiztree_exports",
+        "use_admin": False,
+        "timeout_seconds": 300,
+        "prefer_for_system_advisor": False,
+    },
 }
 
 
@@ -270,6 +278,18 @@ def get_int_setting(path: str, default: int) -> int:
         return default
 
 
+def get_bool_setting(path: str, default: bool) -> bool:
+    value = get_setting(path, default)
+
+    if isinstance(value, bool):
+        return value
+
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "y", "on"}
+
+    return bool(value)
+
+
 def normalize_extensions(values: list[str]) -> set[str]:
     return {
         item.lower() if item.startswith(".") else f".{item.lower()}"
@@ -342,6 +362,11 @@ def validate_user_settings() -> dict[str, Any]:
     if large_file_mb <= 0:
         issues.append("large_file_mb must be greater than 0")
 
+    wiztree_enabled = get_bool_setting("wiztree.enabled", False)
+    wiztree_exe = Path(str(get_setting("wiztree.exe_path", "")))
+    if wiztree_enabled and not wiztree_exe.exists():
+        warnings.append(f"WizTree executable does not exist: {wiztree_exe}")
+
     return {
         "status": "valid" if not issues else "invalid",
         "config_file": str(USER_SETTINGS_FILE),
@@ -368,6 +393,13 @@ def get_config_snapshot() -> dict[str, Any]:
         },
         "browser_cache_path_count": len(get_setting_list("browser_cache.path_templates")),
         "protected_dir_count": len(PROTECTED_DIR_NAMES),
+        "wiztree": {
+            "enabled": WIZTREE_ENABLED,
+            "exe_path": str(WIZTREE_EXE_PATH),
+            "available": WIZTREE_EXE_PATH.exists(),
+            "export_dir": str(WIZTREE_EXPORT_DIR),
+            "prefer_for_system_advisor": WIZTREE_PREFER_FOR_SYSTEM_ADVISOR,
+        },
     }
 
 # =========================
@@ -439,6 +471,19 @@ MEDIA_ORGANIZER_TARGET_FOLDER_NAME = str(
     get_setting("media_organizer.target_folder_name", "Tat_ca_media")
 )
 MEDIA_EXTENSIONS = normalize_extensions(get_setting_list("media_organizer.media_extensions"))
+
+# =========================
+# WIZTREE SETTINGS
+# =========================
+
+WIZTREE_ENABLED = get_bool_setting("wiztree.enabled", True)
+WIZTREE_EXE_PATH = Path(str(get_setting("wiztree.exe_path", r"D:\WizTree\WizTree\WizTree64.exe")))
+WIZTREE_EXPORT_DIR = expand_config_path(str(get_setting("wiztree.export_dir", "{BASE_DIR}/data/wiztree_exports")))
+WIZTREE_USE_ADMIN = get_bool_setting("wiztree.use_admin", False)
+WIZTREE_TIMEOUT_SECONDS = get_int_setting("wiztree.timeout_seconds", 300)
+WIZTREE_PREFER_FOR_SYSTEM_ADVISOR = get_bool_setting("wiztree.prefer_for_system_advisor", False)
+
+WIZTREE_EXPORT_DIR.mkdir(parents=True, exist_ok=True)
 
 # =========================
 # LOG SETTINGS

@@ -12,6 +12,7 @@ from tools.storage.large_file_finder import run_large_file_finder
 from tools.storage.system_advisor import run_system_advisor
 from tools.storage.temp_cleaner import run_temp_cleaner
 from tools.storage.empty_folder_finder import run_empty_folder_finder
+from tools.storage.wiztree_adapter import run_wiztree_adapter
 
 from tools.search.file_indexer import run_file_indexer
 from tools.search.natural_command import run_natural_command
@@ -63,6 +64,7 @@ def main():
 23. Audit Center
 24. Undo Manager
 25. Full System Tester
+26. WizTree Adapter
 
 0. Thoat
 
@@ -150,6 +152,9 @@ def main():
 
         elif choice == "25":
             run_full_system_tester()
+
+        elif choice == "26":
+            run_wiztree_adapter()
 
         else:
             print("Lua chon khong hop le.")

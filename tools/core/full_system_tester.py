@@ -21,6 +21,12 @@ from tools.core.safe_executor import safe_delete
 from tools.core.safety_utils import safe_move, save_manifest
 from tools.core.tool_tester import TOOLS_TO_TEST
 from tools.core.undo_manager import preview_manifest, restore_manifest
+from tools.storage.wiztree_adapter import (
+    get_top_wiztree_files,
+    get_top_wiztree_folders,
+    get_wiztree_status,
+    parse_wiztree_csv,
+)
 
 
 DANGEROUS_PATTERNS = {
@@ -113,6 +119,7 @@ def test_main_menu_coverage() -> dict[str, Any]:
         "Audit Center",
         "Undo Manager",
         "Full System Tester",
+        "WizTree Adapter",
     ]
     missing = [label for label in expected if label not in main_text]
 
@@ -140,6 +147,7 @@ def test_config_health() -> dict[str, Any]:
         "download_organizer",
         "download_watcher",
         "media_organizer",
+        "wiztree",
     }
     missing = sorted(required_top_level - set(data))
     assert_condition(not missing, f"user_settings.json missing sections: {missing}")
@@ -321,6 +329,38 @@ def test_behavior_suite_subprocess() -> dict[str, Any]:
     return result
 
 
+def test_wiztree_adapter_sample_csv() -> dict[str, Any]:
+    sandbox = make_sandbox()
+
+    try:
+        csv_path = sandbox / "wiztree_sample.csv"
+        sample_csv = (
+            "File Name,Size,Allocated,Modified,Attributes,Files,Folders\n"
+            r"D:\Data\,3000,4096,2026-05-30,D,2,1" "\n"
+            r"D:\Data\a.bin,2097152,2097152,2026-05-30,A,0,0" "\n"
+            r"D:\Data\b.txt,10,10,2026-05-30,A,0,0" "\n"
+        )
+        write_text(csv_path, sample_csv)
+
+        records = parse_wiztree_csv(csv_path)
+        top_folders = get_top_wiztree_folders(records, limit=1)
+        large_files = get_top_wiztree_files(records, min_size_mb=1, limit=1)
+
+        assert_condition(len(records) == 3, "WizTree CSV parser should read all rows.")
+        assert_condition(top_folders[0]["path"] == r"D:\Data", "Top folder path should be normalized.")
+        assert_condition(large_files[0]["path"] == r"D:\Data\a.bin", "Large file sorting should use size.")
+
+        return {
+            "records": records,
+            "top_folders": top_folders,
+            "large_files": large_files,
+            "wiztree_status": get_wiztree_status(),
+        }
+
+    finally:
+        cleanup_sandbox(sandbox)
+
+
 def test_dependency_health() -> dict[str, Any]:
     modules = ["psutil", "send2trash", "watchdog"]
     results = []
@@ -365,6 +405,7 @@ FULL_SYSTEM_TESTS: list[tuple[str, Callable[[], dict[str, Any]]]] = [
     ("Audit Center Health", test_audit_center_health),
     ("Undo Manager Roundtrip", test_undo_manager_roundtrip),
     ("Behavior Suite Subprocess", test_behavior_suite_subprocess),
+    ("WizTree Adapter Sample CSV", test_wiztree_adapter_sample_csv),
     ("Dependency Health", test_dependency_health),
     ("Git Submodule Health", test_git_submodule_health),
 ]

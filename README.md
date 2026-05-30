@@ -20,6 +20,7 @@ Active workspace hiện tại là `D:\tool`. Snapshot cũ đã được chuyển
 - Dọn TEMP
 - Dọn Recycle Bin
 - Tìm folder rỗng
+- **thay đổi** WizTree Adapter: scan dung lượng nhanh qua CSV read-only, không xóa/move
 
 ### Automation
 - Download Watcher: tự phân loại file tải về theo ngày và loại file
@@ -65,9 +66,10 @@ Storage Tools	Done
 Automation Tools	Done
 Search Tools	Done
 Core Utilities	Done
-Tool Tester	Passed 25/25
+Tool Tester	Passed 26/26
 Behavior Tester	Passed 11/11
-Full System Tester	Passed 13/13
+Full System Tester	Passed 14/14
+WizTree Adapter	Done
 Refactor Tools Folder	Done
 Config System	Done
 Audit System	Basic Done

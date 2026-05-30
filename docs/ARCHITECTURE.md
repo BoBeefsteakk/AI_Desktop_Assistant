@@ -89,6 +89,7 @@ Ví dụ:
 * media_organizer
 * folder_size_analyzer
 * large_file_finder
+* **thay đổi** wiztree_adapter
 
 ---
 
@@ -255,6 +256,21 @@ Các lớp kiểm tra:
 * Behavior suite
 * Dependencies
 * Git submodule health
+* **thay đổi** External adapter sample parsers như WizTree CSV
+
+---
+
+## External Adapter Layer
+
+**thay đổi** Adapter bên ngoài chỉ được dùng để tăng tốc scan/đọc dữ liệu, không được tự xóa hoặc move file.
+
+WizTree Adapter:
+
+* Gọi WizTree CLI để export CSV khi người dùng xác nhận
+* Lưu CSV vào `data/wiztree_exports`
+* Parse CSV thành dữ liệu top folders và large files
+* Có thể cấp dữ liệu cho System Advisor
+* Nếu adapter lỗi, tool phải fallback hoặc dừng an toàn
 
 ---
 
@@ -276,6 +292,7 @@ Các nhóm đã gom:
 * Download temporary extensions
 * File categories
 * Media extensions
+* **thay đổi** WizTree executable path, export folder, timeout và tùy chọn System Advisor
 
 ---
 

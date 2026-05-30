@@ -300,5 +300,13 @@
             ".aac",
             ".m4a"
         ]
+    },
+    "wiztree": {
+        "enabled": true,
+        "exe_path": "D:\\WizTree\\WizTree\\WizTree64.exe",
+        "export_dir": "{BASE_DIR}/data/wiztree_exports",
+        "use_admin": false,
+        "timeout_seconds": 300,
+        "prefer_for_system_advisor": false
     }
 }
