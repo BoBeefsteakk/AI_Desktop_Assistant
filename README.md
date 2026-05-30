@@ -38,6 +38,7 @@ Active workspace hiện tại là `D:\tool`. Snapshot cũ đã được chuyển
 - Undo Manager
 - Full System Tester
 - **thay đổi** External Apps Manager
+- **thay đổi** Capability Registry
 
 ## Project Structure
 
@@ -68,11 +69,12 @@ Storage Tools	Done
 Automation Tools	Done
 Search Tools	Done
 Core Utilities	Done
-Tool Tester	Passed 27/27
+Tool Tester	Passed 28/28
 Behavior Tester	Passed 11/11
-Full System Tester	Passed 15/15
+Full System Tester	Passed 16/16
 WizTree Adapter	Done
 External Apps Integration	Done
+Capability Registry	Done
 Refactor Tools Folder	Done
 Config System	Done
 Audit System	Basic Done

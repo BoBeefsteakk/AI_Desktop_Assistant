@@ -40,6 +40,7 @@ Hoàn thành
 * **thay đổi** Full System Tester siêu tổng hợp
 * **thay đổi** WizTree Adapter read-only để scan dung lượng nhanh qua CSV
 * **thay đổi** External Apps Integration cho Everything, smartctl, Sysinternals, ExifTool, FFmpeg, rclone
+* **thay đổi** Capability Registry cho toàn bộ tool
 
 Cần rà soát tiếp:
 
@@ -113,7 +114,8 @@ Một lệnh test tổng hợp trước khi refactor lớn hoặc feed assistant
 * **thay đổi** Report schema validation
 * **thay đổi** WizTree Adapter sample CSV test
 * **thay đổi** External Apps Registry test
-* Full System Tester hiện pass 15/15
+* **thay đổi** Capability Registry coverage/risk sync test
+* Full System Tester hiện pass 16/16
 
 ---
 

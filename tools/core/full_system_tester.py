@@ -10,6 +10,10 @@ from typing import Any, Callable
 from config.settings import BASE_DIR, USER_SETTINGS_FILE, validate_user_settings
 from tools.core.audit_center import get_audit_snapshot
 from tools.core.behavior_tester import make_sandbox, cleanup_sandbox, write_text
+from tools.core.capability_registry import (
+    get_capabilities,
+    validate_capability_registry,
+)
 from tools.core.report_manager import (
     REPORT_SCHEMA_VERSION,
     create_report,
@@ -122,6 +126,7 @@ def test_main_menu_coverage() -> dict[str, Any]:
         "Full System Tester",
         "WizTree Adapter",
         "External Apps Manager",
+        "Capability Registry",
     ]
     missing = [label for label in expected if label not in main_text]
 
@@ -377,6 +382,22 @@ def test_external_apps_registry() -> dict[str, Any]:
     return status
 
 
+def test_capability_registry() -> dict[str, Any]:
+    capabilities = get_capabilities()
+    validation = validate_capability_registry(expected_tools=TOOLS_TO_TEST)
+
+    assert_condition(validation["status"] == "valid", f"Capability registry invalid: {validation['issues']}")
+    assert_condition(
+        validation["capability_count"] >= len(TOOLS_TO_TEST),
+        "Capability registry should cover every tool tester entry.",
+    )
+
+    return {
+        "validation": validation,
+        "capability_count": len(capabilities),
+    }
+
+
 def test_dependency_health() -> dict[str, Any]:
     modules = ["psutil", "send2trash", "watchdog"]
     results = []
@@ -423,6 +444,7 @@ FULL_SYSTEM_TESTS: list[tuple[str, Callable[[], dict[str, Any]]]] = [
     ("Behavior Suite Subprocess", test_behavior_suite_subprocess),
     ("WizTree Adapter Sample CSV", test_wiztree_adapter_sample_csv),
     ("External Apps Registry", test_external_apps_registry),
+    ("Capability Registry", test_capability_registry),
     ("Dependency Health", test_dependency_health),
     ("Git Submodule Health", test_git_submodule_health),
 ]

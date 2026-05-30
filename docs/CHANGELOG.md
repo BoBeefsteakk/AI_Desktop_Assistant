@@ -127,14 +127,15 @@ Nâng cấp:
 * **thay đổi** Thêm Full System Tester
 * **thay đổi** Thêm WizTree Adapter
 * **thay đổi** Thêm External Apps Manager
+* **thay đổi** Thêm Capability Registry
 * Chuyển Tool Tester sang mục 21
 
 ### Tool Tester
 
 **thay đổi** Mở rộng:
 
-* Kiểm tra 27 tool
-* Passed: 27
+* Kiểm tra 28 tool
+* Passed: 28
 * Failed: 0
 
 ### Behavior Tester
@@ -214,6 +215,16 @@ Nâng cấp:
 * Process Monitor ghi nhận Sysinternals helpers sẵn có
 * External Apps Manager xem status/version và xuất report
 
+### Capability Registry
+
+**thay đổi** Thêm bản đồ capability chính thức:
+
+* Thêm `tools/core/capability_registry.py`
+* Mỗi tool có metadata về category, risk, confirmation, mutates_files, undo_strategy, report/log, external_apps
+* Main CLI expose Capability Registry
+* Full System Tester kiểm tra Tool Tester entry nào cũng có capability tương ứng
+* Full System Tester kiểm tra risk trong registry không lệch với Tool Tester
+
 ### Audit System
 
 **thay đổi** Thêm audit nền tảng:
@@ -259,9 +270,10 @@ Nâng cấp:
 * Behavior suite subprocess
 * **thay đổi** WizTree Adapter sample CSV
 * **thay đổi** External Apps Registry
+* **thay đổi** Capability Registry coverage
 * Dependency health
 * Git submodule health
-* Passed: 15
+* Passed: 16
 * Failed: 0
 
 ### Repository Layout
@@ -277,7 +289,7 @@ Nâng cấp:
 
 Tool Tester:
 
-Passed: 27
+Passed: 28
 
 Failed: 0
 
@@ -289,7 +301,7 @@ Failed: 0
 
 Full System Tester:
 
-Passed: 15
+Passed: 16
 
 Failed: 0
 

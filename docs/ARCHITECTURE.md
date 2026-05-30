@@ -41,6 +41,7 @@ Bao gồm:
 
 * assistant_logger.py
 * **thay đổi** audit_center.py
+* **thay đổi** capability_registry.py
 * report_manager.py
 * risk_classifier.py
 * safe_executor.py
@@ -216,6 +217,40 @@ Report schema v2:
 * `undo_available`
 * `recommendations`
 * `tags`
+
+---
+
+## Capability Layer
+
+**thay đổi** Capability Registry là bản đồ chính thức để mô tả mọi tool.
+
+Nguồn dữ liệu:
+
+* `tools/core/capability_registry.py`
+
+Mỗi capability ghi:
+
+* `id`
+* `name`
+* `category`
+* `module`
+* `function`
+* `risk_level`
+* `mutates_files`
+* `needs_confirmation`
+* `undo_strategy`
+* `creates_report`
+* `logs_action`
+* `external_apps`
+* `tags`
+* `summary`
+
+Full System Tester kiểm tra:
+
+* Mọi tool trong Tool Tester đều có capability entry
+* Risk trong capability không lệch với Tool Tester
+* Không trùng id/entrypoint
+* Field bắt buộc không thiếu
 
 ---
 

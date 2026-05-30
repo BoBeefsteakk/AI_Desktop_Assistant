@@ -190,7 +190,7 @@ Chức năng:
 
 **thay đổi** Kết quả hiện tại:
 
-Passed: 27
+Passed: 28
 Failed: 0
 
 ---
@@ -227,6 +227,27 @@ Nguyên tắc:
 * Không app ngoài nào được tự xóa/move dữ liệu
 * App ngoài chỉ tăng tốc scan, đọc metadata hoặc bổ sung health snapshot
 * Path app ngoài nằm trong `config/user_settings.json`
+
+---
+
+### Capability Registry
+
+**thay đổi** Đã thêm Capability Registry làm bản đồ chính thức cho toàn bộ tool.
+
+Chức năng:
+
+* Thêm `tools/core/capability_registry.py`
+* Mỗi tool có metadata: category, module, function, risk, mutates_files, confirmation, undo_strategy, report/log, external_apps, tags, summary
+* Main CLI expose `Capability Registry`
+* Tool Tester kiểm tra import menu registry
+* Full System Tester kiểm tra mọi tool trong Tool Tester đều có capability entry và risk không lệch
+* Có thể xuất report capability để assistant đọc sau này
+
+Kết quả hiện tại:
+
+* Capability count: 28
+* Categories: automation, core, search, storage, system
+* Risk levels: safe, medium, dangerous
 
 ---
 
@@ -307,6 +328,7 @@ Process Monitor:
 * Full System Tester
 * **thay đổi** WizTree Adapter
 * **thay đổi** External Apps Manager
+* **thay đổi** Capability Registry
 
 ---
 
@@ -377,10 +399,11 @@ Process Monitor:
 * Kiểm tra `git submodule status`
 * **thay đổi** Kiểm tra WizTree Adapter bằng CSV mẫu trong sandbox, không chạy scan thật
 * **thay đổi** Kiểm tra External Apps Registry đủ path cấu hình
+* **thay đổi** Kiểm tra Capability Registry coverage/risk sync với Tool Tester
 
 Kết quả hiện tại:
 
-Passed: 15
+Passed: 16
 Failed: 0
 
 ---
@@ -435,11 +458,12 @@ Lý do:
 * Full System Tester
 * **thay đổi** WizTree Adapter read-only
 * **thay đổi** External Apps Integration
+* **thay đổi** Capability Registry
 
 Cần làm tiếp để ổn định tool tổng:
 
 * **thay đổi** Mở rộng Undo System cho các thao tác không có manifest nếu cần
-* **thay đổi** Xây Capability Registry để assistant biết tool nào làm gì, risk gì, undo kiểu gì
+* **thay đổi** Dùng Capability Registry để nâng Natural Command v2
 * Bổ sung thêm case vào Full System Tester khi phát hiện lỗi thực tế mới
 
 ---

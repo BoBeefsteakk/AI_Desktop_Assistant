@@ -23,6 +23,7 @@ from tools.automation.download_watcher import run_download_watcher
 from tools.core.assistant_logger import run_assistant_logger
 from tools.core.audit_center import run_audit_center
 from tools.core.behavior_tester import run_behavior_tester
+from tools.core.capability_registry import run_capability_registry
 from tools.core.config_manager import run_config_manager
 from tools.core.external_apps import run_external_apps_manager
 from tools.core.full_system_tester import run_full_system_tester
@@ -67,6 +68,7 @@ def main():
 25. Full System Tester
 26. WizTree Adapter
 27. External Apps Manager
+28. Capability Registry
 
 0. Thoat
 
@@ -160,6 +162,9 @@ def main():
 
         elif choice == "27":
             run_external_apps_manager()
+
+        elif choice == "28":
+            run_capability_registry()
 
         else:
             print("Lua chon khong hop le.")
