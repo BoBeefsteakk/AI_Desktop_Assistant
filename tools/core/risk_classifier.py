@@ -2,80 +2,29 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from config.settings import (
+    BROWSER_CACHE_DIR_NAMES as CONFIG_BROWSER_CACHE_DIR_NAMES,
+    BROWSER_PATH_HINTS as CONFIG_BROWSER_PATH_HINTS,
+    PROTECTED_DIR_NAMES as CONFIG_PROTECTED_DIR_NAMES,
+    PROTECTED_FILE_NAMES as CONFIG_PROTECTED_FILE_NAMES,
+    REVIEW_EXTENSIONS as CONFIG_REVIEW_EXTENSIONS,
+    SAFE_JUNK_EXTENSIONS as CONFIG_SAFE_JUNK_EXTENSIONS,
+    SAFE_ZONE_NAMES as CONFIG_SAFE_ZONE_NAMES,
+)
+
 
 SAFE_DELETE = "safe_delete"
 REVIEW_REQUIRED = "review_required"
 PROTECTED = "protected"
 
 
-PROTECTED_DIR_NAMES = {
-    "$recycle.bin",
-    "system volume information",
-    "windows",
-    "program files",
-    "program files (x86)",
-    "programdata",
-    "appdata",
-    ".git",
-    "__pycache__",
-    "node_modules",
-    "android",
-    "ios",
-    ".gradle",
-    ".idea",
-    ".vscode",
-    "build",
-    "dist",
-    "riot games",
-    "league of legends",
-    "leagueoflegends",
-    "league_of_legends",
-    "lol",
-    "garena",
-    "fc online",
-    "fco",
-    "ea sports fc online",
-    "mobile",
-    "zalo data",
-    "tool",
-    "ai_desktop_assistant",
-    "ai_desktop_assistant_optimized",
-    "c nang cao",
-    "hocmay",
-    "cứu",
-}
-
-SAFE_ZONE_NAMES = {
-    "downloads",
-    "temp",
-    "tmp",
-    "cache",
-    "caches",
-    "cached",
-    "cefcached",
-    "gpucache",
-    "dawncache",
-    "code cache",
-    "logs",
-}
-
-DANGEROUS_FILE_NAMES = {
-    "pagefile.sys",
-    "hiberfil.sys",
-    "swapfile.sys",
-    "dumpstack.log.tmp",
-}
-
-SAFE_JUNK_EXTENSIONS = {
-    ".tmp",
-    ".temp",
-}
-
-REVIEW_EXTENSIONS = {
-    ".log",
-    ".bak",
-    ".old",
-}
+PROTECTED_DIR_NAMES = set(CONFIG_PROTECTED_DIR_NAMES)
+SAFE_ZONE_NAMES = set(CONFIG_SAFE_ZONE_NAMES)
+BROWSER_CACHE_DIR_NAMES = set(CONFIG_BROWSER_CACHE_DIR_NAMES)
+BROWSER_PATH_HINTS = tuple(CONFIG_BROWSER_PATH_HINTS)
+DANGEROUS_FILE_NAMES = set(CONFIG_PROTECTED_FILE_NAMES)
+SAFE_JUNK_EXTENSIONS = set(CONFIG_SAFE_JUNK_EXTENSIONS)
+REVIEW_EXTENSIONS = set(CONFIG_REVIEW_EXTENSIONS)
 
 
 def get_path_parts(path: Path) -> set[str]:
@@ -97,6 +46,13 @@ def is_in_safe_zone(path: Path) -> bool:
     return any(name in lower_path for name in SAFE_ZONE_NAMES)
 
 
+def is_known_browser_cache_path(path: Path) -> bool:
+    parts = get_path_parts(path)
+    has_browser_hint = any(hint.issubset(parts) for hint in BROWSER_PATH_HINTS)
+    has_cache_hint = any(name in parts for name in BROWSER_CACHE_DIR_NAMES)
+    return has_browser_hint and has_cache_hint
+
+
 def classify_file_risk(path: str | Path) -> dict:
     file_path = Path(path)
     lower_name = file_path.name.lower()
@@ -107,6 +63,12 @@ def classify_file_risk(path: str | Path) -> dict:
         return {
             "risk": PROTECTED,
             "reason": "File he thong hoac file dang duoc Windows su dung.",
+        }
+
+    if is_known_browser_cache_path(file_path):
+        return {
+            "risk": SAFE_DELETE,
+            "reason": "Nam trong folder cache trinh duyet da biet.",
         }
 
     if is_in_protected_zone(file_path):

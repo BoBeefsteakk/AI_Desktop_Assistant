@@ -7,16 +7,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterable, List, Dict, Any
 
-APP_DIR = Path(__file__).resolve().parents[1]
-BACKUP_DIR = APP_DIR / "backups"
-REPORT_DIR = APP_DIR / "reports"
+from config.settings import BACKUPS_DIR, REPORTS_DIR, SAFE_SYSTEM_FOLDERS
 
-SAFE_SKIP_DIRS = {
-    "C:\\Windows",
-    "C:\\Program Files",
-    "C:\\Program Files (x86)",
-    "C:\\ProgramData",
-}
+BACKUP_DIR = BACKUPS_DIR
+REPORT_DIR = REPORTS_DIR
+
+SAFE_SKIP_DIRS = {name.lower() for name in SAFE_SYSTEM_FOLDERS}
 
 def ensure_dirs() -> None:
     BACKUP_DIR.mkdir(parents=True, exist_ok=True)
@@ -34,8 +30,8 @@ def format_size(size: int | float) -> str:
     return f"{size:.2f} PB"
 
 def is_system_path(path: str | Path) -> bool:
-    p = str(Path(path).resolve()).lower()
-    return any(p.startswith(x.lower()) for x in SAFE_SKIP_DIRS)
+    parts = {part.lower() for part in Path(path).resolve().parts}
+    return any(name in parts for name in SAFE_SKIP_DIRS)
 
 def ask_yes_no(message: str, default: bool = False) -> bool:
     suffix = "Y/n" if default else "y/N"
@@ -73,16 +69,25 @@ def safe_move(src: str | Path, dst: str | Path) -> Dict[str, str]:
     shutil.move(str(src), str(final_dst))
     return {"old_path": str(src), "new_path": str(final_dst)}
 
-def restore_from_manifest(manifest_path: str | Path) -> None:
+def restore_from_manifest(manifest_path: str | Path) -> Dict[str, Any]:
     manifest_path = Path(manifest_path)
     if not manifest_path.exists():
         print("Khong tim thay file backup manifest.")
-        return
+        return {
+            "status": "missing",
+            "manifest": str(manifest_path),
+            "restored_count": 0,
+            "skipped_count": 0,
+            "records": [],
+        }
 
     with open(manifest_path, "r", encoding="utf-8") as f:
         records = json.load(f)
 
     restored = 0
+    skipped = 0
+    restore_results = []
+
     for item in reversed(records):
         old_path = Path(item.get("old_path", ""))
         new_path = Path(item.get("new_path", ""))
@@ -97,5 +102,25 @@ def restore_from_manifest(manifest_path: str | Path) -> None:
 
             shutil.move(str(new_path), str(final_old))
             restored += 1
+            restore_results.append({
+                "old_path": str(old_path),
+                "new_path": str(new_path),
+                "restored_to": str(final_old),
+                "status": "restored",
+            })
+        else:
+            skipped += 1
+            restore_results.append({
+                "old_path": str(old_path),
+                "new_path": str(new_path),
+                "status": "missing",
+            })
 
     print(f"Da restore {restored} file tu backup manifest.")
+    return {
+        "status": "success",
+        "manifest": str(manifest_path),
+        "restored_count": restored,
+        "skipped_count": skipped,
+        "records": restore_results,
+    }

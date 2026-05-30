@@ -12,7 +12,7 @@ Hoàn thành
 
 ## Phase 2 - Safety Hardening
 
-Đang thực hiện
+**thay đổi** Các mục chính đã hoàn thành.
 
 Đã xong:
 
@@ -21,32 +21,60 @@ Hoàn thành
 * duplicate_finder
 * temp_cleaner
 * junk_file_cleaner
-
-Cần làm:
-
 * browser_cache_cleaner
-* recycle_bin_cleaner
-* media_organizer
+* **thay đổi** recycle_bin_cleaner
+* **thay đổi** media_organizer
+* **thay đổi** empty_folder_finder
+* **thay đổi** download_organizer
+* **thay đổi** download_watcher
+* **thay đổi** main CLI menu expose đầy đủ hơn
+* **thay đổi** behavior_tester sandbox
+* **thay đổi** bỏ tracking gitlink AI_Desktop_Assistant bị thiếu .gitmodules
+* **thay đổi** move snapshot cũ vào D:\tool\backups để tránh nhầm bản
+* **thay đổi** startup_launcher audit/report
+* **thay đổi** disk_checker và process_monitor audit/report
+* **thay đổi** config system với `config/user_settings.json`
+* **thay đổi** Config Manager trong main CLI
+* **thay đổi** Audit Center và report index nền tảng
+* **thay đổi** Undo Manager nền tảng
+* **thay đổi** Full System Tester siêu tổng hợp
+
+Cần rà soát tiếp:
+
+* **thay đổi** chuyển sang Phase 5 AI Decision Engine khi tool tổng ổn định hơn
+* chuẩn hóa sâu hơn metadata summary cho assistant đọc
 
 ---
 
 ## Phase 3 - Audit System
 
+**thay đổi** Basic Done.
+
 Mục tiêu:
 
-Lưu lịch sử thao tác.
+Lưu lịch sử thao tác/report theo một chuẩn dễ đọc cho tool tổng và assistant sau này.
 
 Dự kiến:
 
 logs/
 
-├── actions.log
+├── assistant_actions.jsonl
 
-└── errors.log
+reports/
+
+└── report_index.jsonl
+
+Đã có:
+
+* `create_report()` tự append report index
+* Audit Center xem log/report gần đây
+* Audit Center export snapshot report
 
 ---
 
 ## Phase 4 - Undo System
+
+**thay đổi** Basic Done.
 
 Mục tiêu:
 
@@ -57,6 +85,28 @@ Ví dụ:
 Undo Cleanup
 
 Restore From Report
+
+Đã có:
+
+* Undo Manager đọc manifest trong backups
+* Preview manifest
+* Restore manifest có report/log
+* Behavior test roundtrip
+
+---
+
+## Phase 4.5 - Full System Test
+
+**thay đổi** Basic Done.
+
+Mục tiêu:
+
+Một lệnh test tổng hợp trước khi refactor lớn hoặc feed assistant.
+
+Đã có:
+
+* Compile/import/config/safety/report/audit/undo/behavior/dependency/git checks
+* Full System Tester hiện pass 12/12
 
 ---
 

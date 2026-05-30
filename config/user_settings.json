@@ -1,0 +1,304 @@
+{
+    "paths": {
+        "default_scan_folder": "D:\\\\",
+        "downloads_folder": "D:\\Downloads"
+    },
+    "thresholds": {
+        "large_file_mb": 500,
+        "result_limit": 50,
+        "disk_warning_percent": 80,
+        "disk_critical_percent": 90,
+        "ram_warning_percent": 70,
+        "ram_critical_percent": 85
+    },
+    "safety": {
+        "protected_dir_names": [
+            "$Recycle.Bin",
+            "System Volume Information",
+            "Windows",
+            "Program Files",
+            "Program Files (x86)",
+            "ProgramData",
+            "AppData",
+            ".git",
+            "__pycache__",
+            "node_modules",
+            "android",
+            "ios",
+            ".gradle",
+            ".idea",
+            ".vscode",
+            "build",
+            "dist",
+            "Riot Games",
+            "League of Legends",
+            "LeagueOfLegends",
+            "league_of_legends",
+            "lol",
+            "Garena",
+            "FC Online",
+            "FCO",
+            "EA SPORTS FC Online",
+            "Mobile",
+            "Zalo Data",
+            "tool",
+            "AI_Desktop_Assistant",
+            "AI_Desktop_Assistant_optimized",
+            "C nang cao",
+            "HocMay",
+            "cứu"
+        ],
+        "protected_file_names": [
+            "pagefile.sys",
+            "hiberfil.sys",
+            "swapfile.sys",
+            "dumpstack.log.tmp"
+        ],
+        "safe_zone_names": [
+            "downloads",
+            "temp",
+            "tmp",
+            "cache",
+            "caches",
+            "cached",
+            "cefcached",
+            "gpucache",
+            "dawncache",
+            "code cache",
+            "logs"
+        ],
+        "safe_junk_extensions": [
+            ".tmp",
+            ".temp"
+        ],
+        "review_extensions": [
+            ".log",
+            ".bak",
+            ".old"
+        ]
+    },
+    "browser_cache": {
+        "path_templates": [
+            "{LOCALAPPDATA}/Google/Chrome/User Data/Default/Cache",
+            "{LOCALAPPDATA}/Google/Chrome/User Data/Default/Code Cache",
+            "{LOCALAPPDATA}/Microsoft/Edge/User Data/Default/Cache",
+            "{LOCALAPPDATA}/Microsoft/Edge/User Data/Default/Code Cache",
+            "{LOCALAPPDATA}/BraveSoftware/Brave-Browser/User Data/Default/Cache",
+            "{LOCALAPPDATA}/CocCoc/Browser/User Data/Default/Cache"
+        ],
+        "firefox_profiles_dir": "{APPDATA}/Mozilla/Firefox/Profiles",
+        "firefox_cache_dirs": [
+            "cache2"
+        ],
+        "cache_dir_names": [
+            "cache",
+            "cache2",
+            "cached",
+            "cefcached",
+            "gpucache",
+            "dawncache",
+            "code cache"
+        ],
+        "path_hints": [
+            [
+                "google",
+                "chrome",
+                "user data"
+            ],
+            [
+                "microsoft",
+                "edge",
+                "user data"
+            ],
+            [
+                "bravesoftware",
+                "brave-browser",
+                "user data"
+            ],
+            [
+                "coccoc",
+                "browser",
+                "user data"
+            ],
+            [
+                "mozilla",
+                "firefox",
+                "profiles"
+            ]
+        ]
+    },
+    "download_organizer": {
+        "temporary_extensions": [
+            ".crdownload",
+            ".part",
+            ".tmp",
+            ".download",
+            ".idownload"
+        ],
+        "file_categories": {
+            "Anh": [
+                ".jpg",
+                ".jpeg",
+                ".png",
+                ".gif",
+                ".webp",
+                ".bmp",
+                ".svg",
+                ".heic"
+            ],
+            "Video": [
+                ".mp4",
+                ".mkv",
+                ".avi",
+                ".mov",
+                ".wmv",
+                ".flv",
+                ".webm",
+                ".m4v"
+            ],
+            "Audio": [
+                ".mp3",
+                ".wav",
+                ".flac",
+                ".aac",
+                ".m4a",
+                ".ogg"
+            ],
+            "Tai_lieu": [
+                ".pdf",
+                ".doc",
+                ".docx",
+                ".xls",
+                ".xlsx",
+                ".ppt",
+                ".pptx",
+                ".txt"
+            ],
+            "Nen": [
+                ".zip",
+                ".rar",
+                ".7z",
+                ".tar",
+                ".gz"
+            ],
+            "Code": [
+                ".py",
+                ".js",
+                ".ts",
+                ".html",
+                ".css",
+                ".cpp",
+                ".c",
+                ".java",
+                ".json",
+                ".xml",
+                ".sql"
+            ],
+            "Cai_dat": [
+                ".exe",
+                ".msi",
+                ".apk",
+                ".iso"
+            ]
+        }
+    },
+    "download_watcher": {
+        "scan_interval_seconds": 5,
+        "wait_after_event_seconds": 2,
+        "stable_check_interval_seconds": 1,
+        "stable_check_times": 3,
+        "temporary_extensions": [
+            ".crdownload",
+            ".part",
+            ".tmp",
+            ".download",
+            ".idownload"
+        ],
+        "file_categories": {
+            "Anh": [
+                ".jpg",
+                ".jpeg",
+                ".png",
+                ".gif",
+                ".webp",
+                ".bmp",
+                ".svg",
+                ".heic"
+            ],
+            "Video": [
+                ".mp4",
+                ".mkv",
+                ".avi",
+                ".mov",
+                ".wmv",
+                ".flv",
+                ".webm",
+                ".m4v"
+            ],
+            "Audio": [
+                ".mp3",
+                ".wav",
+                ".flac",
+                ".aac",
+                ".m4a",
+                ".ogg"
+            ],
+            "Tai_lieu": [
+                ".pdf",
+                ".doc",
+                ".docx",
+                ".xls",
+                ".xlsx",
+                ".ppt",
+                ".pptx",
+                ".txt"
+            ],
+            "File_nen": [
+                ".zip",
+                ".rar",
+                ".7z",
+                ".tar",
+                ".gz"
+            ],
+            "Code": [
+                ".py",
+                ".js",
+                ".ts",
+                ".html",
+                ".css",
+                ".cpp",
+                ".c",
+                ".java",
+                ".json",
+                ".xml",
+                ".sql",
+                ".php",
+                ".cs"
+            ],
+            "Cai_dat": [
+                ".exe",
+                ".msi",
+                ".apk",
+                ".iso"
+            ]
+        }
+    },
+    "media_organizer": {
+        "target_folder_name": "Tat_ca_media",
+        "media_extensions": [
+            ".mp4",
+            ".mkv",
+            ".avi",
+            ".mov",
+            ".wmv",
+            ".flv",
+            ".webm",
+            ".m4v",
+            ".mp3",
+            ".wav",
+            ".flac",
+            ".aac",
+            ".m4a"
+        ]
+    }
+}

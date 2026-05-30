@@ -5,8 +5,9 @@ from pathlib import Path
 from datetime import datetime
 from typing import Any
 
-APP_DIR = Path(__file__).resolve().parents[1]
-LOG_DIR = APP_DIR / "logs"
+from config.settings import LOGS_DIR
+
+LOG_DIR = LOGS_DIR
 LOG_FILE = LOG_DIR / "assistant_actions.jsonl"
 
 def log_action(

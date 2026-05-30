@@ -3,6 +3,9 @@ from __future__ import annotations
 import time
 import psutil
 
+from config.settings import RAM_CRITICAL_PERCENT, RAM_WARNING_PERCENT
+from tools.core.assistant_logger import log_action
+from tools.core.report_manager import create_report
 from tools.core.safety_utils import format_size
 
 
@@ -83,6 +86,41 @@ def show_top_process(limit: int = 15, sort_by: str = "ram") -> None:
     if processes:
         print("-" * 90)
         print(f"RAM toan he thong dang dung: {processes[0]['system_memory_percent']:.1f}%")
+
+    recommendations = []
+    if processes:
+        system_ram = processes[0]["system_memory_percent"]
+        if system_ram >= RAM_CRITICAL_PERCENT:
+            recommendations.append("RAM toan he thong dang cao, nen kiem tra cac process dung RAM nhieu.")
+        elif system_ram >= RAM_WARNING_PERCENT:
+            recommendations.append("RAM dang o muc kha cao, nen theo doi neu may bat dau lag.")
+
+    report = create_report(
+        tool_name="process_monitor",
+        status="success",
+        input_data={
+            "limit": limit,
+            "sort_by": sort_by,
+            "ram_warning_percent": RAM_WARNING_PERCENT,
+            "ram_critical_percent": RAM_CRITICAL_PERCENT,
+        },
+        results=processes,
+        recommendations=recommendations,
+    )
+
+    log_action(
+        "process_monitor",
+        "show_top_process",
+        "success",
+        {
+            "limit": limit,
+            "sort_by": sort_by,
+            "process_count": len(processes),
+            "report": str(report),
+        },
+    )
+
+    print(f"Report: {report}")
 
 
 if __name__ == "__main__":

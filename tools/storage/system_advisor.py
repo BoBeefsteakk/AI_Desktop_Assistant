@@ -11,6 +11,8 @@ from config.settings import (
     DEFAULT_SCAN_FOLDER,
     DEFAULT_LARGE_FILE_MB,
     DEFAULT_RESULT_LIMIT,
+    RAM_CRITICAL_PERCENT,
+    RAM_WARNING_PERCENT,
 )
 from tools.core.report_manager import create_report
 
@@ -90,20 +92,21 @@ def build_recommendations(
     if processes:
         system_ram = processes[0]["system_memory_percent"]
 
-        if system_ram >= 85:
+        if system_ram >= RAM_CRITICAL_PERCENT:
             recommendations.append(
                 f"RAM toan he thong dang rat cao ({system_ram:.1f}%). "
                 f"Nen dong bot browser/tab nang, app edit video, launcher game."
             )
-        elif system_ram >= 70:
+        elif system_ram >= RAM_WARNING_PERCENT:
             recommendations.append(
                 f"RAM dang o muc kha cao ({system_ram:.1f}%). "
                 f"Nen theo doi neu may bat dau lag."
             )
 
+        large_process_bytes = DEFAULT_LARGE_FILE_MB * 1024 * 1024
         heavy_processes = [
             item for item in processes
-            if item["memory_bytes"] >= DEFAULT_LARGE_FILE_MB
+            if item["memory_bytes"] >= large_process_bytes
         ]
 
         if heavy_processes:
@@ -188,23 +191,17 @@ def run_system_advisor() -> None:
     for index, recommendation in enumerate(recommendations, start=1):
         print(f"{index}. {recommendation}")
 
-    report_data = {
-        "root_drive": root_drive,
-        "top_folders": top_folders,
-        "large_files": large_files,
-        "processes": processes,
-        "recommendations": recommendations,
-    }
-
     report = create_report(
-    tool_name="system_advisor",
-    status="success",
-    input_data={
-        "root_drive": root_drive,
-        "large_file_threshold_mb": DEFAULT_LARGE_FILE_MB,
-        "result_limit": DEFAULT_RESULT_LIMIT,
-    },
-    results={
+        tool_name="system_advisor",
+        status="success",
+        input_data={
+            "root_drive": root_drive,
+            "large_file_threshold_mb": DEFAULT_LARGE_FILE_MB,
+            "result_limit": DEFAULT_RESULT_LIMIT,
+            "ram_warning_percent": RAM_WARNING_PERCENT,
+            "ram_critical_percent": RAM_CRITICAL_PERCENT,
+        },
+        results={
             "top_folders": top_folders,
             "large_files": large_files,
             "processes": processes,

@@ -5,20 +5,15 @@ import os
 from pathlib import Path
 from datetime import datetime
 
+from config.settings import DATA_DIR, DEFAULT_SCAN_FOLDER, SAFE_SYSTEM_FOLDERS
 from tools.core.safety_utils import format_size, save_report
 
-APP_DIR = Path(__file__).resolve().parents[1]
-DATA_DIR = APP_DIR / "data"
 INDEX_FILE = DATA_DIR / "file_index.json"
 
-SKIP_DIR_NAMES = {
-    "$Recycle.Bin", "System Volume Information", "Windows",
-    "Program Files", "Program Files (x86)", "ProgramData",
-    "AppData", "node_modules", ".git", "__pycache__"
-}
+SKIP_DIR_NAMES = {name.lower() for name in SAFE_SYSTEM_FOLDERS}
 
 def should_skip(path: Path) -> bool:
-    return any(part in SKIP_DIR_NAMES for part in path.parts)
+    return any(part.lower() in SKIP_DIR_NAMES for part in path.parts)
 
 def build_file_index(root_folder: str, index_path: str | Path = INDEX_FILE) -> None:
     root = Path(root_folder)
@@ -110,7 +105,7 @@ def run_file_indexer() -> None:
         choice = input("Chon: ").strip()
 
         if choice == "1":
-            folder = input("Nhap folder/drive can index, VD D:\\: ").strip().strip('"') or "D:\\"
+            folder = input(f"Nhap folder/drive can index [{DEFAULT_SCAN_FOLDER}]: ").strip().strip('"') or DEFAULT_SCAN_FOLDER
             build_file_index(folder)
 
         elif choice == "2":

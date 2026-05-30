@@ -2,6 +2,8 @@
 
 AI Desktop Assistant là bộ công cụ local hỗ trợ quản lý file, phân tích hệ thống, tự động hóa tác vụ và đưa ra gợi ý dọn dẹp/tối ưu máy tính.
 
+Active workspace hiện tại là `D:\tool`. Snapshot cũ đã được chuyển vào `D:\tool\backups\AI_Desktop_Assistant_old_20260530_144926` để tránh nhầm lẫn.
+
 ## Tính năng hiện có
 
 ### System
@@ -28,15 +30,22 @@ AI Desktop Assistant là bộ công cụ local hỗ trợ quản lý file, phân
 - File Indexer
 - Natural Command
 
+### Core
+- Config Manager
+- Audit Center
+- Undo Manager
+- Full System Tester
+
 ## Project Structure
 
 ```txt
-AI_Desktop_Assistant/
+D:\tool/
 ├── main.py
 ├── requirements.txt
 ├── README.md
 ├── config/
-│   └── settings.py
+│   ├── settings.py
+│   └── user_settings.json
 ├── reports/
 ├── logs/
 └── tools/
@@ -45,6 +54,7 @@ AI_Desktop_Assistant/
     ├── search/
     ├── storage/
     └── system/
+```
 
 ## Tiến độ hiện tại
 
@@ -55,7 +65,11 @@ Storage Tools	Done
 Automation Tools	Done
 Search Tools	Done
 Core Utilities	Done
-Tool Tester	Passed 15/15
+Tool Tester	Passed 25/25
+Behavior Tester	Passed 11/11
+Full System Tester	Passed 12/12
 Refactor Tools Folder	Done
-Config System	Next
+Config System	Done
+Audit System	Basic Done
+Undo System	Basic Done
 UI Desktop	Later

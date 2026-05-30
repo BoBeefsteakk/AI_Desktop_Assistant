@@ -4,11 +4,18 @@ from tools.system.disk_checker import check_disk
 from tools.system.process_monitor import show_top_process
 from tools.system.recycle_bin_cleaner import clear_recycle_bin
 from tools.system.junk_file_cleaner import run_junk_cleaner
+from tools.system.browser_cache_cleaner import run_browser_cache_cleaner
+from tools.system.game_booster import run_game_booster
 
 from tools.storage.duplicate_finder import run_duplicate_finder
 from tools.storage.media_organizer import run_media_organizer
 
-from tools.search.file_indexer import run_file_indexer
+from tools.search.file_indexer import (
+    run_file_indexer,
+    search_file_index,
+    show_search_results,
+)
+from tools.automation.startup_launcher import run_startup_launcher
 
 def handle_command(command: str) -> bool:
     cmd = command.lower().strip()

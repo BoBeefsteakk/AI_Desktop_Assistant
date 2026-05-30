@@ -1,4 +1,4 @@
 @echo off
-cd /d D:\tool\AI_Desktop_Assistant
+cd /d D:\tool
 
-py -3.11 -m tools.download_watcher
+py -3.11 -m tools.automation.download_watcher

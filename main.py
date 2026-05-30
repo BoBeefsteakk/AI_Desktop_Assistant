@@ -10,12 +10,22 @@ from tools.storage.media_organizer import run_media_organizer
 from tools.storage.folder_size_analyzer import run_folder_size_analyzer
 from tools.storage.large_file_finder import run_large_file_finder
 from tools.storage.system_advisor import run_system_advisor
+from tools.storage.temp_cleaner import run_temp_cleaner
+from tools.storage.empty_folder_finder import run_empty_folder_finder
 
 from tools.search.file_indexer import run_file_indexer
 from tools.search.natural_command import run_natural_command
 
 from tools.automation.startup_launcher import run_startup_launcher
+from tools.automation.download_organizer import run_download_organizer
+from tools.automation.download_watcher import run_download_watcher
+from tools.core.assistant_logger import run_assistant_logger
+from tools.core.audit_center import run_audit_center
+from tools.core.behavior_tester import run_behavior_tester
+from tools.core.config_manager import run_config_manager
+from tools.core.full_system_tester import run_full_system_tester
 from tools.core.tool_tester import run_tool_tester
+from tools.core.undo_manager import run_undo_manager
 
 
 EXIT_COMMANDS = ["0", "out", "exit", "quit", "thoat", "thoát"]
@@ -42,7 +52,17 @@ def main():
 12. Folder Size Analyzer
 13. Large File Finder
 14. System Advisor
-15. Tool Tester
+15. Temp Cleaner
+16. Empty Folder Finder
+17. Download Organizer
+18. Download Watcher (Ctrl+C de dung)
+19. Assistant Logs
+20. Behavior Tester
+21. Tool Tester
+22. Config Manager
+23. Audit Center
+24. Undo Manager
+25. Full System Tester
 
 0. Thoat
 
@@ -99,7 +119,37 @@ def main():
             run_system_advisor()
 
         elif choice == "15":
+            run_temp_cleaner()
+
+        elif choice == "16":
+            run_empty_folder_finder()
+
+        elif choice == "17":
+            run_download_organizer()
+
+        elif choice == "18":
+            run_download_watcher()
+
+        elif choice == "19":
+            run_assistant_logger()
+
+        elif choice == "20":
+            run_behavior_tester()
+
+        elif choice == "21":
             run_tool_tester()
+
+        elif choice == "22":
+            run_config_manager()
+
+        elif choice == "23":
+            run_audit_center()
+
+        elif choice == "24":
+            run_undo_manager()
+
+        elif choice == "25":
+            run_full_system_tester()
 
         else:
             print("Lua chon khong hop le.")

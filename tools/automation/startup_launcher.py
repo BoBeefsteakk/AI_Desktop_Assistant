@@ -4,10 +4,11 @@ import json
 import subprocess
 from pathlib import Path
 
-from tools.core.safety_utils import ask_yes_no
+from config.settings import BASE_DIR
+from tools.core.assistant_logger import log_action
+from tools.core.report_manager import create_report
 
-APP_DIR = Path(__file__).resolve().parents[1]
-CONFIG_DIR = APP_DIR / "config"
+CONFIG_DIR = BASE_DIR / "config"
 CONFIG_FILE = CONFIG_DIR / "startup_profiles.json"
 
 DEFAULT_CONFIG = {
@@ -36,45 +37,139 @@ def save_profiles(profiles: dict) -> None:
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(profiles, f, ensure_ascii=False, indent=2)
 
-def launch_profile(profile_name: str) -> None:
+def launch_profile(profile_name: str) -> dict:
     profiles = load_profiles()
 
     if profile_name not in profiles:
         print("Khong tim thay profile.")
-        return
+        result = {
+            "profile": profile_name,
+            "status": "missing",
+            "launched_count": 0,
+            "error_count": 0,
+            "apps": [],
+        }
+        log_action("startup_launcher", "launch_profile", "missing", result)
+        return result
 
     apps = profiles[profile_name]
     if not apps:
         print("Profile nay chua co app nao.")
-        return
+        result = {
+            "profile": profile_name,
+            "status": "empty",
+            "launched_count": 0,
+            "error_count": 0,
+            "apps": [],
+        }
+        log_action("startup_launcher", "launch_profile", "empty", result)
+        return result
 
     print(f"Dang mo profile: {profile_name}")
+    launch_results = []
 
     for app in apps:
         try:
             path = app["path"]
             args = app.get("args", [])
-            subprocess.Popen([path, *args], shell=False)
+            process = subprocess.Popen([path, *args], shell=False)
             print(f"Da mo: {app.get('name', path)}")
+            launch_results.append({
+                "name": app.get("name", path),
+                "path": path,
+                "args": args,
+                "pid": process.pid,
+                "status": "launched",
+            })
         except Exception as e:
             print(f"Loi khi mo {app.get('name', app.get('path'))}: {e}")
+            launch_results.append({
+                "name": app.get("name", app.get("path")),
+                "path": app.get("path"),
+                "args": app.get("args", []),
+                "status": "error",
+                "error": str(e),
+            })
 
-def add_app_to_profile(profile_name: str, app_name: str, app_path: str, args: list[str] | None = None) -> None:
+    launched = sum(1 for item in launch_results if item["status"] == "launched")
+    errors = sum(1 for item in launch_results if item["status"] == "error")
+    status = "success" if errors == 0 else "partial"
+
+    report = create_report(
+        tool_name="startup_launcher",
+        status=status,
+        input_data={
+            "profile": profile_name,
+        },
+        results={
+            "launched_count": launched,
+            "error_count": errors,
+            "apps": launch_results,
+        },
+        recommendations=[
+            "Review failed app paths if any app did not open.",
+        ],
+    )
+
+    result = {
+        "profile": profile_name,
+        "status": status,
+        "launched_count": launched,
+        "error_count": errors,
+        "apps": launch_results,
+        "report": str(report),
+    }
+
+    log_action("startup_launcher", "launch_profile", status, result)
+    print(f"Report: {report}")
+    return result
+
+def add_app_to_profile(profile_name: str, app_name: str, app_path: str, args: list[str] | None = None) -> dict:
     profiles = load_profiles()
 
     if profile_name not in profiles:
         profiles[profile_name] = []
 
-    profiles[profile_name].append({
+    app_record = {
         "name": app_name,
         "path": app_path,
         "args": args or []
-    })
+    }
+
+    profiles[profile_name].append(app_record)
 
     save_profiles(profiles)
     print("Da them app vao profile.")
 
-def show_profiles() -> None:
+    report = create_report(
+        tool_name="startup_launcher_config",
+        status="success",
+        input_data={
+            "profile": profile_name,
+        },
+        results={
+            "added_app": app_record,
+            "profile_app_count": len(profiles[profile_name]),
+            "config_file": str(CONFIG_FILE),
+        },
+        recommendations=[
+            "Use Startup Launcher to verify the profile opens correctly.",
+        ],
+    )
+
+    result = {
+        "profile": profile_name,
+        "added_app": app_record,
+        "profile_app_count": len(profiles[profile_name]),
+        "config_file": str(CONFIG_FILE),
+        "report": str(report),
+    }
+
+    log_action("startup_launcher", "add_app_to_profile", "success", result)
+    print(f"Report: {report}")
+    return result
+
+def show_profiles() -> dict:
     profiles = load_profiles()
 
     print("\n========== STARTUP PROFILES ==========")
@@ -84,6 +179,17 @@ def show_profiles() -> None:
             print("  Chua co app.")
         for app in apps:
             print(f"  - {app.get('name')} | {app.get('path')} | args={app.get('args', [])}")
+
+    result = {
+        "profile_count": len(profiles),
+        "profiles": {
+            name: len(apps)
+            for name, apps in profiles.items()
+        },
+        "config_file": str(CONFIG_FILE),
+    }
+    log_action("startup_launcher", "show_profiles", "success", result)
+    return result
 
 def run_startup_launcher() -> None:
     while True:

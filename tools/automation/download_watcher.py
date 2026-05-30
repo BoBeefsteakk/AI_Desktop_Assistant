@@ -1,11 +1,21 @@
 from __future__ import annotations
 
-import os
 import time
-import shutil
 from pathlib import Path
 from datetime import datetime
-from config.settings import DEFAULT_DOWNLOAD_FOLDER, WATCHER_SCAN_INTERVAL
+from config.settings import (
+    DEFAULT_DOWNLOAD_FOLDER,
+    DOWNLOAD_WATCHER_FILE_CATEGORIES,
+    DOWNLOAD_WATCHER_TEMP_EXTENSIONS,
+    WATCHER_SCAN_INTERVAL,
+    WATCHER_STABLE_CHECK_INTERVAL,
+    WATCHER_STABLE_CHECK_TIMES,
+    WATCHER_WAIT_AFTER_EVENT_SECONDS,
+)
+from tools.core.assistant_logger import log_action
+from tools.core.report_manager import create_report
+from tools.core.risk_classifier import classify_file_risk, PROTECTED
+from tools.core.safety_utils import safe_move
 
 try:
     from watchdog.observers import Observer
@@ -29,45 +39,15 @@ DATE_FORMAT = "%Y-%m-%d"
 
 # Cho them vai giay sau khi browser bao file da tai xong
 # de tranh move khi file van dang bi khoa.
-WAIT_AFTER_EVENT_SECONDS = 2
+WAIT_AFTER_EVENT_SECONDS = WATCHER_WAIT_AFTER_EVENT_SECONDS
 
 # Kiem tra file on dinh dung luong trong bao lau truoc khi move.
-STABLE_CHECK_INTERVAL = 1
-STABLE_CHECK_TIMES = 3
+STABLE_CHECK_INTERVAL = WATCHER_STABLE_CHECK_INTERVAL
+STABLE_CHECK_TIMES = WATCHER_STABLE_CHECK_TIMES
 
 # Cac duoi file tam khi dang download.
-TEMP_DOWNLOAD_EXTENSIONS = {
-    ".crdownload",   # Chrome / Edge / Coc Coc
-    ".part",         # Firefox
-    ".tmp",
-    ".download",
-    ".idownload"
-}
-
-FILE_CATEGORIES = {
-    "Anh": {
-        ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg", ".heic"
-    },
-    "Video": {
-        ".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v"
-    },
-    "Audio": {
-        ".mp3", ".wav", ".flac", ".aac", ".m4a", ".ogg"
-    },
-    "Tai_lieu": {
-        ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt"
-    },
-    "File_nen": {
-        ".zip", ".rar", ".7z", ".tar", ".gz"
-    },
-    "Code": {
-        ".py", ".js", ".ts", ".html", ".css", ".cpp", ".c",
-        ".java", ".json", ".xml", ".sql", ".php", ".cs"
-    },
-    "Cai_dat": {
-        ".exe", ".msi", ".apk", ".iso"
-    }
-}
+TEMP_DOWNLOAD_EXTENSIONS = DOWNLOAD_WATCHER_TEMP_EXTENSIONS
+FILE_CATEGORIES = DOWNLOAD_WATCHER_FILE_CATEGORIES
 
 
 # ============================================================
@@ -92,13 +72,15 @@ def is_temp_download_file(file_path: Path) -> bool:
     return file_path.suffix.lower() in TEMP_DOWNLOAD_EXTENSIONS
 
 
-def is_inside_today_folder(file_path: Path) -> bool:
+def is_inside_today_folder(file_path: Path, downloads_dir: Path | None = None) -> bool:
     """
     Neu file da nam trong Downloads/YYYY-MM-DD/... thi bo qua,
     tranh bi move lap lai.
     """
+    base_dir = Path(downloads_dir) if downloads_dir is not None else DOWNLOADS_DIR
+
     try:
-        relative_parts = file_path.relative_to(DOWNLOADS_DIR).parts
+        relative_parts = file_path.relative_to(base_dir).parts
         if len(relative_parts) >= 2:
             first_folder = relative_parts[0]
             datetime.strptime(first_folder, DATE_FORMAT)
@@ -165,7 +147,10 @@ def make_unique_path(target_path: Path) -> Path:
         count += 1
 
 
-def organize_downloaded_file(file_path: Path) -> None:
+def organize_downloaded_file(
+    file_path: Path,
+    downloads_dir: Path | None = None,
+) -> dict:
     """
     Flow dung yeu cau:
     1. Khi file dau tien trong ngay duoc tai ve:
@@ -176,25 +161,63 @@ def organize_downloaded_file(file_path: Path) -> None:
     4. Cac loai khac lam tuong tu
     """
     file_path = Path(file_path)
+    base_dir = Path(downloads_dir) if downloads_dir is not None else DOWNLOADS_DIR
 
     if not file_path.exists():
-        return
+        return {
+            "path": str(file_path),
+            "status": "missing",
+            "reason": "File khong ton tai.",
+        }
 
     if not file_path.is_file():
-        return
+        return {
+            "path": str(file_path),
+            "status": "skipped",
+            "reason": "Path khong phai file.",
+        }
 
     if is_temp_download_file(file_path):
-        return
+        return {
+            "path": str(file_path),
+            "status": "skipped",
+            "reason": "File dang tai do.",
+        }
 
-    if is_inside_today_folder(file_path):
-        return
+    if is_inside_today_folder(file_path, downloads_dir=base_dir):
+        return {
+            "path": str(file_path),
+            "status": "skipped",
+            "reason": "File da nam trong folder theo ngay.",
+        }
 
     if not wait_until_file_ready(file_path):
-        return
+        return {
+            "path": str(file_path),
+            "status": "skipped",
+            "reason": "File chua san sang de move.",
+        }
+
+    risk_data = classify_file_risk(file_path)
+
+    if risk_data["risk"] == PROTECTED:
+        result = {
+            "path": str(file_path),
+            "risk": risk_data["risk"],
+            "risk_reason": risk_data["reason"],
+            "status": "blocked",
+        }
+        log_action(
+            "download_watcher",
+            "organize_downloaded_file",
+            "blocked",
+            result,
+        )
+        return result
 
     category = get_category(file_path)
 
-    today_folder = DOWNLOADS_DIR / get_today_folder_name()
+    today_folder = base_dir / get_today_folder_name()
     category_folder = today_folder / category
 
     category_folder.mkdir(parents=True, exist_ok=True)
@@ -202,28 +225,112 @@ def organize_downloaded_file(file_path: Path) -> None:
     target_path = make_unique_path(category_folder / file_path.name)
 
     try:
-        shutil.move(str(file_path), str(target_path))
+        size = file_path.stat().st_size
+        move_record = safe_move(file_path, target_path)
+
+        result = {
+            "path": move_record["old_path"],
+            "new_path": move_record["new_path"],
+            "category": category,
+            "size": size,
+            "risk": risk_data["risk"],
+            "risk_reason": risk_data["reason"],
+            "status": "moved",
+        }
+
         print(f"[OK] {file_path.name}")
         print(f"     -> {target_path}")
+
+        log_action(
+            "download_watcher",
+            "organize_downloaded_file",
+            "success",
+            result,
+        )
+
+        return result
 
     except Exception as error:
         print(f"[LOI] Khong move duoc: {file_path}")
         print(f"      {error}")
 
+        result = {
+            "path": str(file_path),
+            "target_path": str(target_path),
+            "category": category,
+            "risk": risk_data["risk"],
+            "risk_reason": risk_data["reason"],
+            "status": "error",
+            "error": str(error),
+        }
 
-def scan_existing_files_once() -> None:
+        log_action(
+            "download_watcher",
+            "organize_downloaded_file",
+            "error",
+            result,
+        )
+
+        return result
+
+
+def scan_existing_files_once(downloads_dir: Path | None = None) -> list[dict]:
     """
     Khi vua chay watcher, quet cac file dang co san trong Downloads.
     Neu co file moi chua duoc phan loai thi sap xep luon.
     """
+    base_dir = Path(downloads_dir) if downloads_dir is not None else DOWNLOADS_DIR
     print("Dang quet file co san trong Downloads...")
 
-    for item in DOWNLOADS_DIR.iterdir():
+    results = []
+
+    for item in base_dir.iterdir():
         try:
             if item.is_file():
-                organize_downloaded_file(item)
+                results.append(organize_downloaded_file(item, downloads_dir=base_dir))
         except Exception as error:
             print(f"[LOI] {item} | {error}")
+            results.append({
+                "path": str(item),
+                "status": "error",
+                "error": str(error),
+            })
+
+    moved = sum(1 for item in results if item["status"] == "moved")
+    blocked = sum(1 for item in results if item["status"] == "blocked")
+    errors = sum(1 for item in results if item["status"] == "error")
+
+    if moved or blocked or errors:
+        report = create_report(
+            tool_name="download_watcher_startup_scan",
+            status="success",
+            input_data={
+                "downloads_dir": str(base_dir),
+            },
+            results={
+                "moved_count": moved,
+                "blocked_count": blocked,
+                "error_count": errors,
+                "records": results,
+            },
+            recommendations=[
+                "Use assistant action logs to inspect automatic download moves.",
+            ],
+        )
+
+        log_action(
+            "download_watcher",
+            "scan_existing_files_once",
+            "success",
+            {
+                "moved": moved,
+                "blocked": blocked,
+                "errors": errors,
+                "report": str(report),
+            },
+        )
+
+    return results
 
 
 # ============================================================
@@ -275,7 +382,7 @@ def run_download_watcher() -> None:
     print("Nhan Ctrl + C de dung.")
     print("=" * 40)
 
-    scan_existing_files_once()
+    scan_existing_files_once(DOWNLOADS_DIR)
 
     event_handler = DownloadHandler()
     observer = Observer()

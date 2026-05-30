@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import importlib
-import json
-from datetime import datetime
 from pathlib import Path
+
+from tools.core.report_manager import create_report
 
 
 TOOLS_TO_TEST = [
@@ -12,38 +12,46 @@ TOOLS_TO_TEST = [
     {"name": "Recycle Bin Cleaner", "module": "tools.system.recycle_bin_cleaner", "function": "clear_recycle_bin", "risk": "dangerous"},
     {"name": "Junk File Cleaner", "module": "tools.system.junk_file_cleaner", "function": "run_junk_cleaner", "risk": "dangerous"},
     {"name": "Duplicate Finder", "module": "tools.storage.duplicate_finder", "function": "run_duplicate_finder", "risk": "dangerous"},
+    {"name": "Temp Cleaner", "module": "tools.storage.temp_cleaner", "function": "run_temp_cleaner", "risk": "dangerous"},
     {"name": "Media Organizer", "module": "tools.storage.media_organizer", "function": "run_media_organizer", "risk": "medium"},
+    {"name": "Empty Folder Finder", "module": "tools.storage.empty_folder_finder", "function": "run_empty_folder_finder", "risk": "dangerous"},
     {"name": "File Indexer", "module": "tools.search.file_indexer", "function": "run_file_indexer", "risk": "safe"},
     {"name": "Startup Launcher", "module": "tools.automation.startup_launcher", "function": "run_startup_launcher", "risk": "medium"},
+    {"name": "Download Organizer", "module": "tools.automation.download_organizer", "function": "run_download_organizer", "risk": "medium"},
+    {"name": "Download Watcher", "module": "tools.automation.download_watcher", "function": "run_download_watcher", "risk": "medium"},
     {"name": "Browser Cache Cleaner", "module": "tools.system.browser_cache_cleaner", "function": "run_browser_cache_cleaner", "risk": "dangerous"},
     {"name": "Game Booster", "module": "tools.system.game_booster", "function": "run_game_booster", "risk": "medium"},
     {"name": "Natural Command", "module": "tools.search.natural_command", "function": "run_natural_command", "risk": "safe"},
     {"name": "Folder Size Analyzer", "module": "tools.storage.folder_size_analyzer", "function": "run_folder_size_analyzer", "risk": "safe"},
     {"name": "Large File Finder", "module": "tools.storage.large_file_finder", "function": "run_large_file_finder", "risk": "safe"},
     {"name": "System Advisor", "module": "tools.storage.system_advisor", "function": "run_system_advisor", "risk": "safe"},
+    {"name": "Assistant Logger", "module": "tools.core.assistant_logger", "function": "run_assistant_logger", "risk": "safe"},
+    {"name": "Audit Center", "module": "tools.core.audit_center", "function": "run_audit_center", "risk": "safe"},
+    {"name": "Behavior Tester", "module": "tools.core.behavior_tester", "function": "run_behavior_tester", "risk": "safe"},
+    {"name": "Config Manager", "module": "tools.core.config_manager", "function": "run_config_manager", "risk": "safe"},
+    {"name": "Undo Manager", "module": "tools.core.undo_manager", "function": "run_undo_manager", "risk": "medium"},
+    {"name": "Full System Tester", "module": "tools.core.full_system_tester", "function": "run_full_system_tester", "risk": "safe"},
     {"name": "File Location Opener", "module": "tools.core.file_location_opener", "function": "open_file_location", "risk": "safe"},
 ]
 
 
 def save_test_report(results: list[dict]) -> Path:
-    reports_dir = Path("reports")
-    reports_dir.mkdir(exist_ok=True)
-
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    report_path = reports_dir / f"tool_test_report_{timestamp}.json"
-
     data = {
-        "created_at": datetime.now().isoformat(timespec="seconds"),
         "total": len(results),
         "passed": sum(1 for item in results if item["status"] == "pass"),
         "failed": sum(1 for item in results if item["status"] == "fail"),
         "results": results,
     }
 
-    with report_path.open("w", encoding="utf-8") as file:
-        json.dump(data, file, ensure_ascii=False, indent=4)
-
-    return report_path
+    return create_report(
+        tool_name="tool_tester",
+        status="success" if data["failed"] == 0 else "error",
+        input_data={},
+        results=data,
+        recommendations=[
+            "Fix failed imports before running risky tools.",
+        ],
+    )
 
 
 def test_tool_imports() -> list[dict]:

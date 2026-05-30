@@ -40,11 +40,223 @@ Nâng cấp:
 * Safe Executor
 * Report
 
+### Browser Cache Cleaner
+
+Nâng cấp:
+
+* Risk Classification cho browser cache
+* Safe Executor
+* Report
+* Audit Log
+* Không còn xóa trực tiếp bằng rmtree
+
+### Recycle Bin Cleaner
+
+**thay đổi** Nâng cấp:
+
+* Scan Recycle Bin trước khi empty
+* Preview report
+* Confirmation flow nhiều bước
+* Final report
+* Audit Log
+
+### Media Organizer
+
+**thay đổi** Nâng cấp:
+
+* Risk Classification
+* Preview và chọn file trước khi move
+* Chặn protected path
+* Backup manifest
+* Report
+* Restore report
+* Audit Log
+
+### Empty Folder Finder
+
+**thay đổi** Nâng cấp:
+
+* Risk Classification
+* Preview và chọn folder trước khi xóa
+* Safe Executor
+* Report
+* Audit Log
+* Không còn gọi send2trash trực tiếp
+
+### Download Organizer
+
+**thay đổi** Nâng cấp:
+
+* Risk Classification
+* Preview và chọn file trước khi move
+* Bỏ qua file đang tải dở
+* Backup manifest
+* Report
+* Restore report
+* Audit Log
+
+### Download Watcher
+
+**thay đổi** Nâng cấp nhẹ:
+
+* Giữ nguyên flow watcher hiện có
+* Move bằng safe_move
+* Audit Log cho từng file tự động move
+* Startup scan report khi có thay đổi
+* Helper trả về kết quả có cấu trúc để test
+
+### Requirements
+
+**thay đổi** Thêm:
+
+* watchdog
+
+### Main CLI Menu
+
+**thay đổi** Nâng cấp:
+
+* Thêm Temp Cleaner
+* Thêm Empty Folder Finder
+* Thêm Download Organizer
+* Thêm Download Watcher
+* Thêm Assistant Logs
+* Thêm Behavior Tester
+* **thay đổi** Thêm Config Manager
+* **thay đổi** Thêm Audit Center
+* **thay đổi** Thêm Undo Manager
+* **thay đổi** Thêm Full System Tester
+* Chuyển Tool Tester sang mục 21
+
+### Tool Tester
+
+**thay đổi** Mở rộng:
+
+* Kiểm tra 25 tool
+* Passed: 25
+* Failed: 0
+
+### Behavior Tester
+
+**thay đổi** Thêm:
+
+* Sandbox behavior tests
+* Risk Classifier và Safe Delete bad cases
+* Download Organizer roundtrip
+* Download Watcher startup scan
+* Media Organizer roundtrip
+* Empty Folder Finder fake delete
+* Missing manifest restore
+* Startup Launcher config audit
+* Read-only system snapshots
+* Config System snapshot
+* Audit Center snapshot
+* Undo Manager roundtrip
+* Passed: 11
+* Failed: 0
+
+### Startup Launcher
+
+**thay đổi** Nâng cấp audit:
+
+* Ghi log khi xem profiles
+* Report khi thêm app vào profile
+* Report khi mở profile
+* Lưu trạng thái từng app khi launch
+* Behavior test không mở app thật
+
+### Read-only System Tools
+
+**thay đổi** Nâng cấp audit:
+
+* Disk Checker có `get_disk_info`
+* Disk Checker tạo report và audit log
+* Process Monitor tạo report và audit log khi `show_top_process`
+* Behavior Tester kiểm tra snapshot của Disk Checker và Process Monitor
+
+### Config System
+
+**thay đổi** Thêm config tập trung:
+
+* Thêm `config/user_settings.json`
+* `config/settings.py` đọc user settings và merge với default an toàn
+* Gom Downloads path, default scan folder, thresholds, protected folders
+* Gom browser cache path templates, watcher timing, file categories, media extensions
+* Risk Classifier dùng protected/safe zone từ config
+* Browser Cache Cleaner dùng browser cache templates từ config
+* Download Organizer, Download Watcher, Media Organizer dùng category/extension từ config
+* Disk Checker và Process Monitor dùng warning/critical threshold từ config
+* Thêm `tools/core/config_manager.py`
+
+### Audit System
+
+**thay đổi** Thêm audit nền tảng:
+
+* `create_report()` tự append vào `reports/report_index.jsonl`
+* Report có `schema_version` và `created_at_iso`
+* Report path tự thêm suffix khi trùng timestamp để tránh ghi đè
+* Tool Tester chuyển sang dùng `create_report()`
+* Thêm `tools/core/audit_center.py`
+* Audit Center gom assistant logs và report index thành snapshot
+* Main CLI expose Audit Center
+* Behavior Tester kiểm tra Audit Center snapshot
+
+### Undo System
+
+**thay đổi** Thêm Undo Manager:
+
+* Thêm `tools/core/undo_manager.py`
+* Liệt kê manifest gần đây trong backups
+* Preview manifest trước restore
+* Restore manifest mặc định chỉ cho file trong backups
+* Tạo report và audit log khi restore
+* Main CLI expose Undo Manager
+* Behavior Tester kiểm tra Undo Manager roundtrip
+
+### Full System Tester
+
+**thay đổi** Thêm test siêu tổng hợp:
+
+* Compile all
+* Tool import matrix
+* Main menu coverage
+* Config health
+* Safety static audit
+* Risk classifier guardrails
+* Report manager và audit index
+* Audit Center health
+* Undo Manager roundtrip
+* Behavior suite subprocess
+* Dependency health
+* Git submodule health
+* Passed: 12
+* Failed: 0
+
+### Repository Layout
+
+**thay đổi** Dọn vấn đề repo lồng:
+
+* Gỡ gitlink `AI_Desktop_Assistant` khỏi root index
+* Move snapshot cũ từ `D:\tool\AI_Desktop_Assistant` vào `D:\tool\backups\AI_Desktop_Assistant_old_20260530_144926`
+* Thêm `AI_Desktop_Assistant/` vào `.gitignore`
+* Root project active là `D:\tool`
+
 ### Testing
 
 Tool Tester:
 
-Passed: 15
+Passed: 25
+
+Failed: 0
+
+Behavior Tester:
+
+Passed: 11
+
+Failed: 0
+
+Full System Tester:
+
+Passed: 12
 
 Failed: 0
 
