@@ -15,12 +15,14 @@
 | rclone | **thay đổi** OK | `D:\tool\external\rclone\rclone.exe` | Đã giải nén từ zip, version `1.74.2`. |
 | CrystalDiskInfo | **thay đổi** OK | `C:\Program Files\CrystalDiskInfo\DiskInfo64.exe` | Đã cài version `9.9.1`. |
 | ExifTool | **thay đổi** OK | `D:\tool\external\exiftool\exiftool.exe` | Đã giải nén Windows executable 64-bit, version `13.59`; giữ kèm `exiftool_files`. |
+| FFmpeg | **thay đổi** OK | `D:\tool\external\ffmpeg\bin\ffmpeg.exe` | Đã giải nén release essentials build `8.1.1`. |
+| FFprobe | **thay đổi** OK | `D:\tool\external\ffmpeg\bin\ffprobe.exe` | Đi kèm FFmpeg essentials build `8.1.1`. |
 
 ## Chưa Đúng Hoặc Chưa Hoàn Tất
 
 | App | Trạng thái | File hiện có | Cần làm |
 | --- | --- | --- | --- |
-| FFmpeg | **thay đổi** Chưa đúng | `D:\tool\external\ffmpeg\ffmpeg-8.1.1.tar.xz` | Đây là source code. Cần tải Windows build, ví dụ release essentials zip/7z từ gyan.dev. |
+| Không còn mục bắt buộc | **thay đổi** OK | - | Các app ưu tiên hiện đã có đủ path chuẩn. |
 
 ## Vị Trí Tải/Cài Khuyến Nghị
 
