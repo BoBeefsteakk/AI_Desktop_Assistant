@@ -13,12 +13,12 @@
 | smartmontools | **thay đổi** OK | `C:\Program Files\smartmontools\bin\smartctl.exe` | Đã cài version `7.5`. |
 | 7-Zip | **thay đổi** OK | `C:\Program Files\7-Zip\7z.exe` | Đã cài version `26.01 x64`. |
 | rclone | **thay đổi** OK | `D:\tool\external\rclone\rclone.exe` | Đã giải nén từ zip, version `1.74.2`. |
+| CrystalDiskInfo | **thay đổi** OK | `C:\Program Files\CrystalDiskInfo\DiskInfo64.exe` | Đã cài version `9.9.1`. |
 
 ## Chưa Đúng Hoặc Chưa Hoàn Tất
 
 | App | Trạng thái | File hiện có | Cần làm |
 | --- | --- | --- | --- |
-| CrystalDiskInfo | **thay đổi** Chưa đúng | `D:\tool\external\CrystalDiskInfo\CrystalMarkRetro2_1_0.exe` | Đây là CrystalMark Retro, không phải CrystalDiskInfo. Cần tải CrystalDiskInfo Standard. |
 | ExifTool | **thay đổi** Chưa đúng | `D:\tool\external\exiftool\Image-ExifTool-13.59.tar.gz` | Đây là source/full distribution. Cần tải Windows executable 64-bit zip, sau đó rename `exiftool(-k).exe` thành `exiftool.exe`. |
 | FFmpeg | **thay đổi** Chưa đúng | `D:\tool\external\ffmpeg\ffmpeg-8.1.1.tar.xz` | Đây là source code. Cần tải Windows build, ví dụ release essentials zip/7z từ gyan.dev. |
 
