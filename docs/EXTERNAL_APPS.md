@@ -14,12 +14,12 @@
 | 7-Zip | **thay đổi** OK | `C:\Program Files\7-Zip\7z.exe` | Đã cài version `26.01 x64`. |
 | rclone | **thay đổi** OK | `D:\tool\external\rclone\rclone.exe` | Đã giải nén từ zip, version `1.74.2`. |
 | CrystalDiskInfo | **thay đổi** OK | `C:\Program Files\CrystalDiskInfo\DiskInfo64.exe` | Đã cài version `9.9.1`. |
+| ExifTool | **thay đổi** OK | `D:\tool\external\exiftool\exiftool.exe` | Đã giải nén Windows executable 64-bit, version `13.59`; giữ kèm `exiftool_files`. |
 
 ## Chưa Đúng Hoặc Chưa Hoàn Tất
 
 | App | Trạng thái | File hiện có | Cần làm |
 | --- | --- | --- | --- |
-| ExifTool | **thay đổi** Chưa đúng | `D:\tool\external\exiftool\Image-ExifTool-13.59.tar.gz` | Đây là source/full distribution. Cần tải Windows executable 64-bit zip, sau đó rename `exiftool(-k).exe` thành `exiftool.exe`. |
 | FFmpeg | **thay đổi** Chưa đúng | `D:\tool\external\ffmpeg\ffmpeg-8.1.1.tar.xz` | Đây là source code. Cần tải Windows build, ví dụ release essentials zip/7z từ gyan.dev. |
 
 ## Vị Trí Tải/Cài Khuyến Nghị
