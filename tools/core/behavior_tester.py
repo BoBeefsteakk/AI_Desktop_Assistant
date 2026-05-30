@@ -28,8 +28,14 @@ def assert_condition(condition: bool, message: str) -> None:
 
 
 def make_sandbox() -> Path:
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     sandbox = SANDBOX_ROOT / f"run_{timestamp}"
+
+    count = 1
+    while sandbox.exists():
+        sandbox = SANDBOX_ROOT / f"run_{timestamp}_{count}"
+        count += 1
+
     sandbox.mkdir(parents=True, exist_ok=False)
     return sandbox
 

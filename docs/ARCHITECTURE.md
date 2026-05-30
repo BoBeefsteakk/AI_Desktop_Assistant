@@ -200,6 +200,21 @@ Thành phần chính:
 * `assistant_logger.py`: ghi action log dạng JSONL
 * `audit_center.py`: đọc log + report index và xuất audit snapshot
 
+Report schema v2:
+
+* `schema_version`
+* `tool`
+* `action`
+* `risk_level`
+* `status`
+* `summary`
+* `input`
+* `results`
+* `manifest`
+* `undo_available`
+* `recommendations`
+* `tags`
+
 ---
 
 ## Undo Layer
@@ -235,6 +250,7 @@ Các lớp kiểm tra:
 * Safety static audit
 * Risk classifier
 * Report/audit index
+* Report schema validation
 * Undo roundtrip
 * Behavior suite
 * Dependencies

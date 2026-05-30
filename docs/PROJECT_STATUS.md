@@ -213,6 +213,7 @@ Các case đã kiểm tra:
 * Config System đọc `config/user_settings.json` và validate snapshot
 * Audit Center đọc assistant logs và report index
 * Undo Manager restore manifest trong sandbox
+* **thay đổi** Sandbox test dùng timestamp microsecond để tránh trùng khi chạy song song
 
 Kết quả hiện tại:
 
@@ -290,8 +291,11 @@ Process Monitor:
 **thay đổi** Đã bổ sung nền tảng audit tổng:
 
 * `create_report()` tự ghi index vào `D:\tool\reports\report_index.jsonl`
-* Mỗi report mới có `schema_version` và `created_at_iso`
+* **thay đổi** Mỗi report mới dùng schema v2 với `schema_version`, `action`, `risk_level`, `summary`, `manifest`, `undo_available`, `tags`
 * Report path tự thêm suffix khi trùng timestamp để tránh ghi đè
+* **thay đổi** Report index cũng ghi `action`, `risk_level`, `summary`, `manifest`, `undo_available`
+* **thay đổi** `create_report()` tự suy luận manifest từ results để bật `undo_available`
+* **thay đổi** Thêm validator `validate_report_file()`
 * Tool Tester cũng dùng `create_report()` nên report được đưa vào index chung
 * Thêm `tools/core/audit_center.py`
 * Audit Center đọc `assistant_actions.jsonl` và `report_index.jsonl`
@@ -326,6 +330,7 @@ Process Monitor:
 * Static safety audit cho active source, bỏ qua backups
 * Kiểm tra risk classifier guardrails
 * Kiểm tra report manager và audit index
+* **thay đổi** Kiểm tra report schema validation
 * Kiểm tra Audit Center
 * Kiểm tra Undo Manager roundtrip
 * Chạy Behavior Tester như subprocess
@@ -334,7 +339,7 @@ Process Monitor:
 
 Kết quả hiện tại:
 
-Passed: 12
+Passed: 13
 Failed: 0
 
 ---
@@ -391,7 +396,7 @@ Lý do:
 Cần làm tiếp để ổn định tool tổng:
 
 * **thay đổi** Mở rộng Undo System cho các thao tác không có manifest nếu cần
-* Chuẩn hóa sâu hơn metadata report cho các tool còn thiếu field summary
+* **thay đổi** Xây Capability Registry để assistant biết tool nào làm gì, risk gì, undo kiểu gì
 * Bổ sung thêm case vào Full System Tester khi phát hiện lỗi thực tế mới
 
 ---

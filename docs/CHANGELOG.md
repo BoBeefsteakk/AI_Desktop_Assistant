@@ -151,6 +151,7 @@ Nâng cấp:
 * Config System snapshot
 * Audit Center snapshot
 * Undo Manager roundtrip
+* **thay đổi** Sandbox name dùng microsecond để tránh collision khi chạy song song
 * Passed: 11
 * Failed: 0
 
@@ -192,7 +193,10 @@ Nâng cấp:
 **thay đổi** Thêm audit nền tảng:
 
 * `create_report()` tự append vào `reports/report_index.jsonl`
-* Report có `schema_version` và `created_at_iso`
+* **thay đổi** Report schema v2 có `schema_version`, `action`, `risk_level`, `summary`, `manifest`, `undo_available`, `tags`
+* **thay đổi** Report index có thêm `action`, `risk_level`, `summary`, `manifest`, `undo_available`
+* **thay đổi** `create_report()` tự suy luận manifest từ results
+* **thay đổi** Thêm `validate_report_file()` và `validate_report_data()`
 * Report path tự thêm suffix khi trùng timestamp để tránh ghi đè
 * Tool Tester chuyển sang dùng `create_report()`
 * Thêm `tools/core/audit_center.py`
@@ -223,12 +227,13 @@ Nâng cấp:
 * Safety static audit
 * Risk classifier guardrails
 * Report manager và audit index
+* **thay đổi** Report schema validation
 * Audit Center health
 * Undo Manager roundtrip
 * Behavior suite subprocess
 * Dependency health
 * Git submodule health
-* Passed: 12
+* Passed: 13
 * Failed: 0
 
 ### Repository Layout
@@ -256,7 +261,7 @@ Failed: 0
 
 Full System Tester:
 
-Passed: 12
+Passed: 13
 
 Failed: 0
 

@@ -10,7 +10,12 @@ from typing import Any, Callable
 from config.settings import BASE_DIR, USER_SETTINGS_FILE, validate_user_settings
 from tools.core.audit_center import get_audit_snapshot
 from tools.core.behavior_tester import make_sandbox, cleanup_sandbox, write_text
-from tools.core.report_manager import create_report, read_recent_report_index
+from tools.core.report_manager import (
+    REPORT_SCHEMA_VERSION,
+    create_report,
+    read_recent_report_index,
+    validate_report_file,
+)
 from tools.core.risk_classifier import PROTECTED, classify_file_risk
 from tools.core.safe_executor import safe_delete
 from tools.core.safety_utils import safe_move, save_manifest
@@ -213,6 +218,7 @@ def test_report_manager_and_audit_index() -> dict[str, Any]:
     report_a = create_report("full_system_report_collision", "success", {}, {"case": "a"})
     report_b = create_report("full_system_report_collision", "success", {}, {"case": "b"})
     recent = read_recent_report_index(limit=20)
+    validation = validate_report_file(report_b)
 
     assert_condition(report_a != report_b, "Report manager should avoid timestamp collisions.")
     assert_condition(report_a.exists() and report_b.exists(), "Collision reports should exist.")
@@ -220,11 +226,50 @@ def test_report_manager_and_audit_index() -> dict[str, Any]:
         any(item.get("report_path") == str(report_b) for item in recent),
         "Report index should include the latest created report.",
     )
+    assert_condition(validation["status"] == "valid", "Created report should match schema.")
 
     return {
         "report_a": str(report_a),
         "report_b": str(report_b),
         "recent_index_count": len(recent),
+        "schema_validation": validation,
+    }
+
+
+def test_report_schema_validation() -> dict[str, Any]:
+    report = create_report(
+        tool_name="full_system_schema_test",
+        status="success",
+        input_data={
+            "expected_schema_version": REPORT_SCHEMA_VERSION,
+        },
+        results={
+            "total": 1,
+            "passed": 1,
+            "failed": 0,
+        },
+        recommendations=[
+            "Report schema validation is active.",
+        ],
+        action="validate_schema",
+        risk_level="safe",
+        summary={
+            "total": 1,
+            "passed": 1,
+            "failed": 0,
+            "undo_available": False,
+        },
+        undo_available=False,
+        tags=["schema", "full_system"],
+    )
+    validation = validate_report_file(report)
+
+    assert_condition(validation["status"] == "valid", "Schema test report should be valid.")
+
+    return {
+        "report": str(report),
+        "schema_version": REPORT_SCHEMA_VERSION,
+        "validation": validation,
     }
 
 
@@ -316,6 +361,7 @@ FULL_SYSTEM_TESTS: list[tuple[str, Callable[[], dict[str, Any]]]] = [
     ("Safety Static Audit", test_safety_static_audit),
     ("Risk Classifier Guardrails", test_risk_classifier_guardrails),
     ("Report Manager and Audit Index", test_report_manager_and_audit_index),
+    ("Report Schema Validation", test_report_schema_validation),
     ("Audit Center Health", test_audit_center_health),
     ("Undo Manager Roundtrip", test_undo_manager_roundtrip),
     ("Behavior Suite Subprocess", test_behavior_suite_subprocess),

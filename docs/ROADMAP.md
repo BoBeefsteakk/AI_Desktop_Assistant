@@ -67,6 +67,8 @@ reports/
 Đã có:
 
 * `create_report()` tự append report index
+* **thay đổi** Report schema v2
+* **thay đổi** Report schema validation trong Full System Tester
 * Audit Center xem log/report gần đây
 * Audit Center export snapshot report
 
@@ -106,7 +108,8 @@ Một lệnh test tổng hợp trước khi refactor lớn hoặc feed assistant
 Đã có:
 
 * Compile/import/config/safety/report/audit/undo/behavior/dependency/git checks
-* Full System Tester hiện pass 12/12
+* **thay đổi** Report schema validation
+* Full System Tester hiện pass 13/13
 
 ---
 
