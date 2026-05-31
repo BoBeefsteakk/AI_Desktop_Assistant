@@ -23,6 +23,8 @@ from tools.core.report_manager import (
 from tools.core.recommendation_center import (
     collect_recommendation_queue,
     summarize_recommendation_queue,
+    sync_recommendation_queue,
+    update_recommendation_state,
 )
 from tools.core.external_apps import build_external_apps_health, get_external_apps_status
 from tools.core.risk_classifier import PROTECTED, REVIEW_REQUIRED, SAFE_DELETE, classify_file_risk
@@ -517,74 +519,109 @@ def test_system_advisor_v2_contract() -> dict[str, Any]:
 
 
 def test_recommendation_center_contract() -> dict[str, Any]:
-    create_report(
-        tool_name="system_advisor",
-        action="analyze_system_v2",
-        status="success",
-        risk_level="safe",
-        input_data={
-            "contract_test": True,
-        },
-        results={
-            "recommendations": [
-                {
-                    "id": "contract-critical",
-                    "severity": "critical",
-                    "title": "Contract critical recommendation",
-                    "detail": "Recommendation Center should collect this structured item.",
-                    "source": "contract_test",
-                    "suggested_tool_id": "large_file_finder",
-                    "suggestion_only": True,
-                }
+    sandbox = make_sandbox()
+    state_file = sandbox / "recommendation_queue.jsonl"
+
+    try:
+        create_report(
+            tool_name="system_advisor",
+            action="analyze_system_v2",
+            status="success",
+            risk_level="safe",
+            input_data={
+                "contract_test": True,
+            },
+            results={
+                "recommendations": [
+                    {
+                        "id": "contract-critical",
+                        "severity": "critical",
+                        "title": "Contract critical recommendation",
+                        "detail": "Recommendation Center should collect this structured item.",
+                        "source": "contract_test",
+                        "suggested_tool_id": "large_file_finder",
+                        "suggestion_only": True,
+                    }
+                ],
+            },
+            recommendations=[
+                "[CRITICAL] Contract critical recommendation.",
             ],
-        },
-        recommendations=[
-            "[CRITICAL] Contract critical recommendation.",
-        ],
-        summary={
-            "total": 1,
-            "critical_count": 1,
-            "warning_count": 0,
-            "info_count": 0,
-            "undo_available": False,
-        },
-        undo_available=False,
-        tags=["system_advisor", "read_only", "v2", "contract_test"],
-    )
-    create_report(
-        tool_name="contract_warning_tool",
-        action="contract_warning",
-        status="warning",
-        risk_level="safe",
-        input_data={},
-        results={},
-        recommendations=[],
-        summary={
-            "undo_available": False,
-        },
-        undo_available=False,
-        tags=["contract_test"],
-    )
+            summary={
+                "total": 1,
+                "critical_count": 1,
+                "warning_count": 0,
+                "info_count": 0,
+                "undo_available": False,
+            },
+            undo_available=False,
+            tags=["system_advisor", "read_only", "v2", "contract_test"],
+        )
+        create_report(
+            tool_name="contract_warning_tool",
+            action="contract_warning",
+            status="warning",
+            risk_level="safe",
+            input_data={},
+            results={},
+            recommendations=[],
+            summary={
+                "undo_available": False,
+            },
+            undo_available=False,
+            tags=["contract_test"],
+        )
 
-    queue = collect_recommendation_queue(report_limit=20)
-    summary = summarize_recommendation_queue(queue)
-    recommendation_ids = {item["id"] for item in queue}
+        sync_result = sync_recommendation_queue(
+            report_limit=20,
+            state_file=state_file,
+            states=None,
+        )
+        queue = collect_recommendation_queue(
+            report_limit=20,
+            state_file=state_file,
+        )
+        summary = summarize_recommendation_queue(queue)
+        recommendation_ids = {item["id"] for item in queue}
 
-    assert_condition("contract-critical" in recommendation_ids, "Recommendation Center should collect Advisor items.")
-    assert_condition(
-        any(item.get("report_tool") == "contract_warning_tool" for item in queue),
-        "Recommendation Center should convert warning/error reports into audit recommendations.",
-    )
-    assert_condition(
-        all(item.get("suggestion_only") is True for item in queue),
-        "Recommendation Center must remain suggestion-only.",
-    )
-    assert_condition(summary["total"] == len(queue), "Queue summary total should match queue length.")
+        assert_condition("contract-critical" in recommendation_ids, "Recommendation Center should collect Advisor items.")
+        assert_condition(
+            any(item.get("report_tool") == "contract_warning_tool" for item in queue),
+            "Recommendation Center should convert warning/error reports into audit recommendations.",
+        )
+        assert_condition(
+            all(item.get("suggestion_only") is True for item in queue),
+            "Recommendation Center must remain suggestion-only.",
+        )
+        assert_condition(summary["total"] == len(queue), "Queue summary total should match queue length.")
+        assert_condition(state_file.exists(), "Recommendation workflow state file should be created during sync.")
 
-    return {
-        "summary": summary,
-        "recommendation_ids": sorted(recommendation_ids),
-    }
+        critical = next(item for item in queue if item["id"] == "contract-critical")
+        update_recommendation_state(
+            critical["fingerprint"],
+            "handled",
+            note="full system contract",
+            state_file=state_file,
+        )
+        handled_queue = collect_recommendation_queue(
+            report_limit=20,
+            state_file=state_file,
+            states={"handled"},
+        )
+        assert_condition(
+            any(item["id"] == "contract-critical" for item in handled_queue),
+            "Recommendation workflow should persist handled state.",
+        )
+
+        return {
+            "summary": summary,
+            "recommendation_ids": sorted(recommendation_ids),
+            "state_file": str(state_file),
+            "created_count": sync_result["created_count"],
+        }
+
+    finally:
+        cleanup_sandbox(sandbox)
 
 
 def test_dependency_health() -> dict[str, Any]:

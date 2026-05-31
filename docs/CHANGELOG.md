@@ -2,6 +2,15 @@
 
 ## 2026-05-31
 
+### Recommendation Workflow v1
+
+* **thay đổi** Recommendation Center co queue state persistent tai `data/recommendation_queue.jsonl`
+* **thay đổi** Them state `pending`, `deferred`, `handled`, `ignored`
+* **thay đổi** Them sync queue, filter theo severity/state, doi state va export queue report
+* **thay đổi** Queue dung fingerprint on dinh de tranh lap lai cung mot goi y sau moi lan chay Advisor/report
+* **thay đổi** Behavior Tester them case state transition
+* **thay đổi** Full System Tester kiem tra state file va handled state
+
 ### Recommendation Center
 
 * **thay đổi** Thêm `tools/core/recommendation_center.py`

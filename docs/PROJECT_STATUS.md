@@ -295,6 +295,12 @@ Chức năng:
 * **thay đổi** Main CLI expose `Recommendation Center`
 * **thay đổi** Natural Command route được lệnh gợi ý/queue sang Recommendation Center
 
+* **thay đổi** Recommendation Workflow v1 them queue state persistent tai `data/recommendation_queue.jsonl`
+* **thay đổi** Ho tro state `pending`, `deferred`, `handled`, `ignored`
+* **thay đổi** Queue mac dinh hien `pending/deferred`, an `handled/ignored`
+* **thay đổi** Co the sync queue, loc theo severity/state, doi state va export report queue
+* **thay đổi** Van read-only voi du lieu user; chi ghi queue state va report
+
 ---
 
 ### Behavior Tester

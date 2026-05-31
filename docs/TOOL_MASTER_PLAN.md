@@ -76,7 +76,7 @@
 
 **thay đổi** Gap 2: External App Health hiện có status/version/path basic, nhưng chưa có drift detection/cảnh báo path đổi theo thời gian.
 
-**thay đổi** Gap 3: Recommendation Center chưa có trạng thái persistent như pending/deferred/handled/ignored.
+**thay đổi** Gap 3: Recommendation Center da co trang thai persistent pending/deferred/handled/ignored.
 
 **thay đổi** Gap 4: Chưa có Guided Action Runner để mở tool từ recommendation với màn xác nhận risk thống nhất.
 
@@ -164,9 +164,9 @@
 
 ## Bước Nên Làm Ngay
 
-**thay đổi** Bước tiếp theo chuẩn nhất là Recommendation Workflow v1.
+**thay đổi** Bước tiếp theo chuẩn nhất là Guided Action Runner.
 
-**thay đổi** Lý do: External App Health Report v2 da co dependency map, nen buoc tiep theo la luu recommendation queue co trang thai pending/deferred/handled/ignored de tranh lap lai goi y va mo duong cho Guided Action Runner.
+**thay đổi** Lý do: Recommendation Workflow v1 da co state file, nen buoc tiep theo la mo tool tu recommendation qua Guided Action Runner ma van giu confirmation cua tool that.
 
 ## Deletion Safety / UX v2
 
@@ -202,4 +202,23 @@
 
 **thay đổi** External Apps Manager da co lua chon xem health v2 va xuat health report v2.
 
-**thay đổi** Buoc ke tiep theo trong ke hoach chuan la Recommendation Workflow v1: queue co trang thai pending/deferred/handled/ignored.
+**thay đổi** Buoc ke tiep theo trong ke hoach chuan la Guided Action Runner.
+
+## Recommendation Workflow v1
+
+**thay đổi** Recommendation Center da co queue persistent tai `data/recommendation_queue.jsonl`.
+
+**thay đổi** Queue dung fingerprint on dinh dua tren source, report tool, title, detail va suggested tool de tranh lap lai cung mot goi y khi Advisor/report chay lai.
+
+**thay đổi** Trang thai ho tro:
+
+* **thay đổi** `pending`: goi y moi, can xem.
+* **thay đổi** `deferred`: tam hoan, van hien trong queue mac dinh.
+* **thay đổi** `handled`: da xu ly, an khoi queue mac dinh.
+* **thay đổi** `ignored`: bo qua, an khoi queue mac dinh.
+
+**thay đổi** Recommendation Center hien co the sync queue, loc theo severity/state, doi trang thai va xuat report queue co summary theo state.
+
+**thay đổi** Workflow nay van read-only doi voi du lieu user: no chi ghi state queue trong `data/` va report trong `reports/`, khong chay cleanup/tool thay user.
+
+**thay đổi** Buoc ke tiep theo trong ke hoach chuan la Guided Action Runner.

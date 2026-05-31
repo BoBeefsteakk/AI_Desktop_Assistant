@@ -703,6 +703,132 @@ def test_recommendation_center_queue(sandbox: Path) -> dict[str, Any]:
     }
 
 
+def test_recommendation_workflow_state_transitions(sandbox: Path) -> dict[str, Any]:
+    state_file = sandbox / "recommendation_queue.jsonl"
+    seed = sandbox.name
+
+    create_report(
+        tool_name="system_advisor",
+        action="workflow_state_test",
+        status="success",
+        risk_level="safe",
+        input_data={
+            "sandbox": str(sandbox),
+        },
+        results={
+            "recommendations": [
+                {
+                    "id": f"workflow-deferred-{seed}",
+                    "severity": "warning",
+                    "title": "Workflow deferred",
+                    "detail": f"Recommendation workflow deferred test {seed}.",
+                    "source": "behavior_test",
+                    "suggested_tool_id": "audit_center",
+                    "suggestion_only": True,
+                },
+                {
+                    "id": f"workflow-handled-{seed}",
+                    "severity": "info",
+                    "title": "Workflow handled",
+                    "detail": f"Recommendation workflow handled test {seed}.",
+                    "source": "behavior_test",
+                    "suggested_tool_id": "audit_center",
+                    "suggestion_only": True,
+                },
+                {
+                    "id": f"workflow-ignored-{seed}",
+                    "severity": "info",
+                    "title": "Workflow ignored",
+                    "detail": f"Recommendation workflow ignored test {seed}.",
+                    "source": "behavior_test",
+                    "suggested_tool_id": "audit_center",
+                    "suggestion_only": True,
+                },
+            ],
+        },
+        recommendations=[],
+        summary={
+            "total": 3,
+            "undo_available": False,
+        },
+        undo_available=False,
+        tags=["recommendation_workflow", "behavior_test"],
+    )
+
+    sync_result = recommendation_center.sync_recommendation_queue(
+        report_limit=20,
+        state_file=state_file,
+        states=None,
+    )
+    matching = {
+        item["id"]: item
+        for item in sync_result["all_queue"]
+        if str(item["id"]).endswith(seed)
+    }
+
+    assert_condition(
+        len(matching) == 3,
+        "Recommendation workflow test should collect three seeded recommendations.",
+    )
+    assert_condition(
+        state_file.exists(),
+        "Recommendation workflow should persist state events to jsonl.",
+    )
+
+    recommendation_center.update_recommendation_state(
+        matching[f"workflow-deferred-{seed}"]["fingerprint"],
+        "deferred",
+        note="behavior defer",
+        state_file=state_file,
+    )
+    recommendation_center.update_recommendation_state(
+        matching[f"workflow-handled-{seed}"]["fingerprint"],
+        "handled",
+        note="behavior handled",
+        state_file=state_file,
+    )
+    recommendation_center.update_recommendation_state(
+        matching[f"workflow-ignored-{seed}"]["fingerprint"],
+        "ignored",
+        note="behavior ignored",
+        state_file=state_file,
+    )
+
+    all_queue = recommendation_center.collect_recommendation_queue(
+        report_limit=20,
+        state_file=state_file,
+        states=None,
+    )
+    seeded = [
+        item for item in all_queue
+        if str(item["id"]).endswith(seed)
+    ]
+    summary = recommendation_center.summarize_recommendation_queue(seeded)
+    visible = recommendation_center.collect_recommendation_queue(
+        report_limit=20,
+        state_file=state_file,
+        states=recommendation_center.DEFAULT_VISIBLE_STATES,
+    )
+    visible_seeded = [
+        item for item in visible
+        if str(item["id"]).endswith(seed)
+    ]
+
+    assert_condition(summary["deferred_count"] == 1, "Deferred state should be counted.")
+    assert_condition(summary["handled_count"] == 1, "Handled state should be counted.")
+    assert_condition(summary["ignored_count"] == 1, "Ignored state should be counted.")
+    assert_condition(
+        len(visible_seeded) == 1 and visible_seeded[0]["workflow_state"] == "deferred",
+        "Default visible queue should include deferred but hide handled/ignored.",
+    )
+
+    return {
+        "state_file": str(state_file),
+        "summary": summary,
+        "visible_seeded_count": len(visible_seeded),
+    }
+
+
 def test_external_apps_health_v2_contract(sandbox: Path) -> dict[str, Any]:
     health = external_apps.build_external_apps_health(include_versions=False)
     apps_by_name = {
@@ -790,6 +916,7 @@ def run_behavior_tester() -> None:
         ("Natural Command Router", test_natural_command_router),
         ("System Advisor v2 Recommendations", test_system_advisor_v2_recommendations),
         ("Recommendation Center Queue", test_recommendation_center_queue),
+        ("Recommendation Workflow State Transitions", test_recommendation_workflow_state_transitions),
         ("External Apps Health v2 Contract", test_external_apps_health_v2_contract),
     ]
 
