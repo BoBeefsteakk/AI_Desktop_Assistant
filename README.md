@@ -11,6 +11,7 @@ Active workspace hiện tại là `D:\tool`. Snapshot cũ đã được chuyển
 - Theo dõi process ăn RAM/CPU
 - Game Booster an toàn
 - System Advisor phân tích tổng quan hệ thống
+- **thay đổi** System Advisor v2: snapshot read-only + recommendation có severity và suggested tool
 
 ### Storage
 - Tìm folder nặng nhất
@@ -71,12 +72,13 @@ Automation Tools	Done
 Search Tools	Done
 Core Utilities	Done
 Tool Tester	Passed 28/28
-Behavior Tester	Passed 12/12
-Full System Tester	Passed 16/16
+Behavior Tester	Passed 13/13
+Full System Tester	Passed 17/17
 WizTree Adapter	Done
 External Apps Integration	Done
 Capability Registry	Done
 Natural Command v2	Done
+System Advisor v2	Done
 Refactor Tools Folder	Done
 Config System	Done
 Audit System	Basic Done

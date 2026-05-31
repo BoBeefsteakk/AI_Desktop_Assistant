@@ -15,7 +15,7 @@ from tools.core.safe_executor import safe_delete
 from tools.core.safety_utils import restore_from_manifest, safe_move, save_manifest
 from tools.core.undo_manager import preview_manifest, restore_manifest
 from tools.search import natural_command
-from tools.storage import empty_folder_finder, media_organizer
+from tools.storage import empty_folder_finder, media_organizer, system_advisor
 from tools.system.disk_checker import get_disk_info
 from tools.system.process_monitor import get_top_processes
 
@@ -469,6 +469,135 @@ def test_natural_command_router(sandbox: Path) -> dict[str, Any]:
     }
 
 
+def test_system_advisor_v2_recommendations(sandbox: Path) -> dict[str, Any]:
+    top_folders = [
+        {
+            "path": str(sandbox / "Downloads"),
+            "size": 10 * 1024 * 1024 * 1024,
+            "source": "test",
+        }
+    ]
+    large_files = [
+        {
+            "path": str(sandbox / "Downloads" / "installer.zip"),
+            "size": 2 * 1024 * 1024 * 1024,
+            "extension": ".zip",
+        },
+        {
+            "path": str(sandbox / "Media" / "clip.mp4"),
+            "size": 3 * 1024 * 1024 * 1024,
+            "extension": ".mp4",
+        },
+    ]
+    processes = [
+        {
+            "pid": 1,
+            "name": "chrome.exe",
+            "cpu_percent": 2.0,
+            "memory_bytes": 900 * 1024 * 1024,
+            "memory_percent": 9.0,
+            "system_memory_percent": 90.0,
+        }
+    ]
+    disk_snapshot = {
+        "disks": [
+            {
+                "device": "D:",
+                "mountpoint": "D:\\",
+                "percent": 92.0,
+                "free": 8 * 1024 * 1024 * 1024,
+                "status": "critical",
+            }
+        ],
+        "smart_health": {
+            "devices": [
+                {
+                    "device": "/dev/sda",
+                    "smart_passed": False,
+                }
+            ]
+        },
+    }
+    external_apps = {
+        "enabled": True,
+        "total": 2,
+        "available": 1,
+        "missing": 1,
+        "apps": [
+            {"name": "everything_cli", "available": True},
+            {"name": "ffmpeg", "available": False},
+        ],
+    }
+    audit_snapshot = {
+        "log_count": 0,
+        "report_count": 1,
+        "reports": [
+            {
+                "tool": "fake_tool",
+                "status": "error",
+            }
+        ],
+    }
+
+    result = system_advisor.build_system_advisor_result(
+        root_drive=str(sandbox),
+        storage_provider="python",
+        wiztree_status="skipped",
+        storage_scan_report=None,
+        top_folders=top_folders,
+        large_files=large_files,
+        processes=processes,
+        disk_snapshot=disk_snapshot,
+        external_apps=external_apps,
+        audit_snapshot=audit_snapshot,
+    )
+
+    recommendation_ids = {
+        item["id"]
+        for item in result["recommendations"]
+    }
+    severities = [
+        item["severity"]
+        for item in result["recommendations"]
+    ]
+
+    expected_ids = {
+        "smart-health-failed",
+        "ram-critical",
+        "downloads-folder-heavy",
+        "large-archive-files",
+        "large-video-files",
+        "external-apps-missing",
+        "recent-report-issues",
+    }
+
+    assert_condition(
+        expected_ids.issubset(recommendation_ids),
+        f"System Advisor v2 missing expected recommendations: {expected_ids - recommendation_ids}",
+    )
+    assert_condition(
+        severities == sorted(
+            severities,
+            key=lambda severity: system_advisor.SEVERITY_ORDER[severity],
+        ),
+        "System Advisor v2 recommendations should be sorted by severity.",
+    )
+    assert_condition(
+        result["recommendation_summary"]["critical_count"] >= 2,
+        "System Advisor v2 should count critical recommendations.",
+    )
+    assert_condition(
+        all(item["suggestion_only"] for item in result["recommendations"]),
+        "System Advisor v2 must only suggest actions, not execute them.",
+    )
+
+    return {
+        "recommendation_count": len(result["recommendations"]),
+        "summary": result["recommendation_summary"],
+        "recommendation_ids": sorted(recommendation_ids),
+    }
+
+
 def run_single_test(
     name: str,
     test_func: Callable[[Path], dict[str, Any]],
@@ -508,6 +637,7 @@ def run_behavior_tester() -> None:
         ("Audit Center Snapshot", test_audit_center_snapshot),
         ("Undo Manager Roundtrip", test_undo_manager_roundtrip),
         ("Natural Command Router", test_natural_command_router),
+        ("System Advisor v2 Recommendations", test_system_advisor_v2_recommendations),
     ]
 
     results = []

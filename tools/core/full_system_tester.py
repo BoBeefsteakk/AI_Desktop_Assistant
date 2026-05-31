@@ -32,6 +32,7 @@ from tools.storage.wiztree_adapter import (
     get_wiztree_status,
     parse_wiztree_csv,
 )
+from tools.storage.system_advisor import build_system_advisor_result
 
 
 DANGEROUS_PATTERNS = {
@@ -398,6 +399,82 @@ def test_capability_registry() -> dict[str, Any]:
     }
 
 
+def test_system_advisor_v2_contract() -> dict[str, Any]:
+    result = build_system_advisor_result(
+        root_drive="D:\\",
+        storage_provider="python",
+        wiztree_status="skipped",
+        storage_scan_report=None,
+        top_folders=[
+            {
+                "path": "D:\\Downloads",
+                "size": 5 * 1024 * 1024 * 1024,
+                "source": "contract_test",
+            }
+        ],
+        large_files=[
+            {
+                "path": "D:\\Downloads\\archive.zip",
+                "size": 2 * 1024 * 1024 * 1024,
+                "extension": ".zip",
+            }
+        ],
+        processes=[
+            {
+                "pid": 1,
+                "name": "browser.exe",
+                "cpu_percent": 1.0,
+                "memory_bytes": 700 * 1024 * 1024,
+                "memory_percent": 7.0,
+                "system_memory_percent": 86.0,
+            }
+        ],
+        disk_snapshot={
+            "disks": [
+                {
+                    "device": "D:",
+                    "mountpoint": "D:\\",
+                    "percent": 91.0,
+                    "free": 9 * 1024 * 1024 * 1024,
+                    "status": "critical",
+                }
+            ],
+            "smart_health": {
+                "devices": [],
+            },
+        },
+        external_apps={
+            "enabled": True,
+            "total": 1,
+            "available": 1,
+            "missing": 0,
+            "apps": [
+                {"name": "everything_cli", "available": True},
+            ],
+        },
+        audit_snapshot={
+            "log_count": 0,
+            "report_count": 0,
+            "reports": [],
+        },
+    )
+
+    recommendations = result["recommendations"]
+    summary = result["recommendation_summary"]
+    recommendation_ids = {item["id"] for item in recommendations}
+
+    assert_condition("disk-critical-D:\\" in recommendation_ids, "Advisor should flag critical disk usage.")
+    assert_condition("ram-critical" in recommendation_ids, "Advisor should flag critical RAM usage.")
+    assert_condition("large-archive-files" in recommendation_ids, "Advisor should flag large archive files.")
+    assert_condition(summary["total"] == len(recommendations), "Advisor summary total should match recommendations.")
+    assert_condition(result["snapshot"]["storage"]["provider"] == "python", "Advisor snapshot should keep storage provider.")
+
+    return {
+        "recommendation_ids": sorted(recommendation_ids),
+        "summary": summary,
+    }
+
+
 def test_dependency_health() -> dict[str, Any]:
     modules = ["psutil", "send2trash", "watchdog"]
     results = []
@@ -445,6 +522,7 @@ FULL_SYSTEM_TESTS: list[tuple[str, Callable[[], dict[str, Any]]]] = [
     ("WizTree Adapter Sample CSV", test_wiztree_adapter_sample_csv),
     ("External Apps Registry", test_external_apps_registry),
     ("Capability Registry", test_capability_registry),
+    ("System Advisor v2 Contract", test_system_advisor_v2_contract),
     ("Dependency Health", test_dependency_health),
     ("Git Submodule Health", test_git_submodule_health),
 ]

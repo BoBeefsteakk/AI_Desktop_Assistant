@@ -321,7 +321,7 @@ CAPABILITIES: list[dict[str, Any]] = [
         "logs_action": True,
         "external_apps": ["wiztree", "smartctl"],
         "tags": ["advisor", "storage", "system"],
-        "summary": "Combine storage, large files, process and recommendation snapshots.",
+        "summary": "Build read-only system snapshots and structured recommendations with suggested next tools.",
     },
     {
         "id": "assistant_logger",

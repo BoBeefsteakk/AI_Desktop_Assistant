@@ -2,6 +2,18 @@
 
 ## 2026-05-31
 
+### System Advisor v2
+
+* **thay đổi** Nâng System Advisor thành phân tích read-only, không tự chạy cleanup
+* **thay đổi** Gom snapshot từ storage, disk/SMART, process, external apps và audit reports
+* **thay đổi** Recommendation có severity `critical`, `warning`, `info`
+* **thay đổi** Recommendation gắn `suggested_tool_id` và metadata từ Capability Registry
+* **thay đổi** Report mới dùng action `analyze_system_v2`, risk `safe`, tags `system_advisor/read_only/v2`
+* **thay đổi** Behavior Tester thêm case System Advisor v2 Recommendations
+* **thay đổi** Full System Tester thêm case System Advisor v2 Contract
+* **thay đổi** Behavior Tester hiện pass 13/13
+* **thay đổi** Full System Tester hiện pass 17/17
+
 ### Natural Command v2
 
 * **thay đổi** Thay keyword hard-code bằng router dựa trên Capability Registry
@@ -9,7 +21,7 @@
 * **thay đổi** Giữ nguyên `find <từ khóa>`/`tim <từ khóa>` để search qua File Indexer/Everything fallback
 * **thay đổi** Tool medium/dangerous hoặc có khả năng thay đổi file sẽ hỏi xác nhận trước khi chạy từ Natural Command
 * **thay đổi** Behavior Tester thêm case Natural Command Router
-* **thay đổi** Behavior Tester hiện pass 12/12
+* **thay đổi** Behavior Tester hiện pass 12/12 ở thời điểm Natural Command v2
 
 ## 2026-05-30
 
@@ -306,13 +318,13 @@ Failed: 0
 
 Behavior Tester:
 
-Passed: 11
+Passed: 13
 
 Failed: 0
 
 Full System Tester:
 
-Passed: 16
+Passed: 17
 
 Failed: 0
 

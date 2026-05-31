@@ -265,6 +265,21 @@ Chuc nang:
 
 ---
 
+### System Advisor v2
+
+**thay đổi** Đã nâng System Advisor thành bộ phân tích read-only có snapshot tổng hợp và recommendation có cấu trúc.
+
+Chức năng:
+
+* **thay đổi** Gom snapshot từ storage, disk/SMART, process, external apps và audit reports
+* **thay đổi** Recommendation có `severity`: critical, warning, info
+* **thay đổi** Mỗi recommendation có `suggested_tool_id`, tên tool, risk và trạng thái cần confirmation lấy từ Capability Registry
+* **thay đổi** Advisor chỉ gợi ý, không tự chạy cleanup, không xóa, không move
+* **thay đổi** Report dùng action `analyze_system_v2`, risk `safe`, tags `system_advisor`, `read_only`, `v2`
+* **thay đổi** Behavior Tester và Full System Tester có case riêng kiểm tra contract Advisor v2 bằng dữ liệu giả
+
+---
+
 ### Behavior Tester
 
 **thay đổi** Đã bổ sung test hành vi trong sandbox.
@@ -284,11 +299,12 @@ Các case đã kiểm tra:
 * Audit Center đọc assistant logs và report index
 * Undo Manager restore manifest trong sandbox
 * **thay đổi** Natural Command Router test: route disk/cache/full-test/search/unknown va check confirmation
+* **thay đổi** System Advisor v2 Recommendations test: kiểm tra severity, suggested tool và suggestion-only contract
 * **thay đổi** Sandbox test dùng timestamp microsecond để tránh trùng khi chạy song song
 
 Kết quả hiện tại:
 
-Passed: 12
+Passed: 13
 Failed: 0
 
 ---
@@ -415,10 +431,11 @@ Process Monitor:
 * **thay đổi** Kiểm tra WizTree Adapter bằng CSV mẫu trong sandbox, không chạy scan thật
 * **thay đổi** Kiểm tra External Apps Registry đủ path cấu hình
 * **thay đổi** Kiểm tra Capability Registry coverage/risk sync với Tool Tester
+* **thay đổi** Kiểm tra System Advisor v2 contract bằng dữ liệu giả
 
 Kết quả hiện tại:
 
-Passed: 16
+Passed: 17
 Failed: 0
 
 ---
@@ -475,11 +492,13 @@ Lý do:
 * **thay đổi** External Apps Integration
 * **thay đổi** Capability Registry
 * **thay đổi** Natural Command v2
+* **thay đổi** System Advisor v2
 
 Cần làm tiếp để ổn định tool tổng:
 
 * **thay đổi** Mở rộng Undo System cho các thao tác không có manifest nếu cần
 * **thay đổi** Mở rộng Natural Command v2 thành intent engine sau khi có thêm lịch sử/report để feed assistant
+* **thay đổi** Tạo Recommendation Center nếu muốn gom mọi gợi ý từ Advisor/Audit thành một hàng đợi xử lý
 * Bổ sung thêm case vào Full System Tester khi phát hiện lỗi thực tế mới
 
 ---

@@ -92,6 +92,7 @@ Ví dụ:
 * folder_size_analyzer
 * large_file_finder
 * **thay đổi** wiztree_adapter
+* **thay đổi** system_advisor v2
 
 ---
 
@@ -261,7 +262,34 @@ Full System Tester kiểm tra:
 
 **thay đổi** Natural Command v2 dùng metadata này để quyết định route và mức xác nhận trước khi chạy tool.
 
+**thay đổi** System Advisor v2 dùng metadata này để gắn suggested tool/risk/confirmation vào recommendation, nhưng chỉ gợi ý và không tự chạy tool.
+
 ---
+
+## Advisor Layer
+
+**thay đổi** System Advisor v2 là lớp phân tích read-only trước AI Decision Engine.
+
+Nguồn dữ liệu:
+
+* Storage snapshot: top folders và large files từ Python scanner hoặc WizTree adapter
+* Disk snapshot: dung lượng ổ đĩa và SMART health khi `smartctl` sẵn sàng
+* Process snapshot: top RAM/CPU process
+* External apps snapshot: tool ngoài còn thiếu hay đã sẵn sàng
+* Audit snapshot: report/log gần đây
+
+Output:
+
+* Snapshot tổng hợp
+* Structured recommendations có `severity`, `suggested_tool_id`, `suggested_tool_risk`
+* Report schema v2 với action `analyze_system_v2`
+
+Nguyên tắc:
+
+* Chỉ đọc dữ liệu
+* Không xóa/move file
+* Không tự chạy cleanup tool
+* Tool có risk chỉ được đề xuất để người dùng tự quyết định
 
 ## Undo Layer
 
