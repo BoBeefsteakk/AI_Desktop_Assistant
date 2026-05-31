@@ -50,6 +50,8 @@
 
 **thay đổi** Các app ngoài hiện được móc qua `tools/core/external_apps.py` và cấu hình trong `config/user_settings.json`.
 
+**thay đổi** Bước tiếp theo theo `D:\tool\docs\TOOL_MASTER_PLAN.md` là External App Health Report v2: map app -> tool phụ thuộc, path/version, impact nếu missing và recommendation khi app lỗi.
+
 | App | Tool đang dùng | Cách dùng |
 | --- | --- | --- |
 | Everything CLI | File Indexer, Natural Command | Search nhanh trước, fallback local index nếu lỗi. |

@@ -494,6 +494,8 @@ Lý do:
 
 ## Những gì cần làm tiếp
 
+**thay đổi** Kế hoạch chuẩn sau khi rà lại tool tổng được ghi riêng tại `D:\tool\docs\TOOL_MASTER_PLAN.md`.
+
 **thay đổi** Các mục chính của Phase 2 Safety Hardening đã hoàn thành cho:
 
 * Duplicate Finder
@@ -517,6 +519,9 @@ Lý do:
 
 Cần làm tiếp để ổn định tool tổng:
 
+* **thay đổi** Ưu tiên 1: External App Health Report v2 với dependency map app -> tool
+* **thay đổi** Ưu tiên 2: Recommendation Workflow v1 có trạng thái pending/deferred/handled/ignored
+* **thay đổi** Ưu tiên 3: Guided Action Runner mở tool từ recommendation nhưng vẫn giữ confirmation
 * **thay đổi** Mở rộng Undo System cho các thao tác không có manifest nếu cần
 * **thay đổi** Mở rộng Natural Command v2 thành intent engine sau khi có thêm lịch sử/report để feed assistant
 * **thay đổi** Chuẩn hóa Recommendation Center thành queue có trạng thái handled/deferred nếu cần workflow dài hơn

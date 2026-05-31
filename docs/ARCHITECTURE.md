@@ -420,6 +420,8 @@ Nếu không chắc:
 
 ## Hướng phát triển
 
+**thay đổi** Kế hoạch chuẩn sau khi rà lại tool tổng được ghi tại `D:\tool\docs\TOOL_MASTER_PLAN.md`.
+
 Hiện tại:
 
 Tool Collection

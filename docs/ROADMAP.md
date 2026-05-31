@@ -14,6 +14,8 @@ Hoàn thành
 
 **thay đổi** Các mục chính đã hoàn thành.
 
+**thay đổi** Kế hoạch chuẩn sau khi rà lại tool tổng được ghi tại `D:\tool\docs\TOOL_MASTER_PLAN.md`.
+
 Đã xong:
 
 * risk_classifier
@@ -47,8 +49,11 @@ Hoàn thành
 
 Cần rà soát tiếp:
 
-* **thay đổi** chuyển sang Phase 5 AI Decision Engine khi tool tổng ổn định hơn
-* **thay đổi** thêm trạng thái handled/deferred cho recommendation queue nếu cần workflow dài hơn
+* **thay đổi** External App Health Report v2 với dependency map app -> tool
+* **thay đổi** Recommendation Workflow v1 có trạng thái pending/deferred/handled/ignored
+* **thay đổi** Guided Action Runner mở tool từ recommendation nhưng không bypass confirmation
+* **thay đổi** Natural Command v3 nhẹ cho recommendation queue
+* **thay đổi** Advisor real run calibration trước khi feed assistant
 
 ---
 

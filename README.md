@@ -65,6 +65,8 @@ D:\tool/
 
 ## Tiến độ hiện tại
 
+**thay đổi** Kế hoạch chuẩn hiện được ghi ở `D:\tool\docs\TOOL_MASTER_PLAN.md`.
+
 Module	Status
 Main CLI Menu	Done
 System Tools	Done
