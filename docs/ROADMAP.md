@@ -43,11 +43,12 @@ Hoàn thành
 * **thay đổi** Capability Registry cho toàn bộ tool
 * **thay đổi** Natural Command v2 route lệnh qua Capability Registry và confirmation theo risk
 * **thay đổi** System Advisor v2 read-only snapshot + structured recommendations
+* **thay đổi** Recommendation Center read-only gom gợi ý từ Advisor/Audit thành queue
 
 Cần rà soát tiếp:
 
 * **thay đổi** chuyển sang Phase 5 AI Decision Engine khi tool tổng ổn định hơn
-* **thay đổi** chuẩn hóa sâu hơn metadata summary, intent history và recommendation queue cho assistant đọc
+* **thay đổi** thêm trạng thái handled/deferred cho recommendation queue nếu cần workflow dài hơn
 
 ---
 
@@ -119,7 +120,8 @@ Một lệnh test tổng hợp trước khi refactor lớn hoặc feed assistant
 * **thay đổi** Capability Registry coverage/risk sync test
 * **thay đổi** Natural Command Router test nằm trong Behavior Tester
 * **thay đổi** System Advisor v2 Contract test
-* Full System Tester hiện pass 17/17
+* **thay đổi** Recommendation Center Contract test
+* Full System Tester hiện pass 18/18
 
 ---
 

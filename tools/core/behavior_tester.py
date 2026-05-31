@@ -10,6 +10,7 @@ from config.settings import BASE_DIR, USER_SETTINGS_FILE, validate_user_settings
 from tools.automation import download_organizer, download_watcher, startup_launcher
 from tools.core.audit_center import get_audit_snapshot
 from tools.core.report_manager import create_report
+from tools.core import recommendation_center
 from tools.core.risk_classifier import PROTECTED, classify_file_risk
 from tools.core.safe_executor import safe_delete
 from tools.core.safety_utils import restore_from_manifest, safe_move, save_manifest
@@ -420,6 +421,7 @@ def test_natural_command_router(sandbox: Path) -> dict[str, Any]:
     search_route = natural_command.resolve_command("find naruto")
     cache_route = natural_command.resolve_command("don cache")
     full_test_route = natural_command.resolve_command("test tong")
+    recommendation_route = natural_command.resolve_command("goi y tiep theo")
     unknown_route = natural_command.resolve_command("khong hieu lenh nay")
 
     assert_condition(
@@ -448,6 +450,11 @@ def test_natural_command_router(sandbox: Path) -> dict[str, Any]:
         "Natural Command should route full system test.",
     )
     assert_condition(
+        recommendation_route["type"] == "capability"
+        and recommendation_route["capability"]["id"] == "recommendation_center",
+        "Natural Command should route Recommendation Center.",
+    )
+    assert_condition(
         unknown_route["type"] == "unknown",
         "Natural Command should return unknown for unsupported commands.",
     )
@@ -465,6 +472,7 @@ def test_natural_command_router(sandbox: Path) -> dict[str, Any]:
         "search_query": search_route["query"],
         "cache_route": cache_route["capability"]["id"],
         "full_test_route": full_test_route["capability"]["id"],
+        "recommendation_route": recommendation_route["capability"]["id"],
         "unknown_type": unknown_route["type"],
     }
 
@@ -598,6 +606,64 @@ def test_system_advisor_v2_recommendations(sandbox: Path) -> dict[str, Any]:
     }
 
 
+def test_recommendation_center_queue(sandbox: Path) -> dict[str, Any]:
+    create_report(
+        tool_name="system_advisor",
+        action="analyze_system_v2",
+        status="success",
+        risk_level="safe",
+        input_data={
+            "sandbox": str(sandbox),
+        },
+        results={
+            "recommendations": [
+                {
+                    "id": "behavior-recommendation-center",
+                    "severity": "warning",
+                    "title": "Behavior recommendation",
+                    "detail": "Recommendation Center should collect Advisor recommendations.",
+                    "source": "behavior_test",
+                    "suggested_tool_id": "audit_center",
+                    "suggestion_only": True,
+                }
+            ],
+        },
+        recommendations=[
+            "[WARNING] Behavior recommendation.",
+        ],
+        summary={
+            "total": 1,
+            "warning_count": 1,
+            "undo_available": False,
+        },
+        undo_available=False,
+        tags=["system_advisor", "read_only", "v2", "behavior_test"],
+    )
+
+    queue = recommendation_center.collect_recommendation_queue(report_limit=15)
+    summary = recommendation_center.summarize_recommendation_queue(queue)
+    matching = [
+        item for item in queue
+        if item["id"] == "behavior-recommendation-center"
+    ]
+
+    assert_condition(matching, "Recommendation Center should collect System Advisor v2 recommendations.")
+    assert_condition(
+        matching[-1]["suggested_tool_name"] == "Audit Center",
+        "Recommendation Center should enrich suggested tool metadata.",
+    )
+    assert_condition(
+        all(item["suggestion_only"] for item in queue),
+        "Recommendation Center should stay read-only/suggestion-only.",
+    )
+
+    return {
+        "queue_count": len(queue),
+        "summary": summary,
+        "matched": matching[-1],
+    }
+
+
 def run_single_test(
     name: str,
     test_func: Callable[[Path], dict[str, Any]],
@@ -638,6 +704,7 @@ def run_behavior_tester() -> None:
         ("Undo Manager Roundtrip", test_undo_manager_roundtrip),
         ("Natural Command Router", test_natural_command_router),
         ("System Advisor v2 Recommendations", test_system_advisor_v2_recommendations),
+        ("Recommendation Center Queue", test_recommendation_center_queue),
     ]
 
     results = []

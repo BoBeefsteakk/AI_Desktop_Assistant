@@ -52,6 +52,7 @@ Bao gồm:
 * **thay đổi** config_manager.py
 * **thay đổi** undo_manager.py
 * **thay đổi** full_system_tester.py
+* **thay đổi** recommendation_center.py
 
 ---
 
@@ -264,6 +265,8 @@ Full System Tester kiểm tra:
 
 **thay đổi** System Advisor v2 dùng metadata này để gắn suggested tool/risk/confirmation vào recommendation, nhưng chỉ gợi ý và không tự chạy tool.
 
+**thay đổi** Recommendation Center dùng metadata này để enrich suggested tool trong queue và giữ nguyên trạng thái suggestion-only.
+
 ---
 
 ## Advisor Layer
@@ -290,6 +293,31 @@ Nguyên tắc:
 * Không xóa/move file
 * Không tự chạy cleanup tool
 * Tool có risk chỉ được đề xuất để người dùng tự quyết định
+
+---
+
+## Recommendation Layer
+
+**thay đổi** Recommendation Center là hàng đợi đọc-only nằm sau Advisor/Audit.
+
+Nguồn dữ liệu:
+
+* Report index: `reports/report_index.jsonl`
+* Report chi tiết của System Advisor v2
+* Report warning/error từ các tool khác
+* Capability Registry để enrich suggested tool
+
+Output:
+
+* Queue recommendation đã sort theo severity
+* Summary theo critical/warning/info
+* Report schema v2 với action `export_queue`
+
+Nguyên tắc:
+
+* Không tự chạy tool được đề xuất
+* Không xóa/move/sửa file
+* Chỉ gom, lọc, xuất report và giúp người dùng chọn bước tiếp theo
 
 ## Undo Layer
 

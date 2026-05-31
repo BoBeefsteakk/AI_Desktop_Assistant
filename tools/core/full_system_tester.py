@@ -20,6 +20,10 @@ from tools.core.report_manager import (
     read_recent_report_index,
     validate_report_file,
 )
+from tools.core.recommendation_center import (
+    collect_recommendation_queue,
+    summarize_recommendation_queue,
+)
 from tools.core.external_apps import get_external_apps_status
 from tools.core.risk_classifier import PROTECTED, classify_file_risk
 from tools.core.safe_executor import safe_delete
@@ -128,6 +132,7 @@ def test_main_menu_coverage() -> dict[str, Any]:
         "WizTree Adapter",
         "External Apps Manager",
         "Capability Registry",
+        "Recommendation Center",
     ]
     missing = [label for label in expected if label not in main_text]
 
@@ -475,6 +480,77 @@ def test_system_advisor_v2_contract() -> dict[str, Any]:
     }
 
 
+def test_recommendation_center_contract() -> dict[str, Any]:
+    create_report(
+        tool_name="system_advisor",
+        action="analyze_system_v2",
+        status="success",
+        risk_level="safe",
+        input_data={
+            "contract_test": True,
+        },
+        results={
+            "recommendations": [
+                {
+                    "id": "contract-critical",
+                    "severity": "critical",
+                    "title": "Contract critical recommendation",
+                    "detail": "Recommendation Center should collect this structured item.",
+                    "source": "contract_test",
+                    "suggested_tool_id": "large_file_finder",
+                    "suggestion_only": True,
+                }
+            ],
+        },
+        recommendations=[
+            "[CRITICAL] Contract critical recommendation.",
+        ],
+        summary={
+            "total": 1,
+            "critical_count": 1,
+            "warning_count": 0,
+            "info_count": 0,
+            "undo_available": False,
+        },
+        undo_available=False,
+        tags=["system_advisor", "read_only", "v2", "contract_test"],
+    )
+    create_report(
+        tool_name="contract_warning_tool",
+        action="contract_warning",
+        status="warning",
+        risk_level="safe",
+        input_data={},
+        results={},
+        recommendations=[],
+        summary={
+            "undo_available": False,
+        },
+        undo_available=False,
+        tags=["contract_test"],
+    )
+
+    queue = collect_recommendation_queue(report_limit=20)
+    summary = summarize_recommendation_queue(queue)
+    recommendation_ids = {item["id"] for item in queue}
+
+    assert_condition("contract-critical" in recommendation_ids, "Recommendation Center should collect Advisor items.")
+    assert_condition(
+        any(item.get("report_tool") == "contract_warning_tool" for item in queue),
+        "Recommendation Center should convert warning/error reports into audit recommendations.",
+    )
+    assert_condition(
+        all(item.get("suggestion_only") is True for item in queue),
+        "Recommendation Center must remain suggestion-only.",
+    )
+    assert_condition(summary["total"] == len(queue), "Queue summary total should match queue length.")
+
+    return {
+        "summary": summary,
+        "recommendation_ids": sorted(recommendation_ids),
+    }
+
+
 def test_dependency_health() -> dict[str, Any]:
     modules = ["psutil", "send2trash", "watchdog"]
     results = []
@@ -523,6 +599,7 @@ FULL_SYSTEM_TESTS: list[tuple[str, Callable[[], dict[str, Any]]]] = [
     ("External Apps Registry", test_external_apps_registry),
     ("Capability Registry", test_capability_registry),
     ("System Advisor v2 Contract", test_system_advisor_v2_contract),
+    ("Recommendation Center Contract", test_recommendation_center_contract),
     ("Dependency Health", test_dependency_health),
     ("Git Submodule Health", test_git_submodule_health),
 ]

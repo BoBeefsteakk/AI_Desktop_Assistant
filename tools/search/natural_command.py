@@ -44,6 +44,7 @@ INTENT_ALIASES: list[tuple[str, list[str]]] = [
     ("wiztree_adapter", ["wiztree", "wiztree scan"]),
     ("external_apps_manager", ["external app", "external apps", "app ngoai", "apps manager"]),
     ("capability_registry", ["capability", "registry", "capability registry", "nang luc"]),
+    ("recommendation_center", ["recommendation", "recommendations", "queue", "hang doi goi y", "goi y tiep theo"]),
 ]
 
 

@@ -190,7 +190,7 @@ Chức năng:
 
 **thay đổi** Kết quả hiện tại:
 
-Passed: 28
+Passed: 29
 Failed: 0
 
 ---
@@ -245,7 +245,7 @@ Chức năng:
 
 Kết quả hiện tại:
 
-* Capability count: 28
+* Capability count: 29
 * Categories: automation, core, search, storage, system
 * Risk levels: safe, medium, dangerous
 
@@ -280,6 +280,23 @@ Chức năng:
 
 ---
 
+### Recommendation Center
+
+**thay đổi** Đã thêm Recommendation Center read-only để gom gợi ý từ System Advisor/Audit thành hàng đợi xử lý.
+
+Chức năng:
+
+* **thay đổi** Thêm `tools/core/recommendation_center.py`
+* **thay đổi** Đọc report gần đây từ `reports/report_index.jsonl`
+* **thay đổi** Lấy structured recommendations từ System Advisor v2
+* **thay đổi** Chuyển report `warning/error` thành recommendation cần xem lại qua Audit Center
+* **thay đổi** Enrich suggested tool bằng Capability Registry: tên tool, risk, confirmation
+* **thay đổi** Chỉ đọc và xuất queue report, không tự chạy cleanup, không xóa/move file
+* **thay đổi** Main CLI expose `Recommendation Center`
+* **thay đổi** Natural Command route được lệnh gợi ý/queue sang Recommendation Center
+
+---
+
 ### Behavior Tester
 
 **thay đổi** Đã bổ sung test hành vi trong sandbox.
@@ -300,11 +317,12 @@ Các case đã kiểm tra:
 * Undo Manager restore manifest trong sandbox
 * **thay đổi** Natural Command Router test: route disk/cache/full-test/search/unknown va check confirmation
 * **thay đổi** System Advisor v2 Recommendations test: kiểm tra severity, suggested tool và suggestion-only contract
+* **thay đổi** Recommendation Center Queue test: kiểm tra collect queue, enrich suggested tool và suggestion-only contract
 * **thay đổi** Sandbox test dùng timestamp microsecond để tránh trùng khi chạy song song
 
 Kết quả hiện tại:
 
-Passed: 13
+Passed: 14
 Failed: 0
 
 ---
@@ -360,6 +378,7 @@ Process Monitor:
 * **thay đổi** WizTree Adapter
 * **thay đổi** External Apps Manager
 * **thay đổi** Capability Registry
+* **thay đổi** Recommendation Center
 
 ---
 
@@ -432,10 +451,11 @@ Process Monitor:
 * **thay đổi** Kiểm tra External Apps Registry đủ path cấu hình
 * **thay đổi** Kiểm tra Capability Registry coverage/risk sync với Tool Tester
 * **thay đổi** Kiểm tra System Advisor v2 contract bằng dữ liệu giả
+* **thay đổi** Kiểm tra Recommendation Center contract bằng report giả
 
 Kết quả hiện tại:
 
-Passed: 17
+Passed: 18
 Failed: 0
 
 ---
@@ -493,12 +513,13 @@ Lý do:
 * **thay đổi** Capability Registry
 * **thay đổi** Natural Command v2
 * **thay đổi** System Advisor v2
+* **thay đổi** Recommendation Center
 
 Cần làm tiếp để ổn định tool tổng:
 
 * **thay đổi** Mở rộng Undo System cho các thao tác không có manifest nếu cần
 * **thay đổi** Mở rộng Natural Command v2 thành intent engine sau khi có thêm lịch sử/report để feed assistant
-* **thay đổi** Tạo Recommendation Center nếu muốn gom mọi gợi ý từ Advisor/Audit thành một hàng đợi xử lý
+* **thay đổi** Chuẩn hóa Recommendation Center thành queue có trạng thái handled/deferred nếu cần workflow dài hơn
 * Bổ sung thêm case vào Full System Tester khi phát hiện lỗi thực tế mới
 
 ---

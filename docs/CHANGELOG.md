@@ -2,6 +2,19 @@
 
 ## 2026-05-31
 
+### Recommendation Center
+
+* **thay đổi** Thêm `tools/core/recommendation_center.py`
+* **thay đổi** Gom gợi ý từ System Advisor v2 và Audit/report warning-error thành queue read-only
+* **thay đổi** Enrich suggested tool bằng Capability Registry: tên tool, risk, confirmation
+* **thay đổi** Main CLI expose Recommendation Center ở mục 29
+* **thay đổi** Natural Command route được lệnh recommendation/queue/gợi ý sang Recommendation Center
+* **thay đổi** Tool Tester mở rộng lên 29 tool
+* **thay đổi** Behavior Tester thêm case Recommendation Center Queue
+* **thay đổi** Full System Tester thêm case Recommendation Center Contract
+* **thay đổi** Behavior Tester hiện pass 14/14
+* **thay đổi** Full System Tester hiện pass 18/18
+
 ### System Advisor v2
 
 * **thay đổi** Nâng System Advisor thành phân tích read-only, không tự chạy cleanup
@@ -11,8 +24,8 @@
 * **thay đổi** Report mới dùng action `analyze_system_v2`, risk `safe`, tags `system_advisor/read_only/v2`
 * **thay đổi** Behavior Tester thêm case System Advisor v2 Recommendations
 * **thay đổi** Full System Tester thêm case System Advisor v2 Contract
-* **thay đổi** Behavior Tester hiện pass 13/13
-* **thay đổi** Full System Tester hiện pass 17/17
+* **thay đổi** Behavior Tester hiện pass 13/13 ở thời điểm System Advisor v2
+* **thay đổi** Full System Tester hiện pass 17/17 ở thời điểm System Advisor v2
 
 ### Natural Command v2
 
@@ -157,8 +170,8 @@ Nâng cấp:
 
 **thay đổi** Mở rộng:
 
-* Kiểm tra 28 tool
-* Passed: 28
+* Kiểm tra 29 tool
+* Passed: 29
 * Failed: 0
 
 ### Behavior Tester
@@ -312,19 +325,19 @@ Nâng cấp:
 
 Tool Tester:
 
-Passed: 28
+Passed: 29
 
 Failed: 0
 
 Behavior Tester:
 
-Passed: 13
+Passed: 14
 
 Failed: 0
 
 Full System Tester:
 
-Passed: 17
+Passed: 18
 
 Failed: 0
 

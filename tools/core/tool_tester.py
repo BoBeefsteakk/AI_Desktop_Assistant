@@ -34,6 +34,7 @@ TOOLS_TO_TEST = [
     {"name": "WizTree Adapter", "module": "tools.storage.wiztree_adapter", "function": "run_wiztree_adapter", "risk": "safe"},
     {"name": "External Apps Manager", "module": "tools.core.external_apps", "function": "run_external_apps_manager", "risk": "safe"},
     {"name": "Capability Registry", "module": "tools.core.capability_registry", "function": "run_capability_registry", "risk": "safe"},
+    {"name": "Recommendation Center", "module": "tools.core.recommendation_center", "function": "run_recommendation_center", "risk": "safe"},
     {"name": "File Location Opener", "module": "tools.core.file_location_opener", "function": "open_file_location", "risk": "safe"},
 ]
 
