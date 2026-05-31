@@ -24,7 +24,7 @@ from tools.core.recommendation_center import (
     collect_recommendation_queue,
     summarize_recommendation_queue,
 )
-from tools.core.external_apps import get_external_apps_status
+from tools.core.external_apps import build_external_apps_health, get_external_apps_status
 from tools.core.risk_classifier import PROTECTED, REVIEW_REQUIRED, SAFE_DELETE, classify_file_risk
 from tools.core.safe_executor import safe_delete
 from tools.core.safety_utils import safe_move, save_manifest
@@ -394,6 +394,7 @@ def test_wiztree_adapter_sample_csv() -> dict[str, Any]:
 
 def test_external_apps_registry() -> dict[str, Any]:
     status = get_external_apps_status(include_versions=False)
+    health = build_external_apps_health(include_versions=False)
     missing = [
         item for item in status["apps"]
         if not item["available"]
@@ -401,8 +402,26 @@ def test_external_apps_registry() -> dict[str, Any]:
 
     assert_condition(status["enabled"], "External apps registry should be enabled.")
     assert_condition(not missing, f"External apps missing configured paths: {missing}")
+    assert_condition(
+        health["schema"] == "external_apps_health_v2",
+        "External apps health report should expose v2 schema.",
+    )
+    assert_condition(
+        "system_advisor" in {
+            tool["id"]
+            for tool in next(item for item in health["apps"] if item["name"] == "wiztree")["dependent_tools"]
+        },
+        "External apps health should map WizTree to System Advisor.",
+    )
+    assert_condition(
+        health["summary"]["impacted_tool_count"] == 0,
+        "No tool should be impacted when all configured external apps are available.",
+    )
 
-    return status
+    return {
+        "status": status,
+        "health_summary": health["summary"],
+    }
 
 
 def test_capability_registry() -> dict[str, Any]:

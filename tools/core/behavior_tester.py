@@ -10,7 +10,7 @@ from config.settings import BASE_DIR, USER_SETTINGS_FILE, validate_user_settings
 from tools.automation import download_organizer, download_watcher, startup_launcher
 from tools.core.audit_center import get_audit_snapshot
 from tools.core.report_manager import create_report
-from tools.core import recommendation_center
+from tools.core import external_apps, recommendation_center
 from tools.core.risk_classifier import PROTECTED, REVIEW_REQUIRED, SAFE_DELETE, classify_file_risk
 from tools.core.safe_executor import safe_delete
 from tools.core.safety_utils import restore_from_manifest, safe_move, save_manifest
@@ -703,6 +703,52 @@ def test_recommendation_center_queue(sandbox: Path) -> dict[str, Any]:
     }
 
 
+def test_external_apps_health_v2_contract(sandbox: Path) -> dict[str, Any]:
+    health = external_apps.build_external_apps_health(include_versions=False)
+    apps_by_name = {
+        item["name"]: item
+        for item in health["apps"]
+    }
+
+    required_apps = {
+        "everything_cli": "file_indexer",
+        "everything_app": "natural_command",
+        "wiztree": "system_advisor",
+        "smartctl": "disk_checker",
+        "ffprobe": "media_organizer",
+        "exiftool": "media_organizer",
+    }
+
+    for app_name, expected_tool_id in required_apps.items():
+        assert_condition(
+            app_name in apps_by_name,
+            f"External Apps Health v2 should include {app_name}.",
+        )
+        dependent_tool_ids = {
+            tool["id"]
+            for tool in apps_by_name[app_name]["dependent_tools"]
+        }
+        assert_condition(
+            expected_tool_id in dependent_tool_ids,
+            f"{app_name} should map to dependent tool {expected_tool_id}.",
+        )
+
+    assert_condition(
+        health["schema"] == "external_apps_health_v2",
+        "External Apps Health should expose v2 schema marker.",
+    )
+    assert_condition(
+        health["summary"]["total"] == len(health["apps"]),
+        "External Apps Health summary total should match app list.",
+    )
+
+    return {
+        "summary": health["summary"],
+        "checked_apps": sorted(required_apps),
+        "impacted_tool_ids": health["impacted_tool_ids"],
+    }
+
+
 def run_single_test(
     name: str,
     test_func: Callable[[Path], dict[str, Any]],
@@ -744,6 +790,7 @@ def run_behavior_tester() -> None:
         ("Natural Command Router", test_natural_command_router),
         ("System Advisor v2 Recommendations", test_system_advisor_v2_recommendations),
         ("Recommendation Center Queue", test_recommendation_center_queue),
+        ("External Apps Health v2 Contract", test_external_apps_health_v2_contract),
     ]
 
     results = []

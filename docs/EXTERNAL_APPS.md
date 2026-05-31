@@ -61,3 +61,25 @@
 | Sysinternals | Process Monitor | Ghi nhận helper sẵn sàng cho diagnostics. |
 | 7-Zip | External Apps Registry | Sẵn sàng cho archive validation sau này. |
 | rclone | External Apps Registry | Sẵn sàng cho backup/sync sau này. |
+
+## External App Health Report v2
+
+**thay đổi** `tools/core/external_apps.py` da co health report v2 de map app ngoai -> tool dang phu thuoc.
+
+**thay đổi** Report v2 gom:
+
+* **thay đổi** `path`, `available`, `version`, `state` cho tung app.
+* **thay đổi** `dependent_tools` va `dependent_tool_count` lay tu Capability Registry.
+* **thay đổi** `impact` de noi ro neu app thieu thi tool nao bi cham/mat do chinh xac.
+* **thay đổi** `recommendations` neu app missing/disabled/unconfigured.
+* **thay đổi** `impacted_tool_ids` de Recommendation Center/Advisor doc duoc tool nao dang bi anh huong.
+
+**thay đổi** Menu External Apps Manager hien co:
+
+* **thay đổi** `1` xem status co ban.
+* **thay đổi** `2` xem status + version.
+* **thay đổi** `3` xem health v2 + dependency map.
+* **thay đổi** `4` xuat health report v2.
+* **thay đổi** `5` test Everything search.
+
+**thay đổi** Health v2 van read-only: khong auto tai app, khong sua path, khong chay installer.

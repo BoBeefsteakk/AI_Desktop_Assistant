@@ -72,7 +72,7 @@
 
 ## Gaps Còn Lại
 
-**thay đổi** Gap 1: External App Health Report v2 còn thiếu mapping rõ app -> tool phụ thuộc.
+**thay đổi** Gap 1: External App Health Report v2 da co mapping app -> tool phu thuoc.
 
 **thay đổi** Gap 2: External App Health hiện có status/version/path basic, nhưng chưa có drift detection/cảnh báo path đổi theo thời gian.
 
@@ -164,9 +164,9 @@
 
 ## Bước Nên Làm Ngay
 
-**thay đổi** Bước tiếp theo chuẩn nhất là External App Health Report v2.
+**thay đổi** Bước tiếp theo chuẩn nhất là Recommendation Workflow v1.
 
-**thay đổi** Lý do: trước khi assistant đọc/ra quyết định, nó cần biết tool nào đang phụ thuộc app ngoài nào, app nào đang thiếu, app nào path bị sai và nếu thiếu thì ảnh hưởng tới độ chính xác/tốc độ ra sao.
+**thay đổi** Lý do: External App Health Report v2 da co dependency map, nen buoc tiep theo la luu recommendation queue co trang thai pending/deferred/handled/ignored de tranh lap lai goi y va mo duong cho Guided Action Runner.
 
 ## Deletion Safety / UX v2
 
@@ -186,3 +186,20 @@
 * **thay đổi** Browser cache va temp file trong vung an toan co the la `safe_delete`.
 * **thay đổi** AppData/user app data/dev artifacts mac dinh la `review_required`, khong auto delete bang lenh `all`.
 * **thay đổi** Empty Folder Finder doi `all` thanh chi chon `SAFE_DELETE`; muon chon hang loat folder `REVIEW_REQUIRED` phai dung lua chon `review` va xac nhan rieng.
+
+## External App Health Report v2
+
+**thay đổi** Buoc External App Health Report v2 da duoc them vao `tools/core/external_apps.py`.
+
+**thay đổi** Health v2 gom dependency map tu Capability Registry, bao gom ca app cau hinh rieng nhu `wiztree`.
+
+**thay đổi** Moi app co them:
+
+* **thay đổi** `state`: available, missing, disabled, unconfigured.
+* **thay đổi** `dependent_tools`: tool nao dang phu thuoc app do.
+* **thay đổi** `impact`: app thieu se lam giam chat luong phan nao.
+* **thay đổi** `recommendations`: goi y read-only neu app thieu/path sai.
+
+**thay đổi** External Apps Manager da co lua chon xem health v2 va xuat health report v2.
+
+**thay đổi** Buoc ke tiep theo trong ke hoach chuan la Recommendation Workflow v1: queue co trang thai pending/deferred/handled/ignored.

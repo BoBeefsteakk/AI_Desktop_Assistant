@@ -10,8 +10,11 @@ from config.settings import (
     EXTERNAL_APP_PATHS,
     EXTERNAL_APP_TIMEOUT_SECONDS,
     EXTERNAL_APPS_ENABLED,
+    WIZTREE_ENABLED,
+    WIZTREE_EXE_PATH,
 )
 from tools.core.assistant_logger import log_action
+from tools.core.capability_registry import get_capabilities
 from tools.core.report_manager import create_report
 
 
@@ -25,14 +28,53 @@ VERSION_COMMANDS: dict[str, list[str]] = {
     "seven_zip": ["i"],
 }
 
+APP_IMPACT_DESCRIPTIONS: dict[str, str] = {
+    "everything_app": "Everything service/app giup Everything CLI tra ket qua nhanh va day du.",
+    "everything_cli": "File search va Natural Command se fallback cham hon neu thieu CLI.",
+    "wiztree": "Storage scan se fallback sang Python scanner, cham hon tren o lon.",
+    "smartctl": "Disk Checker va Advisor mat SMART health/temperature.",
+    "crystaldiskinfo": "Chi con SMART CLI qua smartctl, mat GUI helper de doi chieu nhanh.",
+    "exiftool": "Media metadata mat EXIF/container tag chi tiet.",
+    "ffmpeg": "Chua dung truc tiep trong flow chinh, nhung can cho xu ly media sau nay.",
+    "ffprobe": "Media metadata mat duration/codec/resolution chuan.",
+    "seven_zip": "Archive validation/extract workflow sau nay se bi giam chat luong.",
+    "rclone": "Backup/sync cloud sau nay chua san sang.",
+    "sysinternals_autoruns": "Startup diagnostics sau nay mat autoruns CLI.",
+    "sysinternals_handle": "Process/file-lock diagnostics mat Handle helper.",
+    "sysinternals_procexp": "Process diagnostics mat Process Explorer helper.",
+    "sysinternals_rammap": "RAM diagnostics mat RAMMap helper.",
+    "sysinternals_du": "Disk usage diagnostics mat DU helper.",
+    "sysinternals_sigcheck": "Signature/security diagnostics mat Sigcheck helper.",
+}
+
+INDIRECT_APP_DEPENDENCIES: dict[str, list[str]] = {
+    "everything_app": ["file_indexer", "natural_command"],
+}
+
 
 def get_external_app_path(app_name: str) -> Path | None:
+    if app_name == "wiztree":
+        return WIZTREE_EXE_PATH
     return EXTERNAL_APP_PATHS.get(app_name)
 
 
 def is_external_app_available(app_name: str) -> bool:
     path = get_external_app_path(app_name)
+    if app_name == "wiztree":
+        return bool(WIZTREE_ENABLED and path and path.exists())
     return bool(EXTERNAL_APPS_ENABLED and path and path.exists())
+
+
+def get_configured_external_app_paths() -> dict[str, Path]:
+    paths = dict(EXTERNAL_APP_PATHS)
+    paths.setdefault("wiztree", WIZTREE_EXE_PATH)
+    return paths
+
+
+def get_external_app_enabled(app_name: str) -> bool:
+    if app_name == "wiztree":
+        return WIZTREE_ENABLED
+    return EXTERNAL_APPS_ENABLED
 
 
 def run_external_app(
@@ -43,7 +85,7 @@ def run_external_app(
 ) -> dict[str, Any]:
     path = get_external_app_path(app_name)
 
-    if not EXTERNAL_APPS_ENABLED:
+    if not get_external_app_enabled(app_name):
         return {
             "status": "disabled",
             "app": app_name,
@@ -121,11 +163,13 @@ def get_external_app_version(app_name: str) -> str | None:
 def get_external_apps_status(include_versions: bool = False) -> dict[str, Any]:
     apps = []
 
-    for app_name, path in sorted(EXTERNAL_APP_PATHS.items()):
+    for app_name, path in sorted(get_configured_external_app_paths().items()):
+        enabled = get_external_app_enabled(app_name)
         record = {
             "name": app_name,
             "path": str(path),
-            "available": EXTERNAL_APPS_ENABLED and path.exists(),
+            "enabled": enabled,
+            "available": enabled and path.exists(),
         }
         if include_versions and record["available"]:
             record["version"] = get_external_app_version(app_name)
@@ -142,6 +186,187 @@ def get_external_apps_status(include_versions: bool = False) -> dict[str, Any]:
     }
 
 
+def get_external_app_dependency_map() -> dict[str, list[dict[str, Any]]]:
+    dependency_map: dict[str, list[dict[str, Any]]] = {}
+    capabilities_by_id = {item["id"]: item for item in get_capabilities()}
+
+    for capability in capabilities_by_id.values():
+        for app_name in capability.get("external_apps", []):
+            dependency_map.setdefault(app_name, []).append({
+                "id": capability["id"],
+                "name": capability["name"],
+                "category": capability["category"],
+                "risk_level": capability["risk_level"],
+                "mutates_files": capability["mutates_files"],
+                "needs_confirmation": capability["needs_confirmation"],
+            })
+
+    for app_name, capability_ids in INDIRECT_APP_DEPENDENCIES.items():
+        for capability_id in capability_ids:
+            capability = capabilities_by_id.get(capability_id)
+            if capability is None:
+                continue
+            dependency_map.setdefault(app_name, []).append({
+                "id": capability["id"],
+                "name": capability["name"],
+                "category": capability["category"],
+                "risk_level": capability["risk_level"],
+                "mutates_files": capability["mutates_files"],
+                "needs_confirmation": capability["needs_confirmation"],
+                "relation": "indirect",
+            })
+
+    for app_name, dependent_tools in dependency_map.items():
+        seen = set()
+        unique_tools = []
+        for tool in dependent_tools:
+            if tool["id"] in seen:
+                continue
+            seen.add(tool["id"])
+            unique_tools.append(tool)
+        dependency_map[app_name] = sorted(unique_tools, key=lambda item: item["id"])
+
+    return dependency_map
+
+
+def build_external_app_recommendations(health: dict[str, Any]) -> list[dict[str, Any]]:
+    recommendations = []
+
+    for app in health["apps"]:
+        if app["state"] == "available":
+            continue
+
+        dependent_tool_ids = [tool["id"] for tool in app["dependent_tools"]]
+        severity = "warning" if dependent_tool_ids else "info"
+
+        if app["state"] == "disabled":
+            title = "External app dang bi disable"
+            detail = (
+                f"{app['name']} dang bi disable. "
+                f"Anh huong tool: {', '.join(dependent_tool_ids) or 'chua co tool phu thuoc truc tiep'}."
+            )
+        elif app["state"] == "unconfigured":
+            title = "External app chua co path cau hinh"
+            detail = (
+                f"{app['name']} duoc capability registry nhac toi nhung chua co path cau hinh. "
+                f"Anh huong tool: {', '.join(dependent_tool_ids) or 'chua ro'}."
+            )
+        else:
+            title = "External app bi thieu hoac sai path"
+            detail = (
+                f"{app['name']} khong tim thay tai {app.get('path') or '<missing path>'}. "
+                f"Anh huong tool: {', '.join(dependent_tool_ids) or 'chua co tool phu thuoc truc tiep'}."
+            )
+
+        recommendations.append({
+            "id": f"external-app-{app['name']}-{app['state']}",
+            "severity": severity,
+            "title": title,
+            "detail": detail,
+            "source": "external_apps",
+            "app_name": app["name"],
+            "state": app["state"],
+            "dependent_tool_ids": dependent_tool_ids,
+            "suggested_tool_id": "external_apps_manager",
+            "suggestion_only": True,
+        })
+
+    severity_order = {"critical": 0, "warning": 1, "info": 2}
+    return sorted(
+        recommendations,
+        key=lambda item: (severity_order.get(item["severity"], 99), item["id"]),
+    )
+
+
+def external_app_recommendation_to_text(recommendation: dict[str, Any]) -> str:
+    return (
+        f"[{recommendation['severity'].upper()}] "
+        f"{recommendation['title']}: {recommendation['detail']}"
+    )
+
+
+def build_external_apps_health(include_versions: bool = False) -> dict[str, Any]:
+    status = get_external_apps_status(include_versions=include_versions)
+    dependency_map = get_external_app_dependency_map()
+    apps_by_name = {item["name"]: item for item in status["apps"]}
+    all_app_names = sorted(set(apps_by_name) | set(dependency_map))
+    apps = []
+
+    for app_name in all_app_names:
+        base = apps_by_name.get(app_name)
+        dependent_tools = dependency_map.get(app_name, [])
+
+        if base is None:
+            record = {
+                "name": app_name,
+                "path": None,
+                "enabled": False,
+                "available": False,
+                "configured": False,
+                "state": "unconfigured",
+            }
+        else:
+            available = bool(base["available"])
+            enabled = bool(base.get("enabled", EXTERNAL_APPS_ENABLED))
+            if available:
+                state = "available"
+            elif not enabled:
+                state = "disabled"
+            else:
+                state = "missing"
+
+            record = {
+                **base,
+                "configured": True,
+                "state": state,
+            }
+
+        record.update({
+            "dependent_tools": dependent_tools,
+            "dependent_tool_count": len(dependent_tools),
+            "impact": APP_IMPACT_DESCRIPTIONS.get(app_name, "Helper app cho diagnostics hoac workflow mo rong."),
+        })
+        apps.append(record)
+
+    impacted_tool_ids = {
+        tool["id"]
+        for app in apps
+        if app["state"] != "available"
+        for tool in app["dependent_tools"]
+    }
+    recommendations = build_external_app_recommendations({
+        "apps": apps,
+    })
+
+    summary = {
+        "total": len(apps),
+        "available": sum(1 for app in apps if app["state"] == "available"),
+        "missing": sum(1 for app in apps if app["state"] == "missing"),
+        "disabled": sum(1 for app in apps if app["state"] == "disabled"),
+        "unconfigured": sum(1 for app in apps if app["state"] == "unconfigured"),
+        "with_dependents": sum(1 for app in apps if app["dependent_tool_count"] > 0),
+        "impacted_tool_count": len(impacted_tool_ids),
+        "recommendation_count": len(recommendations),
+    }
+
+    return {
+        "enabled": EXTERNAL_APPS_ENABLED,
+        "schema": "external_apps_health_v2",
+        "summary": summary,
+        "total": summary["total"],
+        "available": summary["available"],
+        "missing": summary["missing"] + summary["disabled"] + summary["unconfigured"],
+        "apps": apps,
+        "dependency_map": dependency_map,
+        "impacted_tool_ids": sorted(impacted_tool_ids),
+        "recommendations": recommendations,
+        "recommendation_text": [
+            external_app_recommendation_to_text(item)
+            for item in recommendations
+        ],
+    }
+
+
 def print_external_apps_status(include_versions: bool = False) -> None:
     status = get_external_apps_status(include_versions=include_versions)
     print("\n========== EXTERNAL APPS ==========")
@@ -154,30 +379,60 @@ def print_external_apps_status(include_versions: bool = False) -> None:
         print(f"[{mark}] {item['name']:<24} | {item['path']}{version}")
 
 
+def print_external_apps_health(include_versions: bool = False) -> None:
+    health = build_external_apps_health(include_versions=include_versions)
+    summary = health["summary"]
+
+    print("\n========== EXTERNAL APPS HEALTH V2 ==========")
+    print(f"Available: {summary['available']}/{summary['total']}")
+    print(f"Missing/disabled/unconfigured: {health['missing']}")
+    print(f"Impacted tools: {summary['impacted_tool_count']}")
+
+    for item in health["apps"]:
+        mark = "OK" if item["state"] == "available" else item["state"].upper()
+        version = f" | {item['version']}" if item.get("version") else ""
+        tools = ", ".join(tool["id"] for tool in item["dependent_tools"]) or "-"
+        print(
+            f"[{mark:<12}] {item['name']:<24} | "
+            f"tools: {tools} | {item.get('path') or '<unconfigured>'}{version}"
+        )
+
+    if health["recommendations"]:
+        print("\nRecommendations:")
+        for recommendation in health["recommendation_text"]:
+            print(f"- {recommendation}")
+
+
 def export_external_apps_report(include_versions: bool = True) -> dict[str, Any]:
-    status = get_external_apps_status(include_versions=include_versions)
-    report_status = "success" if status["missing"] == 0 else "warning"
+    health = build_external_apps_health(include_versions=include_versions)
+    summary = health["summary"]
+    report_status = "success" if health["missing"] == 0 else "warning"
     report = create_report(
         tool_name="external_apps",
-        action="status",
+        action="health_v2",
         status=report_status,
         risk_level="safe",
         input_data={
             "include_versions": include_versions,
         },
-        results=status,
-        recommendations=[
-            "Keep external app paths stable or update config/user_settings.json.",
-            "External apps are used as read-only helpers unless a tool explicitly asks for confirmation.",
+        results=health,
+        recommendations=health["recommendation_text"] or [
+            "External app paths are healthy.",
+            "External apps remain helper integrations; they do not delete or move user data by themselves.",
         ],
         summary={
-            "total": status["total"],
-            "available_count": status["available"],
-            "missing_count": status["missing"],
+            "total": summary["total"],
+            "available_count": summary["available"],
+            "missing_count": summary["missing"],
+            "disabled_count": summary["disabled"],
+            "unconfigured_count": summary["unconfigured"],
+            "with_dependents": summary["with_dependents"],
+            "impacted_tool_count": summary["impacted_tool_count"],
+            "recommendation_count": summary["recommendation_count"],
             "undo_available": False,
         },
         undo_available=False,
-        tags=["external_apps", "config", "safe"],
+        tags=["external_apps", "config", "safe", "health_v2"],
     )
 
     log_action(
@@ -185,8 +440,10 @@ def export_external_apps_report(include_versions: bool = True) -> dict[str, Any]
         "export_external_apps_report",
         report_status,
         {
-            "available": status["available"],
-            "total": status["total"],
+            "available": summary["available"],
+            "total": summary["total"],
+            "missing": health["missing"],
+            "impacted_tool_count": summary["impacted_tool_count"],
             "report": str(report),
         },
     )
@@ -195,7 +452,7 @@ def export_external_apps_report(include_versions: bool = True) -> dict[str, Any]
     return {
         "status": report_status,
         "report": str(report),
-        "external_apps": status,
+        "external_apps": health,
     }
 
 
@@ -410,8 +667,9 @@ def run_external_apps_manager() -> None:
 ========== EXTERNAL APPS MANAGER ==========
 1. Xem trang thai app ngoai
 2. Xem trang thai + version
-3. Xuat report app ngoai
-4. Test Everything search
+3. Xem health v2 + dependency map
+4. Xuat health report v2
+5. Test Everything search
 0. Thoat
 """)
         choice = input("Chon: ").strip()
@@ -423,9 +681,12 @@ def run_external_apps_manager() -> None:
             print_external_apps_status(include_versions=True)
 
         elif choice == "3":
-            export_external_apps_report(include_versions=True)
+            print_external_apps_health(include_versions=True)
 
         elif choice == "4":
+            export_external_apps_report(include_versions=True)
+
+        elif choice == "5":
             keyword = input("Nhap tu khoa search: ").strip()
             result = search_everything(keyword, limit=10)
             print(f"Status: {result['status']}")
