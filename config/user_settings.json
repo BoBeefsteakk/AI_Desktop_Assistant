@@ -12,6 +12,9 @@
         "ram_critical_percent": 85
     },
     "safety": {
+        "protected_root_paths": [
+            "{BASE_DIR}"
+        ],
         "protected_dir_names": [
             "$Recycle.Bin",
             "System Volume Information",
@@ -19,17 +22,11 @@
             "Program Files",
             "Program Files (x86)",
             "ProgramData",
-            "AppData",
             ".git",
-            "__pycache__",
-            "node_modules",
-            "android",
-            "ios",
-            ".gradle",
-            ".idea",
-            ".vscode",
-            "build",
-            "dist",
+            "cứu"
+        ],
+        "guarded_dir_names": [
+            "AppData",
             "Riot Games",
             "League of Legends",
             "LeagueOfLegends",
@@ -46,7 +43,18 @@
             "AI_Desktop_Assistant_optimized",
             "C nang cao",
             "HocMay",
-            "cứu"
+            "cuu"
+        ],
+        "dev_artifact_dir_names": [
+            "__pycache__",
+            "node_modules",
+            "android",
+            "ios",
+            ".gradle",
+            ".idea",
+            ".vscode",
+            "build",
+            "dist"
         ],
         "protected_file_names": [
             "pagefile.sys",

@@ -24,6 +24,9 @@ def safe_delete(path: str | Path) -> dict:
         "path": str(file_path),
         "risk": risk_data["risk"],
         "reason": risk_data["reason"],
+        "category": risk_data.get("category"),
+        "matched_rule": risk_data.get("matched_rule"),
+        "can_user_confirm": risk_data.get("can_user_confirm"),
         "status": "pending",
     }
 

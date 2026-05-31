@@ -167,3 +167,22 @@
 **thay đổi** Bước tiếp theo chuẩn nhất là External App Health Report v2.
 
 **thay đổi** Lý do: trước khi assistant đọc/ra quyết định, nó cần biết tool nào đang phụ thuộc app ngoài nào, app nào đang thiếu, app nào path bị sai và nếu thiếu thì ảnh hưởng tới độ chính xác/tốc độ ra sao.
+
+## Deletion Safety / UX v2
+
+**thay đổi** Risk Classifier da duoc tach thanh nhieu lop thay vi chi dua vao mot danh sach `protected_dir_names`.
+
+**thay đổi** Cac lop hien tai:
+
+* **thay đổi** `protected_root_paths`: chan cung root cua tool/project, mac dinh la `{BASE_DIR}`.
+* **thay đổi** `protected_dir_names`: chi giu cac folder he thong/metadata that su nguy hiem nhu `Windows`, `Program Files`, `ProgramData`, `.git`.
+* **thay đổi** `guarded_dir_names`: cac folder app/user data nhu `AppData`, game data, `Mobile`, `Zalo Data`; khong auto cleanup, nhung user co the review thu cong.
+* **thay đổi** `dev_artifact_dir_names`: cac folder dev/build nhu `node_modules`, `__pycache__`, `build`, `dist`; khong con bi hard-block hang loat, duoc gan `review_required`.
+* **thay đổi** Moi risk result co them `category`, `matched_rule`, `can_auto_delete`, `can_user_confirm` de user biet vi sao file bi chan hoac can review.
+
+**thay đổi** Nguyen tac moi:
+
+* **thay đổi** System/project van bi `protected` va `safe_delete()` se block.
+* **thay đổi** Browser cache va temp file trong vung an toan co the la `safe_delete`.
+* **thay đổi** AppData/user app data/dev artifacts mac dinh la `review_required`, khong auto delete bang lenh `all`.
+* **thay đổi** Empty Folder Finder doi `all` thanh chi chon `SAFE_DELETE`; muon chon hang loat folder `REVIEW_REQUIRED` phai dung lua chon `review` va xac nhan rieng.

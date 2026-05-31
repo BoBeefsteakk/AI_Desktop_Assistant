@@ -4,7 +4,7 @@ from pathlib import Path
 
 from tools.core.assistant_logger import log_action
 from tools.core.report_manager import create_report
-from tools.core.risk_classifier import classify_file_risk, PROTECTED
+from tools.core.risk_classifier import classify_file_risk, PROTECTED, REVIEW_REQUIRED, SAFE_DELETE
 from tools.core.safe_executor import safe_delete
 from tools.core.safety_utils import ask_yes_no, is_system_path, save_report
 
@@ -49,6 +49,8 @@ def find_empty_folders(root_folder: str) -> list[dict]:
                     "path": str(path),
                     "risk": risk_data["risk"],
                     "risk_reason": risk_data["reason"],
+                    "risk_category": risk_data.get("category"),
+                    "risk_rule": risk_data.get("matched_rule"),
                 })
 
         except (PermissionError, OSError):
@@ -64,7 +66,8 @@ def show_empty_folders(folders: list[dict]) -> None:
         return
 
     for i, item in enumerate(folders, start=1):
-        print(f"{i:>3}. {item['risk']:<18} | {item['path']}")
+        risk_category = item.get("risk_category") or item["risk"]
+        print(f"{i:>3}. {item['risk']:<15} | {risk_category:<24} | {item['path']}")
 
     print("-" * 80)
     print(f"Tong folder rong: {len(folders)}")
@@ -77,6 +80,14 @@ def choose_empty_folders_to_delete(folders: list[dict]) -> list[dict]:
         item for item in folders
         if item["risk"] != PROTECTED
     ]
+    safe_folders = [
+        item for item in folders
+        if item["risk"] == SAFE_DELETE
+    ]
+    review_folders = [
+        item for item in folders
+        if item["risk"] == REVIEW_REQUIRED
+    ]
 
     if not deletable_folders:
         print("Tat ca folder rong deu bi chan boi safety layer.")
@@ -85,7 +96,8 @@ def choose_empty_folders_to_delete(folders: list[dict]) -> list[dict]:
     while True:
         print("\nChon folder rong muon dua vao Recycle Bin:")
         print("- Nhap 0 de huy")
-        print("- Nhap all de chon tat ca folder khong PROTECTED")
+        print("- Nhap all de chon tat ca folder SAFE_DELETE")
+        print("- Nhap review de chon tat ca folder REVIEW_REQUIRED")
         print("- Nhap so thu tu, cach nhau boi dau phay. VD: 1,3,5")
 
         choice = input("Lua chon: ").strip().lower()
@@ -94,10 +106,25 @@ def choose_empty_folders_to_delete(folders: list[dict]) -> list[dict]:
             return []
 
         if choice == "all":
-            if not ask_yes_no("Ban chac chan muon chon tat ca folder khong PROTECTED?", default=False):
+            if not safe_folders:
+                print("Khong co folder SAFE_DELETE de chon all.")
                 continue
 
-            return deletable_folders
+            if not ask_yes_no("Ban chac chan muon chon tat ca folder SAFE_DELETE?", default=False):
+                continue
+
+            return safe_folders
+
+        if choice == "review":
+            if not review_folders:
+                print("Khong co folder REVIEW_REQUIRED.")
+                continue
+
+            print("Lua chon nay chi danh cho folder da xem ky va chap nhan rui ro.")
+            if not ask_yes_no("Ban chac chan muon chon tat ca folder REVIEW_REQUIRED?", default=False):
+                continue
+
+            return review_folders
 
         selected = []
 

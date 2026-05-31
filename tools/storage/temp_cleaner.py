@@ -62,6 +62,8 @@ def scan_temp_files(folder: str, max_age_days: int = 1) -> list[dict]:
                 "age_days": round(age_days, 2),
                 "risk": risk_data["risk"],
                 "risk_reason": risk_data["reason"],
+                "risk_category": risk_data.get("category"),
+                "risk_rule": risk_data.get("matched_rule"),
             })
 
         except (PermissionError, OSError):
@@ -80,9 +82,10 @@ def show_temp_items(items: list[dict]) -> None:
     total = sum(x["size"] for x in items)
 
     for i, item in enumerate(items, start=1):
+        risk_category = item.get("risk_category") or item["risk"]
         print(
             f"{i:>3}. {format_size(item['size']):>10} | "
-            f"{item['risk']:<18} | "
+            f"{item['risk']:<15} | {risk_category:<24} | "
             f"{item['type']:<6} | {item['age_days']:>6} ngay | {item['path']}"
         )
 

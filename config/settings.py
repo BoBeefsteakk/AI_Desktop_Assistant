@@ -42,6 +42,9 @@ DEFAULT_USER_SETTINGS: dict[str, Any] = {
         "ram_critical_percent": 85,
     },
     "safety": {
+        "protected_root_paths": [
+            "{BASE_DIR}",
+        ],
         "protected_dir_names": [
             "$Recycle.Bin",
             "System Volume Information",
@@ -49,17 +52,11 @@ DEFAULT_USER_SETTINGS: dict[str, Any] = {
             "Program Files",
             "Program Files (x86)",
             "ProgramData",
-            "AppData",
             ".git",
-            "__pycache__",
-            "node_modules",
-            "android",
-            "ios",
-            ".gradle",
-            ".idea",
-            ".vscode",
-            "build",
-            "dist",
+            "cứu",
+        ],
+        "guarded_dir_names": [
+            "AppData",
             "Riot Games",
             "League of Legends",
             "LeagueOfLegends",
@@ -76,7 +73,18 @@ DEFAULT_USER_SETTINGS: dict[str, Any] = {
             "AI_Desktop_Assistant_optimized",
             "C nang cao",
             "HocMay",
-            "cứu",
+            "cuu",
+        ],
+        "dev_artifact_dir_names": [
+            "__pycache__",
+            "node_modules",
+            "android",
+            "ios",
+            ".gradle",
+            ".idea",
+            ".vscode",
+            "build",
+            "dist",
         ],
         "protected_file_names": [
             "pagefile.sys",
@@ -420,7 +428,10 @@ def get_config_snapshot() -> dict[str, Any]:
             "stable_check_times": WATCHER_STABLE_CHECK_TIMES,
         },
         "browser_cache_path_count": len(get_setting_list("browser_cache.path_templates")),
+        "protected_root_count": len(PROTECTED_ROOT_PATHS),
         "protected_dir_count": len(PROTECTED_DIR_NAMES),
+        "guarded_dir_count": len(GUARDED_DIR_NAMES),
+        "dev_artifact_dir_count": len(DEV_ARTIFACT_DIR_NAMES),
         "wiztree": {
             "enabled": WIZTREE_ENABLED,
             "exe_path": str(WIZTREE_EXE_PATH),
@@ -460,9 +471,21 @@ RAM_CRITICAL_PERCENT = get_int_setting("thresholds.ram_critical_percent", 85)
 SAFE_SYSTEM_FOLDERS = get_setting_list("safety.protected_dir_names")
 SAFE_SYSTEM_FILES = get_setting_list("safety.protected_file_names")
 
+PROTECTED_ROOT_PATHS = [
+    expand_config_path(str(item))
+    for item in get_setting_list("safety.protected_root_paths")
+]
 PROTECTED_DIR_NAMES = {
     str(item).lower()
     for item in get_setting_list("safety.protected_dir_names")
+}
+GUARDED_DIR_NAMES = {
+    str(item).lower()
+    for item in get_setting_list("safety.guarded_dir_names")
+}
+DEV_ARTIFACT_DIR_NAMES = {
+    str(item).lower()
+    for item in get_setting_list("safety.dev_artifact_dir_names")
 }
 PROTECTED_FILE_NAMES = {
     str(item).lower()

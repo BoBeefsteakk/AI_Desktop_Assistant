@@ -82,6 +82,8 @@ def scan_download_files(downloads_dir: str | Path = DOWNLOADS_DIR) -> list[dict]
                 "extension": item.suffix.lower() or "[no_ext]",
                 "risk": risk_data["risk"],
                 "risk_reason": risk_data["reason"],
+                "risk_category": risk_data.get("category"),
+                "risk_rule": risk_data.get("matched_rule"),
             })
 
         except (PermissionError, OSError):
@@ -100,9 +102,11 @@ def show_download_files(files: list[dict]) -> None:
     total_size = sum(item["size"] for item in files)
 
     for index, item in enumerate(files, start=1):
+        risk_category = item.get("risk_category") or item["risk"]
         print(
             f"{index:>3}. {format_size(item['size']):>10} | "
-            f"{item['category']:<10} | {item['risk']:<18} | {item['path']}"
+            f"{item['category']:<10} | {item['risk']:<15} | "
+            f"{risk_category:<24} | {item['path']}"
         )
 
     print("-" * 90)
@@ -186,6 +190,8 @@ def move_download_files(
                 "status": "blocked",
                 "risk": risk_data["risk"],
                 "risk_reason": risk_data["reason"],
+                "risk_category": risk_data.get("category"),
+                "risk_rule": risk_data.get("matched_rule"),
             })
             continue
 
@@ -198,6 +204,8 @@ def move_download_files(
                 "extension": item["extension"],
                 "risk": risk_data["risk"],
                 "risk_reason": risk_data["reason"],
+                "risk_category": risk_data.get("category"),
+                "risk_rule": risk_data.get("matched_rule"),
                 "status": "moved",
             })
             records.append(record)

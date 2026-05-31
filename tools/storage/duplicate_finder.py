@@ -93,6 +93,8 @@ def find_duplicates(folder: str, recursive: bool = True) -> list[dict]:
                     "size": duplicate.stat().st_size,
                     "risk": risk_data["risk"],
                     "risk_reason": risk_data["reason"],
+                    "risk_category": risk_data.get("category"),
+                    "risk_rule": risk_data.get("matched_rule"),
                 })
 
     return duplicates
@@ -112,6 +114,8 @@ def show_duplicates(duplicates: list[dict]) -> None:
         print(f"Goc     : {item['original']}")
         print(f"Ban sao : {item['duplicate']}")
         print(f"Risk    : {item['risk']}")
+        print(f"Category: {item.get('risk_category') or '-'}")
+        print(f"Rule    : {item.get('risk_rule') or '-'}")
         print(f"Reason  : {item['risk_reason']}")
         print("-" * 80)
 

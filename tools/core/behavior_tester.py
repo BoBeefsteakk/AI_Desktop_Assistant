@@ -11,7 +11,7 @@ from tools.automation import download_organizer, download_watcher, startup_launc
 from tools.core.audit_center import get_audit_snapshot
 from tools.core.report_manager import create_report
 from tools.core import recommendation_center
-from tools.core.risk_classifier import PROTECTED, classify_file_risk
+from tools.core.risk_classifier import PROTECTED, REVIEW_REQUIRED, SAFE_DELETE, classify_file_risk
 from tools.core.safe_executor import safe_delete
 from tools.core.safety_utils import restore_from_manifest, safe_move, save_manifest
 from tools.core.undo_manager import preview_manifest, restore_manifest
@@ -63,6 +63,14 @@ def test_risk_classifier_and_safe_delete(sandbox: Path) -> dict[str, Any]:
     risk_data = classify_file_risk(protected_file)
     delete_result = safe_delete(protected_file)
     missing_result = safe_delete(sandbox / "missing.tmp")
+    downloads_temp = classify_file_risk(sandbox / "Downloads" / "cache.tmp")
+    appdata_temp = classify_file_risk(sandbox / "AppData" / "Local" / "Temp" / "safe.tmp")
+    appdata_data = classify_file_risk(sandbox / "AppData" / "Local" / "Vendor" / "data.db")
+    dev_artifact = classify_file_risk(sandbox / "project" / "dist" / "bundle.old")
+    browser_cache = classify_file_risk(
+        sandbox / "AppData" / "Local" / "Google" / "Chrome" / "User Data" / "Default" / "Cache" / "entry"
+    )
+    windows_temp = classify_file_risk(Path(r"C:\Windows\Temp\safe.tmp"))
 
     assert_condition(
         risk_data["risk"] == PROTECTED,
@@ -76,11 +84,42 @@ def test_risk_classifier_and_safe_delete(sandbox: Path) -> dict[str, Any]:
         missing_result["status"] == "missing",
         "safe_delete should report missing paths without error.",
     )
+    assert_condition(
+        downloads_temp["risk"] == SAFE_DELETE,
+        "Temp files inside Downloads should be safe_delete.",
+    )
+    assert_condition(
+        appdata_temp["risk"] == SAFE_DELETE,
+        "Temp files inside AppData Local Temp should be safe_delete.",
+    )
+    assert_condition(
+        appdata_data["risk"] == REVIEW_REQUIRED,
+        "Generic AppData files should require review, not hard block.",
+    )
+    assert_condition(
+        dev_artifact["risk"] == REVIEW_REQUIRED
+        and dev_artifact["category"] == "review_dev_artifact",
+        "Dev artifacts should require review instead of becoming protected.",
+    )
+    assert_condition(
+        browser_cache["risk"] == SAFE_DELETE,
+        "Known browser cache should remain safe_delete even under AppData.",
+    )
+    assert_condition(
+        windows_temp["risk"] == PROTECTED,
+        "Windows paths should remain protected even when they contain Temp.",
+    )
 
     return {
         "protected_risk": risk_data,
         "protected_delete": delete_result,
         "missing_delete": missing_result,
+        "downloads_temp": downloads_temp,
+        "appdata_temp": appdata_temp,
+        "appdata_data": appdata_data,
+        "dev_artifact": dev_artifact,
+        "browser_cache": browser_cache,
+        "windows_temp": windows_temp,
     }
 
 
@@ -235,7 +274,7 @@ def test_empty_folder_finder_fake_delete(sandbox: Path) -> dict[str, Any]:
             "status": "deleted",
         }
 
-    with patch("builtins.input", side_effect=["all", "y", "y"]):
+    with patch("builtins.input", side_effect=["review", "y", "y"]):
         with patch.object(empty_folder_finder, "safe_delete", side_effect=fake_safe_delete):
             empty_folder_finder.delete_empty_folders(folders)
 

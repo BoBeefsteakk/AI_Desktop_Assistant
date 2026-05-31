@@ -25,7 +25,7 @@ from tools.core.recommendation_center import (
     summarize_recommendation_queue,
 )
 from tools.core.external_apps import get_external_apps_status
-from tools.core.risk_classifier import PROTECTED, classify_file_risk
+from tools.core.risk_classifier import PROTECTED, REVIEW_REQUIRED, SAFE_DELETE, classify_file_risk
 from tools.core.safe_executor import safe_delete
 from tools.core.safety_utils import safe_move, save_manifest
 from tools.core.tool_tester import TOOLS_TO_TEST
@@ -226,13 +226,30 @@ def test_safety_static_audit() -> dict[str, Any]:
 def test_risk_classifier_guardrails() -> dict[str, Any]:
     protected = classify_file_risk(BASE_DIR / "README.md")
     missing_delete = safe_delete(BASE_DIR / "missing_full_system_test.tmp")
+    appdata_temp = classify_file_risk(Path(r"C:\Users\Demo\AppData\Local\Temp\cache.tmp"))
+    appdata_data = classify_file_risk(Path(r"C:\Users\Demo\AppData\Local\Vendor\data.db"))
+    dev_artifact = classify_file_risk(Path(r"D:\Projects\demo\dist\bundle.old"))
+    browser_cache = classify_file_risk(
+        Path(r"C:\Users\Demo\AppData\Local\Google\Chrome\User Data\Default\Cache\entry")
+    )
+    windows_temp = classify_file_risk(Path(r"C:\Windows\Temp\cache.tmp"))
 
     assert_condition(protected["risk"] == PROTECTED, "Project root file should be protected.")
     assert_condition(missing_delete["status"] == "missing", "safe_delete should handle missing files.")
+    assert_condition(appdata_temp["risk"] == SAFE_DELETE, "AppData Local Temp files should be safe_delete.")
+    assert_condition(appdata_data["risk"] == REVIEW_REQUIRED, "Generic AppData files should require review.")
+    assert_condition(dev_artifact["risk"] == REVIEW_REQUIRED, "Dev artifacts should require review.")
+    assert_condition(browser_cache["risk"] == SAFE_DELETE, "Known browser cache should be safe_delete.")
+    assert_condition(windows_temp["risk"] == PROTECTED, "Windows temp should stay protected.")
 
     return {
         "protected_readme": protected,
         "missing_delete": missing_delete,
+        "appdata_temp": appdata_temp,
+        "appdata_data": appdata_data,
+        "dev_artifact": dev_artifact,
+        "browser_cache": browser_cache,
+        "windows_temp": windows_temp,
     }
 
 

@@ -65,6 +65,8 @@ def scan_media_files(
                 "extension": path.suffix.lower(),
                 "risk": risk_data["risk"],
                 "risk_reason": risk_data["reason"],
+                "risk_category": risk_data.get("category"),
+                "risk_rule": risk_data.get("matched_rule"),
             })
 
         except (PermissionError, OSError):
@@ -83,9 +85,10 @@ def show_media_files(files: list[dict]) -> None:
     total_size = sum(item["size"] for item in files)
 
     for index, item in enumerate(files, start=1):
+        risk_category = item.get("risk_category") or item["risk"]
         print(
             f"{index:>3}. {format_size(item['size']):>10} | "
-            f"{item['risk']:<18} | {item['path']}"
+            f"{item['risk']:<15} | {risk_category:<24} | {item['path']}"
         )
 
     print("-" * 90)
@@ -256,6 +259,8 @@ def move_media_files(
                 "status": "blocked",
                 "risk": risk_data["risk"],
                 "risk_reason": risk_data["reason"],
+                "risk_category": risk_data.get("category"),
+                "risk_rule": risk_data.get("matched_rule"),
             })
             continue
 
@@ -266,6 +271,8 @@ def move_media_files(
                 "extension": item["extension"],
                 "risk": risk_data["risk"],
                 "risk_reason": risk_data["reason"],
+                "risk_category": risk_data.get("category"),
+                "risk_rule": risk_data.get("matched_rule"),
                 "status": "moved",
             })
             records.append(record)

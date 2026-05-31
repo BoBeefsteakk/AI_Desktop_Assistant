@@ -205,6 +205,8 @@ def organize_downloaded_file(
             "path": str(file_path),
             "risk": risk_data["risk"],
             "risk_reason": risk_data["reason"],
+            "risk_category": risk_data.get("category"),
+            "risk_rule": risk_data.get("matched_rule"),
             "status": "blocked",
         }
         log_action(
@@ -235,6 +237,8 @@ def organize_downloaded_file(
             "size": size,
             "risk": risk_data["risk"],
             "risk_reason": risk_data["reason"],
+            "risk_category": risk_data.get("category"),
+            "risk_rule": risk_data.get("matched_rule"),
             "status": "moved",
         }
 
@@ -260,6 +264,8 @@ def organize_downloaded_file(
             "category": category,
             "risk": risk_data["risk"],
             "risk_reason": risk_data["reason"],
+            "risk_category": risk_data.get("category"),
+            "risk_rule": risk_data.get("matched_rule"),
             "status": "error",
             "error": str(error),
         }
