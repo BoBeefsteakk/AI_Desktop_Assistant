@@ -319,6 +319,29 @@ Nguyên tắc:
 * Không xóa/move/sửa file
 * Chỉ gom, lọc, xuất report và giúp người dùng chọn bước tiếp theo
 
+## Guided Action Layer
+
+**thay đổi** Guided Action Runner là lớp nối giữa Recommendation Center và tool thật.
+
+Nguồn dữ liệu:
+
+* Queue pending/deferred từ Recommendation Center
+* `suggested_tool_id` trong recommendation
+* Metadata từ Capability Registry
+
+Output:
+
+* Màn xác nhận risk trước khi mở target tool
+* Report `guided_action_runner` cho dry-run hoặc lần mở tool
+* Log action để Audit Center đọc lại
+
+Nguyên tắc:
+
+* **thay đổi** Runner không tự cleanup, không tự xóa/move file
+* **thay đổi** Runner chỉ mở target tool sau khi user nhập đúng `OPEN`
+* **thay đổi** Target tool vẫn giữ confirmation/safety/manifest/report riêng
+* **thay đổi** Recommendation không tự thành `handled`; user phải xác nhận sau
+
 ## Undo Layer
 
 **thay đổi** Undo hiện dựa trên manifest sinh ra khi tool move file.
@@ -358,6 +381,7 @@ Các lớp kiểm tra:
 * Dependencies
 * Git submodule health
 * **thay đổi** External adapter sample parsers như WizTree CSV
+* **thay đổi** Guided Action Runner dry-run contract
 
 ---
 

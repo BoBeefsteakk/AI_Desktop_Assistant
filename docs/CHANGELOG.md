@@ -2,6 +2,20 @@
 
 ## 2026-05-31
 
+### Guided Action Runner
+
+* **thay đổi** Thêm `tools/core/guided_action_runner.py`
+* **thay đổi** Sync recommendation queue pending/deferred rồi resolve `suggested_tool_id` qua Capability Registry
+* **thay đổi** Hiển thị risk, mutates_files, needs_confirmation, undo_strategy, external apps và report gốc trước khi mở tool
+* **thay đổi** Bắt user nhập đúng `OPEN` trước khi mở target tool
+* **thay đổi** Không tự cleanup, không bypass confirmation của target tool, không tự mark recommendation handled
+* **thay đổi** Dry-run path tạo report nhưng không execute target tool
+* **thay đổi** Main CLI expose Guided Action Runner ở mục 30
+* **thay đổi** Natural Command route lệnh `lam goi y`/`mo goi y` sang Guided Action Runner
+* **thay đổi** Tool Tester mở rộng lên 30 tool
+* **thay đổi** Behavior Tester thêm Guided Action Runner Contract và hiện pass 17/17
+* **thay đổi** Full System Tester thêm Guided Action Runner Contract và hiện pass 19/19
+
 ### Recommendation Workflow v1
 
 * **thay đổi** Recommendation Center co queue state persistent tai `data/recommendation_queue.jsonl`
@@ -18,11 +32,11 @@
 * **thay đổi** Enrich suggested tool bằng Capability Registry: tên tool, risk, confirmation
 * **thay đổi** Main CLI expose Recommendation Center ở mục 29
 * **thay đổi** Natural Command route được lệnh recommendation/queue/gợi ý sang Recommendation Center
-* **thay đổi** Tool Tester mở rộng lên 29 tool
+* **thay đổi** Tool Tester mở rộng lên 30 tool
 * **thay đổi** Behavior Tester thêm case Recommendation Center Queue
 * **thay đổi** Full System Tester thêm case Recommendation Center Contract
-* **thay đổi** Behavior Tester hiện pass 14/14
-* **thay đổi** Full System Tester hiện pass 18/18
+* **thay đổi** Behavior Tester hiện pass 17/17
+* **thay đổi** Full System Tester hiện pass 19/19
 
 ### System Advisor v2
 
@@ -179,8 +193,8 @@ Nâng cấp:
 
 **thay đổi** Mở rộng:
 
-* Kiểm tra 29 tool
-* Passed: 29
+* Kiểm tra 30 tool
+* Passed: 30
 * Failed: 0
 
 ### Behavior Tester
@@ -334,19 +348,19 @@ Nâng cấp:
 
 Tool Tester:
 
-Passed: 29
+Passed: 30
 
 Failed: 0
 
 Behavior Tester:
 
-Passed: 14
+Passed: 17
 
 Failed: 0
 
 Full System Tester:
 
-Passed: 18
+Passed: 19
 
 Failed: 0
 

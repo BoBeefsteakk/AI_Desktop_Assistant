@@ -46,14 +46,14 @@ Hoàn thành
 * **thay đổi** Natural Command v2 route lệnh qua Capability Registry và confirmation theo risk
 * **thay đổi** System Advisor v2 read-only snapshot + structured recommendations
 * **thay đổi** Recommendation Center read-only gom gợi ý từ Advisor/Audit thành queue
+* **thay đổi** Recommendation Workflow v1 có trạng thái pending/deferred/handled/ignored
+* **thay đổi** Guided Action Runner mở tool từ recommendation qua xác nhận `OPEN`, không bypass confirmation
 
 Cần rà soát tiếp:
 
-* **thay đổi** External App Health Report v2 với dependency map app -> tool
-* **thay đổi** Recommendation Workflow v1 có trạng thái pending/deferred/handled/ignored
-* **thay đổi** Guided Action Runner mở tool từ recommendation nhưng không bypass confirmation
 * **thay đổi** Natural Command v3 nhẹ cho recommendation queue
 * **thay đổi** Advisor real run calibration trước khi feed assistant
+* **thay đổi** External App Health path drift detection nếu app bị di chuyển
 
 ---
 
@@ -126,7 +126,8 @@ Một lệnh test tổng hợp trước khi refactor lớn hoặc feed assistant
 * **thay đổi** Natural Command Router test nằm trong Behavior Tester
 * **thay đổi** System Advisor v2 Contract test
 * **thay đổi** Recommendation Center Contract test
-* Full System Tester hiện pass 18/18
+* **thay đổi** Guided Action Runner Contract test
+* Full System Tester hiện pass 19/19
 
 ---
 

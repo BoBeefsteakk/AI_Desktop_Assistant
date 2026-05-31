@@ -45,6 +45,7 @@ INTENT_ALIASES: list[tuple[str, list[str]]] = [
     ("external_apps_manager", ["external app", "external apps", "app ngoai", "apps manager"]),
     ("capability_registry", ["capability", "registry", "capability registry", "nang luc"]),
     ("recommendation_center", ["recommendation", "recommendations", "queue", "hang doi goi y", "goi y tiep theo"]),
+    ("guided_action_runner", ["guided action", "guided runner", "lam goi y", "mo goi y", "chay goi y", "xu ly goi y"]),
 ]
 
 
@@ -213,6 +214,7 @@ def print_help() -> None:
     print("- find ten_file")
     print("- test tong")
     print("- capability")
+    print("- lam goi y")
     print(f"\nDang co {summary['total']} capability trong registry.")
     print("Tool co risk medium/dangerous hoac co the thay doi file se hoi xac nhan truoc.")
 

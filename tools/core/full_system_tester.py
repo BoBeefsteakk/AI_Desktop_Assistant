@@ -26,6 +26,12 @@ from tools.core.recommendation_center import (
     sync_recommendation_queue,
     update_recommendation_state,
 )
+from tools.core.guided_action_runner import (
+    build_action_context,
+    execute_guided_action,
+    find_guided_action_context,
+    preview_guided_actions,
+)
 from tools.core.external_apps import build_external_apps_health, get_external_apps_status
 from tools.core.risk_classifier import PROTECTED, REVIEW_REQUIRED, SAFE_DELETE, classify_file_risk
 from tools.core.safe_executor import safe_delete
@@ -135,6 +141,7 @@ def test_main_menu_coverage() -> dict[str, Any]:
         "External Apps Manager",
         "Capability Registry",
         "Recommendation Center",
+        "Guided Action Runner",
     ]
     missing = [label for label in expected if label not in main_text]
 
@@ -624,6 +631,89 @@ def test_recommendation_center_contract() -> dict[str, Any]:
         cleanup_sandbox(sandbox)
 
 
+def test_guided_action_runner_contract() -> dict[str, Any]:
+    sandbox = make_sandbox()
+    state_file = sandbox / "guided_action_queue.jsonl"
+    recommendation_id = f"full-guided-action-{sandbox.name}"
+
+    try:
+        create_report(
+            tool_name="system_advisor",
+            action="guided_action_contract",
+            status="success",
+            risk_level="safe",
+            input_data={
+                "sandbox": str(sandbox),
+            },
+            results={
+                "recommendations": [
+                    {
+                        "id": recommendation_id,
+                        "severity": "warning",
+                        "title": "Full guided action contract",
+                        "detail": f"Guided runner dry-run contract {sandbox.name}.",
+                        "source": "full_system_test",
+                        "suggested_tool_id": "download_organizer",
+                        "suggestion_only": True,
+                    }
+                ],
+            },
+            recommendations=[],
+            summary={
+                "total": 1,
+                "warning_count": 1,
+                "undo_available": False,
+            },
+            undo_available=False,
+            tags=["guided_action", "full_system"],
+        )
+
+        preview = preview_guided_actions(
+            report_limit=30,
+            state_file=state_file,
+        )
+        context = find_guided_action_context(
+            preview["contexts"],
+            recommendation_id=recommendation_id,
+        )
+        no_tool_context = build_action_context({
+            "id": "no-tool",
+            "title": "No tool",
+            "detail": "No suggested tool should be blocked.",
+            "severity": "info",
+        })
+
+        assert_condition(context is not None, "Guided Action Runner should collect seeded recommendation.")
+        assert_condition(context["status"] == "ready", "Guided action context should be ready.")
+        assert_condition(
+            context["capability"]["id"] == "download_organizer",
+            "Guided Action Runner should resolve target capability.",
+        )
+        assert_condition(
+            context["target_requires_confirmation"] is True,
+            "Guided Action Runner should preserve target confirmation metadata.",
+        )
+        assert_condition(
+            no_tool_context["status"] == "no_suggested_tool",
+            "Guided Action Runner should block recommendations without suggested tool.",
+        )
+
+        dry_run = execute_guided_action(context, dry_run=True)
+        assert_condition(dry_run["status"] == "dry_run", "Guided dry-run should not execute target tool.")
+        assert_condition(dry_run["executed"] is False, "Guided dry-run must stay non-mutating.")
+        assert_condition(Path(dry_run["report"]).exists(), "Guided dry-run should create a report.")
+
+        return {
+            "preview_ready_count": preview["ready_count"],
+            "target_tool": context["capability"]["id"],
+            "dry_run_report": dry_run["report"],
+            "no_tool_status": no_tool_context["status"],
+        }
+
+    finally:
+        cleanup_sandbox(sandbox)
+
+
 def test_dependency_health() -> dict[str, Any]:
     modules = ["psutil", "send2trash", "watchdog"]
     results = []
@@ -673,6 +763,7 @@ FULL_SYSTEM_TESTS: list[tuple[str, Callable[[], dict[str, Any]]]] = [
     ("Capability Registry", test_capability_registry),
     ("System Advisor v2 Contract", test_system_advisor_v2_contract),
     ("Recommendation Center Contract", test_recommendation_center_contract),
+    ("Guided Action Runner Contract", test_guided_action_runner_contract),
     ("Dependency Health", test_dependency_health),
     ("Git Submodule Health", test_git_submodule_health),
 ]

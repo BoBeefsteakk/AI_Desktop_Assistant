@@ -42,6 +42,7 @@ Active workspace hiện tại là `D:\tool`. Snapshot cũ đã được chuyển
 - **thay đổi** External Apps Manager
 - **thay đổi** Capability Registry
 - **thay đổi** Recommendation Center
+- **thay đổi** Guided Action Runner: mở tool từ recommendation với cổng xác nhận risk, không bypass confirmation của tool thật
 
 ## Project Structure
 
@@ -74,15 +75,16 @@ Storage Tools	Done
 Automation Tools	Done
 Search Tools	Done
 Core Utilities	Done
-Tool Tester	Passed 29/29
-Behavior Tester	Passed 14/14
-Full System Tester	Passed 18/18
+Tool Tester	Passed 30/30
+Behavior Tester	Passed 17/17
+Full System Tester	Passed 19/19
 WizTree Adapter	Done
 External Apps Integration	Done
 Capability Registry	Done
 Natural Command v2	Done
 System Advisor v2	Done
 Recommendation Center	Done
+Guided Action Runner	Done
 Refactor Tools Folder	Done
 Config System	Done
 Audit System	Basic Done

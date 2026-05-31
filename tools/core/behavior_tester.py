@@ -10,7 +10,7 @@ from config.settings import BASE_DIR, USER_SETTINGS_FILE, validate_user_settings
 from tools.automation import download_organizer, download_watcher, startup_launcher
 from tools.core.audit_center import get_audit_snapshot
 from tools.core.report_manager import create_report
-from tools.core import external_apps, recommendation_center
+from tools.core import external_apps, guided_action_runner, recommendation_center
 from tools.core.risk_classifier import PROTECTED, REVIEW_REQUIRED, SAFE_DELETE, classify_file_risk
 from tools.core.safe_executor import safe_delete
 from tools.core.safety_utils import restore_from_manifest, safe_move, save_manifest
@@ -461,6 +461,7 @@ def test_natural_command_router(sandbox: Path) -> dict[str, Any]:
     cache_route = natural_command.resolve_command("don cache")
     full_test_route = natural_command.resolve_command("test tong")
     recommendation_route = natural_command.resolve_command("goi y tiep theo")
+    guided_route = natural_command.resolve_command("lam goi y")
     unknown_route = natural_command.resolve_command("khong hieu lenh nay")
 
     assert_condition(
@@ -494,6 +495,11 @@ def test_natural_command_router(sandbox: Path) -> dict[str, Any]:
         "Natural Command should route Recommendation Center.",
     )
     assert_condition(
+        guided_route["type"] == "capability"
+        and guided_route["capability"]["id"] == "guided_action_runner",
+        "Natural Command should route Guided Action Runner.",
+    )
+    assert_condition(
         unknown_route["type"] == "unknown",
         "Natural Command should return unknown for unsupported commands.",
     )
@@ -505,6 +511,10 @@ def test_natural_command_router(sandbox: Path) -> dict[str, Any]:
         natural_command.requires_confirmation(cache_route["capability"]),
         "Mutating or risky commands should require Natural Command confirmation.",
     )
+    assert_condition(
+        natural_command.requires_confirmation(guided_route["capability"]),
+        "Guided Action Runner should require Natural Command confirmation.",
+    )
 
     return {
         "disk_route": disk_route["capability"]["id"],
@@ -512,6 +522,7 @@ def test_natural_command_router(sandbox: Path) -> dict[str, Any]:
         "cache_route": cache_route["capability"]["id"],
         "full_test_route": full_test_route["capability"]["id"],
         "recommendation_route": recommendation_route["capability"]["id"],
+        "guided_route": guided_route["capability"]["id"],
         "unknown_type": unknown_route["type"],
     }
 
@@ -829,6 +840,89 @@ def test_recommendation_workflow_state_transitions(sandbox: Path) -> dict[str, A
     }
 
 
+def test_guided_action_runner_contract(sandbox: Path) -> dict[str, Any]:
+    state_file = sandbox / "guided_action_queue.jsonl"
+    seed = sandbox.name
+    recommendation_id = f"guided-action-{seed}"
+
+    create_report(
+        tool_name="system_advisor",
+        action="guided_action_contract",
+        status="success",
+        risk_level="safe",
+        input_data={
+            "sandbox": str(sandbox),
+        },
+        results={
+            "recommendations": [
+                {
+                    "id": recommendation_id,
+                    "severity": "warning",
+                    "title": "Guided action contract",
+                    "detail": f"Guided runner should open this recommendation in dry-run only {seed}.",
+                    "source": "behavior_test",
+                    "suggested_tool_id": "download_organizer",
+                    "suggestion_only": True,
+                }
+            ],
+        },
+        recommendations=[],
+        summary={
+            "total": 1,
+            "warning_count": 1,
+            "undo_available": False,
+        },
+        undo_available=False,
+        tags=["guided_action", "behavior_test"],
+    )
+
+    preview = guided_action_runner.preview_guided_actions(
+        report_limit=30,
+        state_file=state_file,
+    )
+    context = guided_action_runner.find_guided_action_context(
+        preview["contexts"],
+        recommendation_id=recommendation_id,
+    )
+
+    assert_condition(context is not None, "Guided Action Runner should find seeded recommendation.")
+    assert_condition(context["status"] == "ready", "Guided action context should be ready.")
+    assert_condition(
+        context["capability"]["id"] == "download_organizer",
+        "Guided Action Runner should resolve suggested capability.",
+    )
+    assert_condition(
+        context["capability"]["mutates_files"] is True,
+        "Guided Action Runner should expose target mutating metadata.",
+    )
+    assert_condition(
+        context["target_requires_confirmation"] is True,
+        "Guided Action Runner should detect target confirmation requirement.",
+    )
+
+    dry_run = guided_action_runner.execute_guided_action(context, dry_run=True)
+    assert_condition(dry_run["status"] == "dry_run", "Guided dry-run should not execute the target tool.")
+    assert_condition(dry_run["executed"] is False, "Guided dry-run must not execute target tool.")
+    assert_condition(Path(dry_run["report"]).exists(), "Guided dry-run should create a report.")
+
+    handled_queue = recommendation_center.collect_recommendation_queue(
+        report_limit=30,
+        state_file=state_file,
+        states={"handled"},
+    )
+    assert_condition(
+        not any(item["id"] == recommendation_id for item in handled_queue),
+        "Guided dry-run should not mark recommendation handled automatically.",
+    )
+
+    return {
+        "recommendation_id": recommendation_id,
+        "target_tool": context["capability"]["id"],
+        "dry_run_report": dry_run["report"],
+        "ready_count": preview["ready_count"],
+    }
+
+
 def test_external_apps_health_v2_contract(sandbox: Path) -> dict[str, Any]:
     health = external_apps.build_external_apps_health(include_versions=False)
     apps_by_name = {
@@ -917,6 +1011,7 @@ def run_behavior_tester() -> None:
         ("System Advisor v2 Recommendations", test_system_advisor_v2_recommendations),
         ("Recommendation Center Queue", test_recommendation_center_queue),
         ("Recommendation Workflow State Transitions", test_recommendation_workflow_state_transitions),
+        ("Guided Action Runner Contract", test_guided_action_runner_contract),
         ("External Apps Health v2 Contract", test_external_apps_health_v2_contract),
     ]
 

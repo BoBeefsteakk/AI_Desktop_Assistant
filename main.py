@@ -27,6 +27,7 @@ from tools.core.capability_registry import run_capability_registry
 from tools.core.config_manager import run_config_manager
 from tools.core.external_apps import run_external_apps_manager
 from tools.core.full_system_tester import run_full_system_tester
+from tools.core.guided_action_runner import run_guided_action_runner
 from tools.core.recommendation_center import run_recommendation_center
 from tools.core.tool_tester import run_tool_tester
 from tools.core.undo_manager import run_undo_manager
@@ -71,6 +72,7 @@ def main():
 27. External Apps Manager
 28. Capability Registry
 29. Recommendation Center
+30. Guided Action Runner
 
 0. Thoat
 
@@ -170,6 +172,9 @@ def main():
 
         elif choice == "29":
             run_recommendation_center()
+
+        elif choice == "30":
+            run_guided_action_runner()
 
         else:
             print("Lua chon khong hop le.")

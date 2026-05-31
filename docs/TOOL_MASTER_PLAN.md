@@ -8,12 +8,12 @@
 
 **thay đổi** Kết quả hiện tại:
 
-* **thay đổi** Main CLI đang expose 29 tool.
-* **thay đổi** Capability Registry valid 29/29, không thiếu entry so với Tool Tester.
-* **thay đổi** Tool Tester pass 29/29.
-* **thay đổi** Behavior Tester pass 14/14.
-* **thay đổi** Full System Tester pass 18/18.
-* **thay đổi** Capability summary: 17 safe, 6 medium, 6 dangerous; 11 tool có thể thay đổi file; 11 tool cần confirmation; 9 tool dùng external app.
+* **thay đổi** Main CLI đang expose 30 tool.
+* **thay đổi** Capability Registry valid 30/30, không thiếu entry so với Tool Tester.
+* **thay đổi** Tool Tester pass 30/30.
+* **thay đổi** Behavior Tester pass 17/17.
+* **thay đổi** Full System Tester pass 19/19.
+* **thay đổi** Capability summary: 17 safe, 7 medium, 6 dangerous; 11 tool có thể thay đổi file; 12 tool cần confirmation; 9 tool dùng external app.
 
 ## Luồng Tool Tổng Chuẩn
 
@@ -27,12 +27,15 @@
 6. **thay đổi** System Advisor v2 gom snapshot read-only từ storage, disk/SMART, process, external apps và audit reports.
 7. **thay đổi** System Advisor v2 chỉ tạo recommendation, không tự cleanup, không xóa, không move.
 8. **thay đổi** Recommendation Center gom recommendation thành queue read-only để user review.
-9. **thay đổi** Nếu user chọn chạy tool thật, tool đó vẫn tự xử lý confirmation, risk classification, safe executor, manifest/undo và report/log.
-10. **thay đổi** Audit Center, Report Manager và Undo Manager lưu lại lịch sử, report, manifest để kiểm tra sau.
+9. **thay đổi** Guided Action Runner mở tool được đề xuất từ recommendation sau khi user xác nhận `OPEN`.
+10. **thay đổi** Nếu user chọn chạy tool thật, tool đó vẫn tự xử lý confirmation, risk classification, safe executor, manifest/undo và report/log.
+11. **thay đổi** Audit Center, Report Manager và Undo Manager lưu lại lịch sử, report, manifest để kiểm tra sau.
 
 ## Nguyên Tắc Không Được Phá
 
 **thay đổi** Advisor và Recommendation Center không được tự chạy cleanup tool.
+
+**thay đổi** Guided Action Runner chỉ được mở tool sau xác nhận rõ ràng; không được bypass confirmation của tool đích.
 
 **thay đổi** Mọi thao tác xóa phải đi qua `safe_executor.safe_delete()`.
 
@@ -61,6 +64,7 @@
 * **thay đổi** Natural Command v2
 * **thay đổi** System Advisor v2
 * **thay đổi** Recommendation Center
+* **thay đổi** Guided Action Runner
 
 **thay đổi** External app layer:
 
@@ -78,7 +82,7 @@
 
 **thay đổi** Gap 3: Recommendation Center da co trang thai persistent pending/deferred/handled/ignored.
 
-**thay đổi** Gap 4: Chưa có Guided Action Runner để mở tool từ recommendation với màn xác nhận risk thống nhất.
+**thay đổi** Gap 4: Guided Action Runner đã có, mở tool từ recommendation với màn xác nhận risk thống nhất và dry-run contract test.
 
 **thay đổi** Gap 5: Natural Command chưa điều khiển được queue kiểu "xem gợi ý số 1", "hoãn mục 2", "mở tool của mục 3".
 
@@ -127,6 +131,8 @@
 
 **thay đổi** Không làm ở bước này: không bypass confirmation của tool thật.
 
+**thay đổi** Trạng thái: đã hoàn thành. Main CLI expose mục 30, Capability Registry/Tool Tester/Natural Command đã có entry, Behavior Tester và Full System Tester đều có contract test dry-run.
+
 ### Bước 4 - Natural Command v3 Nhẹ
 
 **thay đổi** Mục tiêu: điều khiển recommendation queue bằng lệnh tự nhiên.
@@ -164,9 +170,9 @@
 
 ## Bước Nên Làm Ngay
 
-**thay đổi** Bước tiếp theo chuẩn nhất là Guided Action Runner.
+**thay đổi** Bước tiếp theo chuẩn nhất là Natural Command v3 Nhẹ.
 
-**thay đổi** Lý do: Recommendation Workflow v1 da co state file, nen buoc tiep theo la mo tool tu recommendation qua Guided Action Runner ma van giu confirmation cua tool that.
+**thay đổi** Lý do: Guided Action Runner đã có, nên bước tiếp theo là cho Natural Command điều khiển queue kiểu xem/mở/hoãn/đánh dấu recommendation mà vẫn đi qua runner an toàn.
 
 ## Deletion Safety / UX v2
 
@@ -202,7 +208,7 @@
 
 **thay đổi** External Apps Manager da co lua chon xem health v2 va xuat health report v2.
 
-**thay đổi** Buoc ke tiep theo trong ke hoach chuan la Guided Action Runner.
+**thay đổi** Buoc ke tiep theo trong ke hoach chuan la Natural Command v3 Nhe.
 
 ## Recommendation Workflow v1
 
@@ -221,4 +227,24 @@
 
 **thay đổi** Workflow nay van read-only doi voi du lieu user: no chi ghi state queue trong `data/` va report trong `reports/`, khong chay cleanup/tool thay user.
 
-**thay đổi** Buoc ke tiep theo trong ke hoach chuan la Guided Action Runner.
+**thay đổi** Guided Action Runner đã hoàn thành bước mở tool từ queue qua xác nhận `OPEN`, có dry-run test và không tự mark handled.
+
+## Guided Action Runner
+
+**thay đổi** Thêm `tools/core/guided_action_runner.py`.
+
+**thay đổi** Runner làm 4 việc:
+
+* **thay đổi** Sync queue pending/deferred từ Recommendation Center.
+* **thay đổi** Resolve `suggested_tool_id` qua Capability Registry.
+* **thay đổi** Hiển thị risk, mutates_files, needs_confirmation, undo_strategy, external_apps và report gốc.
+* **thay đổi** Chỉ mở tool sau khi user nhập đúng `OPEN`.
+
+**thay đổi** Safety contract:
+
+* **thay đổi** Runner không tự xóa/move/cleanup.
+* **thay đổi** Runner không bypass confirmation của tool thật.
+* **thay đổi** Dry-run tạo report nhưng không execute target tool.
+* **thay đổi** Recommendation không tự chuyển `handled`; user phải xác nhận sau khi tool đích chạy xong.
+
+**thay đổi** Bước kế tiếp trong kế hoạch chuẩn là Natural Command v3 Nhẹ.

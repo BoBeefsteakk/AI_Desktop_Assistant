@@ -190,7 +190,7 @@ Chức năng:
 
 **thay đổi** Kết quả hiện tại:
 
-Passed: 29
+Passed: 30
 Failed: 0
 
 ---
@@ -301,6 +301,23 @@ Chức năng:
 * **thay đổi** Co the sync queue, loc theo severity/state, doi state va export report queue
 * **thay đổi** Van read-only voi du lieu user; chi ghi queue state va report
 
+### Guided Action Runner
+
+**thay đổi** Đã thêm Guided Action Runner để mở tool từ recommendation nhưng vẫn giữ confirmation an toàn.
+
+Chức năng:
+
+* **thay đổi** Thêm `tools/core/guided_action_runner.py`
+* **thay đổi** Sync queue `pending/deferred` từ Recommendation Center
+* **thay đổi** Resolve `suggested_tool_id` qua Capability Registry
+* **thay đổi** Hiển thị target tool, risk, `mutates_files`, `needs_confirmation`, `undo_strategy`, external apps và report gốc
+* **thay đổi** Bắt user nhập đúng `OPEN` trước khi mở tool thật
+* **thay đổi** Không tự cleanup, không tự xóa/move, không bypass confirmation của tool đích
+* **thay đổi** Dry-run tạo report nhưng không execute target tool
+* **thay đổi** Recommendation không tự chuyển `handled`; user phải xác nhận sau khi chạy tool đích
+* **thay đổi** Main CLI expose `Guided Action Runner` ở mục 30
+* **thay đổi** Natural Command route được lệnh `lam goi y`/`mo goi y` sang Guided Action Runner
+
 ---
 
 ### Behavior Tester
@@ -324,11 +341,13 @@ Các case đã kiểm tra:
 * **thay đổi** Natural Command Router test: route disk/cache/full-test/search/unknown va check confirmation
 * **thay đổi** System Advisor v2 Recommendations test: kiểm tra severity, suggested tool và suggestion-only contract
 * **thay đổi** Recommendation Center Queue test: kiểm tra collect queue, enrich suggested tool và suggestion-only contract
+* **thay đổi** Recommendation Workflow State Transitions test: kiểm tra pending/deferred/handled/ignored trên state file sandbox
+* **thay đổi** Guided Action Runner Contract test: kiểm tra resolve suggested tool, target confirmation metadata, dry-run không execute và không auto handled
 * **thay đổi** Sandbox test dùng timestamp microsecond để tránh trùng khi chạy song song
 
 Kết quả hiện tại:
 
-Passed: 14
+Passed: 17
 Failed: 0
 
 ---
@@ -385,6 +404,7 @@ Process Monitor:
 * **thay đổi** External Apps Manager
 * **thay đổi** Capability Registry
 * **thay đổi** Recommendation Center
+* **thay đổi** Guided Action Runner
 
 ---
 
@@ -458,10 +478,11 @@ Process Monitor:
 * **thay đổi** Kiểm tra Capability Registry coverage/risk sync với Tool Tester
 * **thay đổi** Kiểm tra System Advisor v2 contract bằng dữ liệu giả
 * **thay đổi** Kiểm tra Recommendation Center contract bằng report giả
+* **thay đổi** Kiểm tra Guided Action Runner contract bằng report giả và dry-run
 
 Kết quả hiện tại:
 
-Passed: 18
+Passed: 19
 Failed: 0
 
 ---
@@ -522,12 +543,13 @@ Lý do:
 * **thay đổi** Natural Command v2
 * **thay đổi** System Advisor v2
 * **thay đổi** Recommendation Center
+* **thay đổi** Guided Action Runner
 
 Cần làm tiếp để ổn định tool tổng:
 
-* **thay đổi** Ưu tiên 1: External App Health Report v2 với dependency map app -> tool
-* **thay đổi** Ưu tiên 2: Recommendation Workflow v1 có trạng thái pending/deferred/handled/ignored
-* **thay đổi** Ưu tiên 3: Guided Action Runner mở tool từ recommendation nhưng vẫn giữ confirmation
+* **thay đổi** Ưu tiên 1: Natural Command v3 Nhẹ để điều khiển queue qua lệnh tự nhiên
+* **thay đổi** Ưu tiên 2: Advisor real run calibration trên máy thật
+* **thay đổi** Ưu tiên 3: Path drift detection cho External App Health nếu app bị di chuyển
 * **thay đổi** Mở rộng Undo System cho các thao tác không có manifest nếu cần
 * **thay đổi** Mở rộng Natural Command v2 thành intent engine sau khi có thêm lịch sử/report để feed assistant
 * **thay đổi** Chuẩn hóa Recommendation Center thành queue có trạng thái handled/deferred nếu cần workflow dài hơn
