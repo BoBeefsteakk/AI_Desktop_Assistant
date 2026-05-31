@@ -251,6 +251,20 @@ Kết quả hiện tại:
 
 ---
 
+### Natural Command v2
+
+**thay đổi** Da nang Natural Command tu keyword hard-code sang router dua tren Capability Registry.
+
+Chuc nang:
+
+* **thay đổi** Chuan hoa lenh co dau/khong dau bang Unicode normalization
+* **thay đổi** Giu nguyen flow `find <tu khoa>` va `tim <tu khoa>` qua File Indexer/Everything fallback
+* **thay đổi** Route lenh nhu `check disk`, `don cache`, `folder size`, `test tong`, `capability` sang capability tuong ung
+* **thay đổi** Tool risk medium/dangerous hoac co the thay doi file se hoi xac nhan truoc khi mo tool
+* **thay đổi** Behavior Tester co case rieng de test router ma khong chay thao tac nguy hiem
+
+---
+
 ### Behavior Tester
 
 **thay đổi** Đã bổ sung test hành vi trong sandbox.
@@ -269,11 +283,12 @@ Các case đã kiểm tra:
 * Config System đọc `config/user_settings.json` và validate snapshot
 * Audit Center đọc assistant logs và report index
 * Undo Manager restore manifest trong sandbox
+* **thay đổi** Natural Command Router test: route disk/cache/full-test/search/unknown va check confirmation
 * **thay đổi** Sandbox test dùng timestamp microsecond để tránh trùng khi chạy song song
 
 Kết quả hiện tại:
 
-Passed: 11
+Passed: 12
 Failed: 0
 
 ---
@@ -459,11 +474,12 @@ Lý do:
 * **thay đổi** WizTree Adapter read-only
 * **thay đổi** External Apps Integration
 * **thay đổi** Capability Registry
+* **thay đổi** Natural Command v2
 
 Cần làm tiếp để ổn định tool tổng:
 
 * **thay đổi** Mở rộng Undo System cho các thao tác không có manifest nếu cần
-* **thay đổi** Dùng Capability Registry để nâng Natural Command v2
+* **thay đổi** Mở rộng Natural Command v2 thành intent engine sau khi có thêm lịch sử/report để feed assistant
 * Bổ sung thêm case vào Full System Tester khi phát hiện lỗi thực tế mới
 
 ---

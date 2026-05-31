@@ -104,6 +104,13 @@ Ví dụ:
 * file_indexer
 * natural_command
 
+**thay đổi** `natural_command.py` hiện là router v2:
+
+* Chuẩn hóa lệnh có dấu/không dấu
+* Giữ `find <từ khóa>`/`tim <từ khóa>` cho search nhanh qua File Indexer
+* Dùng Capability Registry để tìm tool phù hợp
+* Hỏi xác nhận trước khi mở capability có risk medium/dangerous hoặc có thể thay đổi file
+
 ---
 
 ### automation
@@ -251,6 +258,8 @@ Full System Tester kiểm tra:
 * Risk trong capability không lệch với Tool Tester
 * Không trùng id/entrypoint
 * Field bắt buộc không thiếu
+
+**thay đổi** Natural Command v2 dùng metadata này để quyết định route và mức xác nhận trước khi chạy tool.
 
 ---
 

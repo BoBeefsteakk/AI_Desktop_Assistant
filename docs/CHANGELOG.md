@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-05-31
+
+### Natural Command v2
+
+* **thay đổi** Thay keyword hard-code bằng router dựa trên Capability Registry
+* **thay đổi** Chuẩn hóa lệnh tiếng Việt có dấu/không dấu trước khi match intent
+* **thay đổi** Giữ nguyên `find <từ khóa>`/`tim <từ khóa>` để search qua File Indexer/Everything fallback
+* **thay đổi** Tool medium/dangerous hoặc có khả năng thay đổi file sẽ hỏi xác nhận trước khi chạy từ Natural Command
+* **thay đổi** Behavior Tester thêm case Natural Command Router
+* **thay đổi** Behavior Tester hiện pass 12/12
+
 ## 2026-05-30
 
 ### Refactor

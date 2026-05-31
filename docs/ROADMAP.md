@@ -41,11 +41,12 @@ Hoàn thành
 * **thay đổi** WizTree Adapter read-only để scan dung lượng nhanh qua CSV
 * **thay đổi** External Apps Integration cho Everything, smartctl, Sysinternals, ExifTool, FFmpeg, rclone
 * **thay đổi** Capability Registry cho toàn bộ tool
+* **thay đổi** Natural Command v2 route lệnh qua Capability Registry và confirmation theo risk
 
 Cần rà soát tiếp:
 
 * **thay đổi** chuyển sang Phase 5 AI Decision Engine khi tool tổng ổn định hơn
-* chuẩn hóa sâu hơn metadata summary cho assistant đọc
+* **thay đổi** chuẩn hóa sâu hơn metadata summary và intent history cho assistant đọc
 
 ---
 
@@ -115,6 +116,7 @@ Một lệnh test tổng hợp trước khi refactor lớn hoặc feed assistant
 * **thay đổi** WizTree Adapter sample CSV test
 * **thay đổi** External Apps Registry test
 * **thay đổi** Capability Registry coverage/risk sync test
+* **thay đổi** Natural Command Router test nằm trong Behavior Tester
 * Full System Tester hiện pass 16/16
 
 ---

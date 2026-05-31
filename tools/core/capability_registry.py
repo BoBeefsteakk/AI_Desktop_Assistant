@@ -273,7 +273,7 @@ CAPABILITIES: list[dict[str, Any]] = [
         "logs_action": False,
         "external_apps": ["everything_cli"],
         "tags": ["command", "search"],
-        "summary": "Route simple natural-language commands to existing tools.",
+        "summary": "Route normalized natural-language commands through Capability Registry with risk confirmation.",
     },
     {
         "id": "folder_size_analyzer",

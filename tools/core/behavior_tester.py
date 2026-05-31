@@ -14,6 +14,7 @@ from tools.core.risk_classifier import PROTECTED, classify_file_risk
 from tools.core.safe_executor import safe_delete
 from tools.core.safety_utils import restore_from_manifest, safe_move, save_manifest
 from tools.core.undo_manager import preview_manifest, restore_manifest
+from tools.search import natural_command
 from tools.storage import empty_folder_finder, media_organizer
 from tools.system.disk_checker import get_disk_info
 from tools.system.process_monitor import get_top_processes
@@ -413,6 +414,61 @@ def test_undo_manager_roundtrip(sandbox: Path) -> dict[str, Any]:
     }
 
 
+def test_natural_command_router(sandbox: Path) -> dict[str, Any]:
+    disk_route = natural_command.resolve_command("check disk")
+    accented_disk_route = natural_command.resolve_command("ki\u1ec3m tra \u1ed5 c\u1ee9ng")
+    search_route = natural_command.resolve_command("find naruto")
+    cache_route = natural_command.resolve_command("don cache")
+    full_test_route = natural_command.resolve_command("test tong")
+    unknown_route = natural_command.resolve_command("khong hieu lenh nay")
+
+    assert_condition(
+        disk_route["type"] == "capability"
+        and disk_route["capability"]["id"] == "disk_checker",
+        "Natural Command should route check disk to Disk Checker.",
+    )
+    assert_condition(
+        accented_disk_route["type"] == "capability"
+        and accented_disk_route["capability"]["id"] == "disk_checker",
+        "Natural Command should normalize Vietnamese accents.",
+    )
+    assert_condition(
+        search_route["type"] == "search"
+        and search_route["query"] == "naruto",
+        "Natural Command should keep find <keyword> search behavior.",
+    )
+    assert_condition(
+        cache_route["type"] == "capability"
+        and cache_route["capability"]["id"] == "browser_cache_cleaner",
+        "Natural Command should route cache cleanup.",
+    )
+    assert_condition(
+        full_test_route["type"] == "capability"
+        and full_test_route["capability"]["id"] == "full_system_tester",
+        "Natural Command should route full system test.",
+    )
+    assert_condition(
+        unknown_route["type"] == "unknown",
+        "Natural Command should return unknown for unsupported commands.",
+    )
+    assert_condition(
+        not natural_command.requires_confirmation(disk_route["capability"]),
+        "Safe read-only commands should not require Natural Command confirmation.",
+    )
+    assert_condition(
+        natural_command.requires_confirmation(cache_route["capability"]),
+        "Mutating or risky commands should require Natural Command confirmation.",
+    )
+
+    return {
+        "disk_route": disk_route["capability"]["id"],
+        "search_query": search_route["query"],
+        "cache_route": cache_route["capability"]["id"],
+        "full_test_route": full_test_route["capability"]["id"],
+        "unknown_type": unknown_route["type"],
+    }
+
+
 def run_single_test(
     name: str,
     test_func: Callable[[Path], dict[str, Any]],
@@ -451,6 +507,7 @@ def run_behavior_tester() -> None:
         ("Config System Snapshot", test_config_system_snapshot),
         ("Audit Center Snapshot", test_audit_center_snapshot),
         ("Undo Manager Roundtrip", test_undo_manager_roundtrip),
+        ("Natural Command Router", test_natural_command_router),
     ]
 
     results = []
