@@ -396,6 +396,29 @@ Kết quả:
 
 ---
 
+### Pending Storage Review
+
+**thay đổi** Đã xử lý bước tiếp theo bằng scan/report read-only cho 2 recommendation còn lại.
+
+Kết quả:
+
+* **thay đổi** `D:\Downloads` root có 0 file lẻ để Download Organizer sắp xếp.
+* **thay đổi** `D:\Downloads\Riot Games` khoảng 36.24 GB, không tự động xử lý vì là game data.
+* **thay đổi** `D:\Downloads\app` khoảng 7.72 GB, có nhiều bộ cài/archive cần user chọn giữ/xóa/move.
+* **thay đổi** Large archive review thấy 6 file, tổng khoảng 8.99 GB.
+* **thay đổi** `downloads-folder-heavy` chuyển `handled` cho flow Download Organizer vì không có root file để organize.
+* **thay đổi** `large-archive-files` chuyển `deferred` vì cần user quyết định file nào được xóa hoặc chuyển chỗ.
+* **thay đổi** Queue mới nhất: 0 pending, 2 deferred, 2 handled, 1 ignored.
+* **thay đổi** Feed Readiness mới nhất: ready, 8 pass, 0 warn, 0 fail.
+
+Reports:
+
+* **thay đổi** Storage review: `D:\tool\reports\recommendation_center_20260601_201426.json`.
+* **thay đổi** Queue export: `D:\tool\reports\recommendation_center_20260601_201448.json`.
+* **thay đổi** Feed Readiness: `D:\tool\reports\feed_readiness_20260601_201449.json`.
+
+---
+
 ### Behavior Tester
 
 **thay đổi** Đã bổ sung test hành vi trong sandbox.
@@ -631,7 +654,7 @@ Lý do:
 
 Cần làm tiếp để ổn định tool tổng:
 
-* **thay đổi** Ưu tiên 1: Xử lý 2 pending recommendations còn lại: Downloads nặng và archive/bộ cài lớn
+* **thay đổi** Ưu tiên 1: Nếu muốn giải phóng dung lượng thật, user cần chọn rõ file archive/bộ cài nào được xóa/move hoặc chọn cách xử lý `D:\Downloads\Riot Games`
 * **thay đổi** Ưu tiên 2: Mở rộng Undo System cho các thao tác không có manifest nếu cần
 * **thay đổi** Mở rộng Natural Command v3 thành intent engine sau khi có thêm lịch sử/report để feed assistant
 * **thay đổi** Chuẩn hóa Recommendation Center thành queue có trạng thái handled/deferred nếu cần workflow dài hơn

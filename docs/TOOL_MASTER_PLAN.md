@@ -205,12 +205,23 @@
 
 **thay đổi** Kết quả review:
 
-* **thay đổi** Giữ pending: `downloads-folder-heavy`, `large-archive-files`.
+* **thay đổi** Ban đầu giữ pending: `downloads-folder-heavy`, `large-archive-files`; sau scan read-only đã xử lý state tiếp ở phần dưới.
 * **thay đổi** Chuyển deferred: `large-video-files`.
 * **thay đổi** Chuyển handled: `largest-folder-review`.
 * **thay đổi** Chuyển ignored: `heavy-processes`.
 
-**thay đổi** Bước tiếp theo chuẩn nhất là xử lý 2 pending recommendations còn lại bằng flow có xác nhận: Download Organizer cho `D:\Downloads` và Large File Finder cho archive/bộ cài lớn.
+**thay đổi** Bước tiếp theo đã chạy read-only:
+
+* **thay đổi** `D:\Downloads` root có 0 file lẻ, nên Download Organizer không có gì để move.
+* **thay đổi** `D:\Downloads\Riot Games` chiếm khoảng 36.24 GB nhưng là game data, không tự động xử lý.
+* **thay đổi** `D:\Downloads\app` chiếm khoảng 7.72 GB.
+* **thay đổi** Large File Finder thấy 6 archive/bộ cài lớn, tổng khoảng 8.99 GB.
+* **thay đổi** `downloads-folder-heavy` đã chuyển `handled` cho flow Download Organizer.
+* **thay đổi** `large-archive-files` đã chuyển `deferred` vì cần user chọn file cụ thể trước khi xóa/move.
+
+**thay đổi** Queue mới nhất: 0 pending, 2 deferred, 2 handled, 1 ignored.
+
+**thay đổi** Bước tiếp theo chuẩn nhất là user chọn rõ có muốn xóa/move các archive/bộ cài lớn hoặc xử lý `D:\Downloads\Riot Games` không; tool không được tự quyết định phần này.
 
 ## Deletion Safety / UX v2
 

@@ -2,6 +2,18 @@
 
 ## 2026-06-01
 
+### Pending Storage Review
+
+* **thay đổi** Đã xử lý bước tiếp theo của queue bằng review read-only, không xóa/move file.
+* **thay đổi** Scan `D:\Downloads` cho thấy root Downloads có 0 file lẻ để Download Organizer sắp xếp.
+* **thay đổi** Dung lượng Downloads nằm chủ yếu ở thư mục con: `D:\Downloads\Riot Games` khoảng 36.24 GB và `D:\Downloads\app` khoảng 7.72 GB.
+* **thay đổi** Không tự động đụng `D:\Downloads\Riot Games` vì đây là game data, chỉ nên xử lý nếu user muốn move/uninstall thủ công.
+* **thay đổi** Large File Finder review thấy 6 archive/bộ cài lớn, tổng khoảng 8.99 GB.
+* **thay đổi** Chuyển `downloads-folder-heavy` sang `handled` cho flow Download Organizer vì không có root file để organize.
+* **thay đổi** Chuyển `large-archive-files` sang `deferred` vì xóa/move archive cần user chọn cụ thể.
+* **thay đổi** Queue mới nhất: 0 pending, 2 deferred, 2 handled, 1 ignored.
+* **thay đổi** Feed Readiness mới nhất: ready, 8 pass, 0 warn, 0 fail.
+
 ### Recommendation Queue Review
 
 * **thay đổi** Đã review 5 pending recommendations thật sau Feed Readiness.

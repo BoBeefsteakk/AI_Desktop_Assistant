@@ -51,11 +51,11 @@ Hoàn thành
 * **thay đổi** Advisor real run calibration lượt đầu trên `D:\`, đã lọc report test khỏi queue thật
 * **thay đổi** External App Health path drift detection với baseline local và structured drift recommendations
 * **thay đổi** Feed Assistant Readiness report/checklist trước feed/train
-* **thay đổi** Review Recommendation Queue thật: còn 2 pending action cần user quyết định
+* **thay đổi** Review Recommendation Queue thật và scan storage pending bằng read-only report
 
 Cần rà soát tiếp:
 
-* **thay đổi** Xử lý 2 pending recommendations còn lại: Downloads nặng và archive/bộ cài lớn
+* **thay đổi** User quyết định có xóa/move archive/bộ cài lớn hoặc xử lý `D:\Downloads\Riot Games` không
 
 ---
 
