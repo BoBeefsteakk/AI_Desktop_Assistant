@@ -376,6 +376,26 @@ Kết quả mới nhất:
 
 ---
 
+### Recommendation Queue Review
+
+**thay đổi** Đã review queue thật sau khi có Feed Readiness report.
+
+Trạng thái mới:
+
+* **thay đổi** `downloads-folder-heavy`: giữ `pending`; đây là action chính cho `D:\Downloads` nặng 44.02 GB.
+* **thay đổi** `large-archive-files`: giữ `pending`; cần mở Large File Finder để review 6 archive/bộ cài lớn khoảng 8.99 GB.
+* **thay đổi** `large-video-files`: chuyển `deferred`; chưa tự gom/move video vì cần user chọn nơi lưu.
+* **thay đổi** `largest-folder-review`: chuyển `handled`; duplicate ngữ cảnh với Downloads nặng.
+* **thay đổi** `heavy-processes`: chuyển `ignored`; `MemCompression` là process hệ thống bình thường, không nên kill/cleanup.
+
+Kết quả:
+
+* **thay đổi** Queue mới nhất: 2 pending, 1 deferred, 1 handled, 1 ignored.
+* **thay đổi** Recommendation report: `D:\tool\reports\recommendation_center_20260601_183718.json`.
+* **thay đổi** Feed Readiness report: `D:\tool\reports\feed_readiness_20260601_183718.json`.
+
+---
+
 ### Behavior Tester
 
 **thay đổi** Đã bổ sung test hành vi trong sandbox.
@@ -611,7 +631,7 @@ Lý do:
 
 Cần làm tiếp để ổn định tool tổng:
 
-* **thay đổi** Ưu tiên 1: Review 5 pending recommendations thật trong queue trước khi bật automation sâu hơn
+* **thay đổi** Ưu tiên 1: Xử lý 2 pending recommendations còn lại: Downloads nặng và archive/bộ cài lớn
 * **thay đổi** Ưu tiên 2: Mở rộng Undo System cho các thao tác không có manifest nếu cần
 * **thay đổi** Mở rộng Natural Command v3 thành intent engine sau khi có thêm lịch sử/report để feed assistant
 * **thay đổi** Chuẩn hóa Recommendation Center thành queue có trạng thái handled/deferred nếu cần workflow dài hơn

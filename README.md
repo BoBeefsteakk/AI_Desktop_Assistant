@@ -90,6 +90,7 @@ System Advisor v2	Done
 Recommendation Center	Done
 Guided Action Runner	Done
 Feed Assistant Readiness	Done
+Recommendation Queue Review	Done
 Refactor Tools Folder	Done
 Config System	Done
 Audit System	Basic Done

@@ -51,10 +51,11 @@ Hoàn thành
 * **thay đổi** Advisor real run calibration lượt đầu trên `D:\`, đã lọc report test khỏi queue thật
 * **thay đổi** External App Health path drift detection với baseline local và structured drift recommendations
 * **thay đổi** Feed Assistant Readiness report/checklist trước feed/train
+* **thay đổi** Review Recommendation Queue thật: còn 2 pending action cần user quyết định
 
 Cần rà soát tiếp:
 
-* **thay đổi** Review 5 pending recommendations thật trước khi mở automation sâu hơn
+* **thay đổi** Xử lý 2 pending recommendations còn lại: Downloads nặng và archive/bộ cài lớn
 
 ---
 

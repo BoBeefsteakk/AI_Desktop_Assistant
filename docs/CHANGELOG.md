@@ -2,6 +2,17 @@
 
 ## 2026-06-01
 
+### Recommendation Queue Review
+
+* **thay đổi** Đã review 5 pending recommendations thật sau Feed Readiness.
+* **thay đổi** Giữ `downloads-folder-heavy` ở `pending` vì cần user quyết định chạy Download Organizer trên `D:\Downloads`.
+* **thay đổi** Giữ `large-archive-files` ở `pending` vì cần review file nén/bộ cài lớn bằng Large File Finder trước khi xóa hoặc move.
+* **thay đổi** Chuyển `large-video-files` sang `deferred` vì gom/move video cần user chọn storage đích, không auto-move.
+* **thay đổi** Chuyển `largest-folder-review` sang `handled` vì trùng ngữ cảnh với `downloads-folder-heavy`.
+* **thay đổi** Chuyển `heavy-processes` sang `ignored` vì `MemCompression` là cơ chế nén RAM bình thường của Windows, không nên cleanup.
+* **thay đổi** Queue mới nhất: 2 pending, 1 deferred, 1 handled, 1 ignored.
+* **thay đổi** Feed Readiness mới nhất vẫn `ready`: 7 pass, 1 warn, 0 fail; warning còn lại là 2 pending recommendations cần user review.
+
 ### Feed Assistant Readiness
 
 * **thay đổi** Thêm `tools/core/feed_readiness.py` để kiểm tra trạng thái pre-feed theo dạng read-only.

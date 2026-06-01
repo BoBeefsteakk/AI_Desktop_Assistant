@@ -201,9 +201,16 @@
 
 ## Bước Nên Làm Ngay
 
-**thay đổi** Bước tiếp theo chuẩn nhất là review 5 pending recommendations thật trong Recommendation Center.
+**thay đổi** Bước review 5 pending recommendations thật đã hoàn thành.
 
-**thay đổi** Lý do: mốc pre-feed đã có readiness report; trước khi automation sâu hơn cần xử lý hoặc đánh dấu các gợi ý thật đang pending.
+**thay đổi** Kết quả review:
+
+* **thay đổi** Giữ pending: `downloads-folder-heavy`, `large-archive-files`.
+* **thay đổi** Chuyển deferred: `large-video-files`.
+* **thay đổi** Chuyển handled: `largest-folder-review`.
+* **thay đổi** Chuyển ignored: `heavy-processes`.
+
+**thay đổi** Bước tiếp theo chuẩn nhất là xử lý 2 pending recommendations còn lại bằng flow có xác nhận: Download Organizer cho `D:\Downloads` và Large File Finder cho archive/bộ cài lớn.
 
 ## Deletion Safety / UX v2
 
@@ -239,7 +246,7 @@
 
 **thay đổi** External Apps Manager da co lua chon xem health v2 va xuat health report v2.
 
-**thay đổi** External App Health path drift detection đã hoàn thành. Feed Assistant readiness report cũng đã hoàn thành; bước kế tiếp là review queue thật.
+**thay đổi** External App Health path drift detection và Feed Assistant readiness report đã hoàn thành. Queue thật đã review, hiện còn 2 pending action cần user quyết định.
 
 ## Recommendation Workflow v1
 
@@ -278,7 +285,7 @@
 * **thay đổi** Dry-run tạo report nhưng không execute target tool.
 * **thay đổi** Recommendation không tự chuyển `handled`; user phải xác nhận sau khi tool đích chạy xong.
 
-**thay đổi** Feed Assistant readiness report đã hoàn thành; bước kế tiếp trong kế hoạch chuẩn là review queue thật.
+**thay đổi** Feed Assistant readiness report đã hoàn thành; queue thật đã review, còn 2 pending action cần user quyết định.
 
 ## Natural Command v3 Nhẹ
 
