@@ -717,14 +717,22 @@ def test_recommendation_center_queue(sandbox: Path) -> dict[str, Any]:
         tags=["system_advisor", "read_only", "v2", "behavior_test"],
     )
 
-    queue = recommendation_center.collect_recommendation_queue(report_limit=15)
+    queue = recommendation_center.collect_recommendation_queue(
+        report_limit=15,
+        include_test_reports=True,
+    )
     summary = recommendation_center.summarize_recommendation_queue(queue)
     matching = [
         item for item in queue
         if item["id"] == "behavior-recommendation-center"
     ]
+    default_queue = recommendation_center.collect_recommendation_queue(report_limit=15)
 
     assert_condition(matching, "Recommendation Center should collect System Advisor v2 recommendations.")
+    assert_condition(
+        not any(item["id"] == "behavior-recommendation-center" for item in default_queue),
+        "Default Recommendation Center queue should exclude test-tagged reports.",
+    )
     assert_condition(
         matching[-1]["suggested_tool_name"] == "Audit Center",
         "Recommendation Center should enrich suggested tool metadata.",
@@ -796,6 +804,7 @@ def test_recommendation_workflow_state_transitions(sandbox: Path) -> dict[str, A
     sync_result = recommendation_center.sync_recommendation_queue(
         report_limit=20,
         state_file=state_file,
+        include_test_reports=True,
         states=None,
     )
     matching = {
@@ -835,6 +844,7 @@ def test_recommendation_workflow_state_transitions(sandbox: Path) -> dict[str, A
     all_queue = recommendation_center.collect_recommendation_queue(
         report_limit=20,
         state_file=state_file,
+        include_test_reports=True,
         states=None,
     )
     seeded = [
@@ -845,6 +855,7 @@ def test_recommendation_workflow_state_transitions(sandbox: Path) -> dict[str, A
     visible = recommendation_center.collect_recommendation_queue(
         report_limit=20,
         state_file=state_file,
+        include_test_reports=True,
         states=recommendation_center.DEFAULT_VISIBLE_STATES,
     )
     visible_seeded = [
@@ -906,6 +917,7 @@ def test_guided_action_runner_contract(sandbox: Path) -> dict[str, Any]:
     preview = guided_action_runner.preview_guided_actions(
         report_limit=30,
         state_file=state_file,
+        include_test_reports=True,
     )
     context = guided_action_runner.find_guided_action_context(
         preview["contexts"],
@@ -935,6 +947,7 @@ def test_guided_action_runner_contract(sandbox: Path) -> dict[str, Any]:
     handled_queue = recommendation_center.collect_recommendation_queue(
         report_limit=30,
         state_file=state_file,
+        include_test_reports=True,
         states={"handled"},
     )
     assert_condition(
@@ -989,6 +1002,7 @@ def test_natural_command_v3_queue_actions(sandbox: Path) -> dict[str, Any]:
     preview = guided_action_runner.preview_guided_actions(
         report_limit=30,
         state_file=state_file,
+        include_test_reports=True,
     )
     context = guided_action_runner.find_guided_action_context(
         preview["contexts"],
@@ -1001,6 +1015,7 @@ def test_natural_command_v3_queue_actions(sandbox: Path) -> dict[str, Any]:
         index,
         report_limit=30,
         state_file=state_file,
+        include_test_reports=True,
         dry_run=True,
         require_confirmation=False,
     )
@@ -1012,12 +1027,14 @@ def test_natural_command_v3_queue_actions(sandbox: Path) -> dict[str, Any]:
         "deferred",
         report_limit=30,
         state_file=state_file,
+        include_test_reports=True,
     )
     assert_condition(deferred["status"] == "success", "Natural Command v3 should defer by index.")
 
     deferred_queue = recommendation_center.collect_recommendation_queue(
         report_limit=30,
         state_file=state_file,
+        include_test_reports=True,
         states={"deferred"},
     )
     assert_condition(
@@ -1030,12 +1047,14 @@ def test_natural_command_v3_queue_actions(sandbox: Path) -> dict[str, Any]:
         "handled",
         report_limit=30,
         state_file=state_file,
+        include_test_reports=True,
     )
     assert_condition(handled["status"] == "success", "Natural Command v3 should mark handled by index.")
 
     visible = recommendation_center.collect_recommendation_queue(
         report_limit=30,
         state_file=state_file,
+        include_test_reports=True,
         states=recommendation_center.DEFAULT_VISIBLE_STATES,
     )
     assert_condition(

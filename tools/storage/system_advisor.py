@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import sys
 from typing import Any
 
 from config.settings import (
@@ -20,6 +21,7 @@ from tools.core.external_apps import (
     is_external_app_available,
 )
 from tools.core.report_manager import create_report
+from tools.core.recommendation_center import is_test_report_record
 from tools.core.safety_utils import ask_yes_no, format_size
 from tools.storage.folder_size_analyzer import analyze_top_folders
 from tools.storage.large_file_finder import find_large_files
@@ -37,6 +39,12 @@ SEVERITY_ORDER = {
     "warning": 1,
     "info": 2,
 }
+
+
+def configure_console_output() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
 
 
 def print_divider() -> None:
@@ -332,6 +340,7 @@ def build_structured_recommendations(
     bad_reports = [
         item for item in reports
         if item.get("status") in {"error", "warning"}
+        and not is_test_report_record(item)
     ]
     if bad_reports:
         latest = bad_reports[-1]
@@ -521,6 +530,8 @@ def show_system_advisor_result(result: dict[str, Any]) -> None:
 
 
 def run_system_advisor() -> None:
+    configure_console_output()
+
     print_divider()
     print("SYSTEM ADVISOR V2 - SAFE READ-ONLY ANALYSIS")
     print_divider()

@@ -20,6 +20,17 @@ SEVERITY_ORDER = {
 VALID_WORKFLOW_STATES = {"pending", "deferred", "handled", "ignored"}
 DEFAULT_VISIBLE_STATES = ("pending", "deferred")
 RECOMMENDATION_QUEUE_FILE = DATA_DIR / "recommendation_queue.jsonl"
+TEST_REPORT_TAGS = {
+    "behavior_test",
+    "contract_test",
+    "full_system",
+    "natural_command_v3",
+    "recommendation_workflow",
+}
+LATEST_ONLY_REPORT_TOOLS = {
+    "system_advisor",
+    "external_apps",
+}
 
 
 def safe_read_report(report_path: str | Path) -> dict[str, Any] | None:
@@ -34,6 +45,65 @@ def safe_read_report(report_path: str | Path) -> dict[str, Any] | None:
         return None
 
     return data if isinstance(data, dict) else None
+
+
+def is_test_report_record(report_record: dict[str, Any]) -> bool:
+    report_data = safe_read_report(str(report_record.get("report_path") or ""))
+    if not report_data:
+        return False
+
+    tags = {
+        str(item).strip().lower()
+        for item in report_data.get("tags", [])
+        if str(item).strip()
+    }
+    if tags.intersection(TEST_REPORT_TAGS):
+        return True
+
+    action = str(report_data.get("action") or report_record.get("action") or "").lower()
+    return action.endswith("_contract") or action in {
+        "contract_warning",
+        "workflow_state_test",
+    }
+
+
+def filter_report_records_for_queue(
+    report_records: list[dict[str, Any]],
+    *,
+    include_test_reports: bool = False,
+) -> list[dict[str, Any]]:
+    filtered = [
+        item for item in report_records
+        if include_test_reports or not is_test_report_record(item)
+    ]
+    latest_snapshot_index = {}
+
+    for index, item in enumerate(filtered):
+        tool_name = str(item.get("tool") or "")
+        status = str(item.get("status") or "")
+        if tool_name not in LATEST_ONLY_REPORT_TOOLS or status != "success":
+            continue
+
+        key = (
+            tool_name,
+            str(item.get("action") or ""),
+        )
+        latest_snapshot_index[key] = index
+
+    result = []
+    for index, item in enumerate(filtered):
+        tool_name = str(item.get("tool") or "")
+        status = str(item.get("status") or "")
+        if tool_name in LATEST_ONLY_REPORT_TOOLS and status == "success":
+            key = (
+                tool_name,
+                str(item.get("action") or ""),
+            )
+            if latest_snapshot_index.get(key) != index:
+                continue
+        result.append(item)
+
+    return result
 
 
 def normalize_severity(value: Any, default: str = "info") -> str:
@@ -297,21 +367,17 @@ def build_report_issue_recommendation(report_record: dict[str, Any]) -> dict[str
 
 
 def dedupe_recommendations(recommendations: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    seen = set()
-    deduped = []
+    deduped_by_key = {}
 
     for item in recommendations:
         key = (
             item.get("id"),
             item.get("detail"),
-            item.get("report_path"),
+            item.get("suggested_tool_id"),
         )
-        if key in seen:
-            continue
-        seen.add(key)
-        deduped.append(item)
+        deduped_by_key[key] = item
 
-    return deduped
+    return list(deduped_by_key.values())
 
 
 def attach_workflow_state(
@@ -379,10 +445,14 @@ def collect_recommendation_queue(
     *,
     report_limit: int = 80,
     include_report_issues: bool = True,
+    include_test_reports: bool = False,
     state_file: str | Path | None = None,
     states: set[str] | list[str] | tuple[str, ...] | None = None,
 ) -> list[dict[str, Any]]:
-    report_records = read_recent_report_index(limit=report_limit)
+    report_records = filter_report_records_for_queue(
+        read_recent_report_index(limit=report_limit),
+        include_test_reports=include_test_reports,
+    )
     queue = []
 
     for report_record in report_records:
@@ -417,12 +487,14 @@ def sync_recommendation_queue(
     *,
     report_limit: int = 80,
     include_report_issues: bool = True,
+    include_test_reports: bool = False,
     state_file: str | Path | None = None,
     states: set[str] | list[str] | tuple[str, ...] | None = DEFAULT_VISIBLE_STATES,
 ) -> dict[str, Any]:
     all_queue = collect_recommendation_queue(
         report_limit=report_limit,
         include_report_issues=include_report_issues,
+        include_test_reports=include_test_reports,
         state_file=state_file,
         states=None,
     )
@@ -433,6 +505,7 @@ def sync_recommendation_queue(
     visible_queue = collect_recommendation_queue(
         report_limit=report_limit,
         include_report_issues=include_report_issues,
+        include_test_reports=include_test_reports,
         state_file=state_file,
         states=states,
     )
@@ -443,6 +516,7 @@ def sync_recommendation_queue(
         "all_queue": collect_recommendation_queue(
             report_limit=report_limit,
             include_report_issues=include_report_issues,
+            include_test_reports=include_test_reports,
             state_file=state_file,
             states=None,
         ),

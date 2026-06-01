@@ -294,11 +294,13 @@ def get_recommendation_context_by_index(
     *,
     report_limit: int = 80,
     state_file: str | Path | None = None,
+    include_test_reports: bool = False,
     states: set[str] | list[str] | tuple[str, ...] | None = RECOMMENDATION_VISIBLE_STATES,
 ) -> dict[str, Any]:
     preview = guided_action_runner.preview_guided_actions(
         report_limit=report_limit,
         state_file=state_file,
+        include_test_reports=include_test_reports,
         states=states,
     )
     contexts = preview["contexts"]
@@ -324,10 +326,12 @@ def run_recommendation_queue_preview(
     *,
     report_limit: int = 80,
     state_file: str | Path | None = None,
+    include_test_reports: bool = False,
 ) -> dict[str, Any]:
     preview = guided_action_runner.preview_guided_actions(
         report_limit=report_limit,
         state_file=state_file,
+        include_test_reports=include_test_reports,
         states=RECOMMENDATION_VISIBLE_STATES,
     )
     print(f"Ready actions: {preview['ready_count']}")
@@ -343,11 +347,13 @@ def run_recommendation_state_command(
     *,
     report_limit: int = 80,
     state_file: str | Path | None = None,
+    include_test_reports: bool = False,
 ) -> dict[str, Any]:
     lookup = get_recommendation_context_by_index(
         index,
         report_limit=report_limit,
         state_file=state_file,
+        include_test_reports=include_test_reports,
     )
     if lookup["status"] != "ready":
         print(f"Khong tim thay recommendation so {index}.")
@@ -390,6 +396,7 @@ def run_recommendation_open_command(
     *,
     report_limit: int = 80,
     state_file: str | Path | None = None,
+    include_test_reports: bool = False,
     dry_run: bool = False,
     require_confirmation: bool = True,
 ) -> dict[str, Any]:
@@ -397,6 +404,7 @@ def run_recommendation_open_command(
         index,
         report_limit=report_limit,
         state_file=state_file,
+        include_test_reports=include_test_reports,
     )
     if lookup["status"] != "ready":
         print(f"Khong tim thay recommendation so {index}.")

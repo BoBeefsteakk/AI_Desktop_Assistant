@@ -2,6 +2,15 @@
 
 ## 2026-06-01
 
+### Advisor Real Run Calibration
+
+* **thay đổi** Chạy System Advisor thật trên `D:\` bằng Python scanner read-only
+* **thay đổi** Sửa lỗi console crash khi in đường dẫn Unicode/tiếng Việt bằng UTF-8 output trong System Advisor
+* **thay đổi** Recommendation Center mặc định bỏ qua report test/contract để queue thật không bị nhiễu
+* **thay đổi** Recommendation Center chỉ giữ snapshot mới nhất của `system_advisor`/`external_apps` để tránh duplicate recommendation từ report cũ
+* **thay đổi** Queue thực tế sau calibration còn 5 recommendation: Downloads nặng, archive lớn, process RAM, video lớn, folder lớn nhất
+* **thay đổi** Behavior/Full tests có assertion đảm bảo default queue không lấy test-tagged reports
+
 ### Natural Command v3
 
 * **thay đổi** Natural Command nhận lệnh queue trực tiếp: `xem goi y`, `lam goi y so 1`, `hoan muc 2`, `danh dau muc 3 da xu ly`, `bo qua muc 4`

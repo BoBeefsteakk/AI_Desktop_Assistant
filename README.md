@@ -12,6 +12,7 @@ Active workspace hiện tại là `D:\tool`. Snapshot cũ đã được chuyển
 - Game Booster an toàn
 - System Advisor phân tích tổng quan hệ thống
 - **thay đổi** System Advisor v2: snapshot read-only + recommendation có severity và suggested tool
+- **thay đổi** Advisor real-run calibration: queue thật lọc report test/contract và giữ snapshot mới nhất
 
 ### Storage
 - Tìm folder nặng nhất

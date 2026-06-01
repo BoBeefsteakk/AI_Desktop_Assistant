@@ -48,11 +48,12 @@ Hoàn thành
 * **thay đổi** Recommendation Center read-only gom gợi ý từ Advisor/Audit thành queue
 * **thay đổi** Recommendation Workflow v1 có trạng thái pending/deferred/handled/ignored
 * **thay đổi** Guided Action Runner mở tool từ recommendation qua xác nhận `OPEN`, không bypass confirmation
+* **thay đổi** Advisor real run calibration lượt đầu trên `D:\`, đã lọc report test khỏi queue thật
 
 Cần rà soát tiếp:
 
-* **thay đổi** Advisor real run calibration trước khi feed assistant
 * **thay đổi** External App Health path drift detection nếu app bị di chuyển
+* **thay đổi** Feed Assistant readiness report trước khi feed/train
 
 ---
 
@@ -127,6 +128,7 @@ Một lệnh test tổng hợp trước khi refactor lớn hoặc feed assistant
 * **thay đổi** Recommendation Center Contract test
 * **thay đổi** Guided Action Runner Contract test
 * **thay đổi** Natural Command v3 Queue Contract test
+* **thay đổi** Default queue excludes test-tagged reports
 * Full System Tester hiện pass 20/20
 
 ---

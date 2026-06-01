@@ -583,9 +583,15 @@ def test_recommendation_center_contract() -> dict[str, Any]:
         sync_result = sync_recommendation_queue(
             report_limit=20,
             state_file=state_file,
+            include_test_reports=True,
             states=None,
         )
         queue = collect_recommendation_queue(
+            report_limit=20,
+            state_file=state_file,
+            include_test_reports=True,
+        )
+        default_queue = collect_recommendation_queue(
             report_limit=20,
             state_file=state_file,
         )
@@ -593,6 +599,10 @@ def test_recommendation_center_contract() -> dict[str, Any]:
         recommendation_ids = {item["id"] for item in queue}
 
         assert_condition("contract-critical" in recommendation_ids, "Recommendation Center should collect Advisor items.")
+        assert_condition(
+            "contract-critical" not in {item["id"] for item in default_queue},
+            "Default Recommendation Center queue should exclude test-tagged reports.",
+        )
         assert_condition(
             any(item.get("report_tool") == "contract_warning_tool" for item in queue),
             "Recommendation Center should convert warning/error reports into audit recommendations.",
@@ -614,6 +624,7 @@ def test_recommendation_center_contract() -> dict[str, Any]:
         handled_queue = collect_recommendation_queue(
             report_limit=20,
             state_file=state_file,
+            include_test_reports=True,
             states={"handled"},
         )
         assert_condition(
@@ -672,6 +683,7 @@ def test_guided_action_runner_contract() -> dict[str, Any]:
         preview = preview_guided_actions(
             report_limit=30,
             state_file=state_file,
+            include_test_reports=True,
         )
         context = find_guided_action_context(
             preview["contexts"],
@@ -773,6 +785,7 @@ def test_natural_command_v3_queue_contract() -> dict[str, Any]:
         preview = preview_guided_actions(
             report_limit=30,
             state_file=state_file,
+            include_test_reports=True,
         )
         context = find_guided_action_context(
             preview["contexts"],
@@ -785,6 +798,7 @@ def test_natural_command_v3_queue_contract() -> dict[str, Any]:
             index,
             report_limit=30,
             state_file=state_file,
+            include_test_reports=True,
             dry_run=True,
             require_confirmation=False,
         )
@@ -795,10 +809,12 @@ def test_natural_command_v3_queue_contract() -> dict[str, Any]:
             "handled",
             report_limit=30,
             state_file=state_file,
+            include_test_reports=True,
         )
         handled_queue = collect_recommendation_queue(
             report_limit=30,
             state_file=state_file,
+            include_test_reports=True,
             states={"handled"},
         )
         assert_condition(handled["status"] == "success", "Natural Command v3 should update state.")

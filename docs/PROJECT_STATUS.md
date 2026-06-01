@@ -323,6 +323,20 @@ Chức năng:
 
 ---
 
+### Advisor Real Run Calibration
+
+**thay đổi** Đã chạy System Advisor thật trên `D:\` theo chế độ read-only.
+
+Kết quả:
+
+* **thay đổi** Sửa lỗi System Advisor crash khi console Windows gặp đường dẫn Unicode/tiếng Việt.
+* **thay đổi** Recommendation Center mặc định loại report test/contract khỏi queue thật.
+* **thay đổi** Queue mặc định chỉ lấy snapshot mới nhất của `system_advisor`/`external_apps`, tránh duplicate từ report cũ.
+* **thay đổi** Queue thật sau calibration có 5 recommendation pending: Downloads nặng, archive lớn, process RAM, video lớn, folder lớn nhất.
+* **thay đổi** Behavior Tester và Full System Tester có assertion chống lọt test-tagged reports vào default queue.
+
+---
+
 ### Behavior Tester
 
 **thay đổi** Đã bổ sung test hành vi trong sandbox.
@@ -347,6 +361,7 @@ Các case đã kiểm tra:
 * **thay đổi** Recommendation Workflow State Transitions test: kiểm tra pending/deferred/handled/ignored trên state file sandbox
 * **thay đổi** Guided Action Runner Contract test: kiểm tra resolve suggested tool, target confirmation metadata, dry-run không execute và không auto handled
 * **thay đổi** Natural Command v3 Queue Actions test: kiểm tra preview/open/state update theo index, dry-run không execute target tool
+* **thay đổi** Recommendation Center default queue test: kiểm tra report test/contract không lọt vào queue thật
 * **thay đổi** Sandbox test dùng timestamp microsecond để tránh trùng khi chạy song song
 
 Kết quả hiện tại:
@@ -484,6 +499,7 @@ Process Monitor:
 * **thay đổi** Kiểm tra Recommendation Center contract bằng report giả
 * **thay đổi** Kiểm tra Guided Action Runner contract bằng report giả và dry-run
 * **thay đổi** Kiểm tra Natural Command v3 queue contract bằng report giả và dry-run
+* **thay đổi** Kiểm tra default queue loại test-tagged reports
 
 Kết quả hiện tại:
 
@@ -549,11 +565,12 @@ Lý do:
 * **thay đổi** System Advisor v2
 * **thay đổi** Recommendation Center
 * **thay đổi** Guided Action Runner
+* **thay đổi** Advisor Real Run Calibration
 
 Cần làm tiếp để ổn định tool tổng:
 
-* **thay đổi** Ưu tiên 1: Advisor real run calibration trên máy thật
-* **thay đổi** Ưu tiên 2: Path drift detection cho External App Health nếu app bị di chuyển
+* **thay đổi** Ưu tiên 1: Path drift detection cho External App Health nếu app bị di chuyển
+* **thay đổi** Ưu tiên 2: Feed Assistant readiness report
 * **thay đổi** Ưu tiên 3: Mở rộng Undo System cho các thao tác không có manifest nếu cần
 * **thay đổi** Mở rộng Natural Command v3 thành intent engine sau khi có thêm lịch sử/report để feed assistant
 * **thay đổi** Chuẩn hóa Recommendation Center thành queue có trạng thái handled/deferred nếu cần workflow dài hơn

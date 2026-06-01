@@ -318,6 +318,7 @@ Nguyên tắc:
 * Không tự chạy tool được đề xuất
 * Không xóa/move/sửa file
 * Chỉ gom, lọc, xuất report và giúp người dùng chọn bước tiếp theo
+* **thay đổi** Queue mặc định bỏ qua report test/contract và chỉ giữ snapshot mới nhất của các report dạng `system_advisor`/`external_apps`
 
 ## Guided Action Layer
 
@@ -383,6 +384,7 @@ Các lớp kiểm tra:
 * **thay đổi** External adapter sample parsers như WizTree CSV
 * **thay đổi** Guided Action Runner dry-run contract
 * **thay đổi** Natural Command v3 queue dry-run contract
+* **thay đổi** Default recommendation queue không lấy test-tagged reports
 
 ---
 

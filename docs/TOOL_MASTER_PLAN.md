@@ -86,7 +86,7 @@
 
 **thay đổi** Gap 5: Natural Command v3 đã điều khiển được queue kiểu `xem goi y`, `lam goi y so 1`, `hoan muc 2`, `danh dau muc 3 da xu ly`, `bo qua muc 4`.
 
-**thay đổi** Gap 6: Chưa có lần chạy System Advisor v2 thực tế có review thủ công output trên máy thật để calibrate recommendation.
+**thay đổi** Gap 6: Advisor real-run calibration đã chạy trên `D:\`, đã sửa lỗi Unicode output và lọc test reports khỏi queue mặc định.
 
 **thay đổi** Gap 7: Feed assistant chưa nên làm cho đến khi health report và recommendation workflow ổn định hơn.
 
@@ -157,6 +157,8 @@
 * **thay đổi** Điều chỉnh rule nếu recommendation quá ồn hoặc thiếu trọng tâm.
 * **thay đổi** Sau đó chạy Recommendation Center để kiểm tra queue.
 
+**thay đổi** Trạng thái: đã hoàn thành lượt calibration đầu. Kết quả `D:\` hiện có 5 recommendation thực tế, không còn recommendation nhiễu từ report test/contract.
+
 ### Bước 6 - Feed Assistant Chuẩn Bị
 
 **thay đổi** Chỉ bắt đầu khi các điều kiện sau đạt:
@@ -172,9 +174,9 @@
 
 ## Bước Nên Làm Ngay
 
-**thay đổi** Bước tiếp theo chuẩn nhất là Advisor Real Run Calibration.
+**thay đổi** Bước tiếp theo chuẩn nhất là External App Health path drift detection.
 
-**thay đổi** Lý do: Natural Command v3 đã có, nên cần chạy Advisor trên máy thật để xem recommendation có hợp lý, không quá ồn và route đúng sang queue/runner.
+**thay đổi** Lý do: Advisor real-run đã sạch hơn, bước còn lại trước mốc pre-feed là phát hiện sớm khi path app ngoài bị đổi/mất.
 
 ## Deletion Safety / UX v2
 
@@ -210,7 +212,7 @@
 
 **thay đổi** External Apps Manager da co lua chon xem health v2 va xuat health report v2.
 
-**thay đổi** Buoc ke tiep theo trong ke hoach chuan la Advisor Real Run Calibration.
+**thay đổi** Buoc ke tiep theo trong ke hoach chuan la External App Health path drift detection.
 
 ## Recommendation Workflow v1
 
@@ -249,7 +251,7 @@
 * **thay đổi** Dry-run tạo report nhưng không execute target tool.
 * **thay đổi** Recommendation không tự chuyển `handled`; user phải xác nhận sau khi tool đích chạy xong.
 
-**thay đổi** Bước kế tiếp trong kế hoạch chuẩn là Advisor Real Run Calibration.
+**thay đổi** Bước kế tiếp trong kế hoạch chuẩn là External App Health path drift detection.
 
 ## Natural Command v3 Nhẹ
 
@@ -268,3 +270,22 @@
 * **thay đổi** Lệnh mở theo index vẫn cần confirmation của Guided Action Runner khi chạy thật.
 * **thay đổi** Lệnh state update chỉ ghi state queue, không xóa/move/cleanup.
 * **thay đổi** Test dry-run chứng minh Natural Command không execute target tool trong test.
+
+## Advisor Real Run Calibration
+
+**thay đổi** Đã chạy `System Advisor v2` thật trên `D:\` bằng Python scanner read-only.
+
+**thay đổi** Kết quả calibration:
+
+* **thay đổi** Sửa lỗi crash khi in đường dẫn Unicode/tiếng Việt trong console Windows.
+* **thay đổi** Recommendation Center mặc định bỏ qua report có tag test/contract.
+* **thay đổi** Queue mặc định chỉ giữ snapshot mới nhất của `system_advisor`/`external_apps` để tránh duplicate từ report cũ.
+* **thay đổi** Queue thật còn 5 recommendation pending, 2 warning và 3 info.
+
+**thay đổi** Recommendation thực tế hiện tại:
+
+* **thay đổi** `downloads-folder-heavy` -> Download Organizer.
+* **thay đổi** `large-archive-files` -> Large File Finder.
+* **thay đổi** `heavy-processes` -> Process Monitor.
+* **thay đổi** `large-video-files` -> Media Organizer.
+* **thay đổi** `largest-folder-review` -> Folder Size Analyzer.

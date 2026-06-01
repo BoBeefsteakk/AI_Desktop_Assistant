@@ -111,12 +111,14 @@ def preview_guided_actions(
     *,
     report_limit: int = 80,
     include_report_issues: bool = True,
+    include_test_reports: bool = False,
     state_file: str | Path | None = None,
     states: set[str] | list[str] | tuple[str, ...] | None = DEFAULT_VISIBLE_STATES,
 ) -> dict[str, Any]:
     sync_result = sync_recommendation_queue(
         report_limit=report_limit,
         include_report_issues=include_report_issues,
+        include_test_reports=include_test_reports,
         state_file=state_file,
         states=states,
     )
@@ -367,11 +369,13 @@ def run_guided_action_by_index(
     *,
     report_limit: int = 80,
     state_file: str | Path | None = None,
+    include_test_reports: bool = False,
     execute: bool = False,
 ) -> dict[str, Any]:
     preview = preview_guided_actions(
         report_limit=report_limit,
         state_file=state_file,
+        include_test_reports=include_test_reports,
     )
     contexts = preview["contexts"]
     if index < 1 or index > len(contexts):
