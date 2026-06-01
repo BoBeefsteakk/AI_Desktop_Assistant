@@ -50,10 +50,11 @@ Hoàn thành
 * **thay đổi** Guided Action Runner mở tool từ recommendation qua xác nhận `OPEN`, không bypass confirmation
 * **thay đổi** Advisor real run calibration lượt đầu trên `D:\`, đã lọc report test khỏi queue thật
 * **thay đổi** External App Health path drift detection với baseline local và structured drift recommendations
+* **thay đổi** Feed Assistant Readiness report/checklist trước feed/train
 
 Cần rà soát tiếp:
 
-* **thay đổi** Feed Assistant readiness report trước khi feed/train
+* **thay đổi** Review 5 pending recommendations thật trước khi mở automation sâu hơn
 
 ---
 
@@ -128,8 +129,9 @@ Một lệnh test tổng hợp trước khi refactor lớn hoặc feed assistant
 * **thay đổi** Recommendation Center Contract test
 * **thay đổi** Guided Action Runner Contract test
 * **thay đổi** Natural Command v3 Queue Contract test
+* **thay đổi** Feed Readiness Contract test
 * **thay đổi** Default queue excludes test-tagged reports
-* Full System Tester hiện pass 20/20
+* Full System Tester hiện pass 21/21
 
 ---
 

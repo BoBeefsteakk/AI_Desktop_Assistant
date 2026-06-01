@@ -27,8 +27,22 @@ TEST_REPORT_TAGS = {
     "natural_command_v3",
     "recommendation_workflow",
 }
+TEST_REPORT_TOOLS = {
+    "behavior_tester",
+    "tool_tester",
+    "full_system_tester",
+    "contract_warning_tool",
+    "full_system_schema_test",
+    "full_system_report_collision",
+    "collision_test",
+}
 LATEST_ONLY_REPORT_TOOLS = {
     "system_advisor",
+    "external_apps",
+}
+STRUCTURED_RECOMMENDATION_REPORT_TOOLS = {
+    "system_advisor",
+    "audit_center",
     "external_apps",
 }
 
@@ -48,6 +62,9 @@ def safe_read_report(report_path: str | Path) -> dict[str, Any] | None:
 
 
 def is_test_report_record(report_record: dict[str, Any]) -> bool:
+    if str(report_record.get("tool") or "") in TEST_REPORT_TOOLS:
+        return True
+
     report_data = safe_read_report(str(report_record.get("report_path") or ""))
     if not report_data:
         return False
@@ -319,12 +336,12 @@ def extract_recommendations_from_report(
     items: list[Any] = []
     results = report_data.get("results", {})
 
-    if isinstance(results, dict):
+    if report_data.get("tool") in STRUCTURED_RECOMMENDATION_REPORT_TOOLS and isinstance(results, dict):
         structured = results.get("recommendations")
         if isinstance(structured, list):
             items.extend(structured)
 
-    if not items and report_data.get("tool") in {"system_advisor", "audit_center", "external_apps"}:
+    if not items and report_data.get("tool") in STRUCTURED_RECOMMENDATION_REPORT_TOOLS:
         raw_recommendations = report_data.get("recommendations", [])
         if isinstance(raw_recommendations, list):
             items.extend(raw_recommendations)

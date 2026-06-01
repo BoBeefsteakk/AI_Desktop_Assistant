@@ -419,6 +419,23 @@ WizTree Adapter:
 
 ---
 
+## Feed Readiness Layer
+
+**thay đổi** `tools/core/feed_readiness.py` là bước đóng gói pre-feed trước khi tính feed/train assistant.
+
+**thay đổi** Layer này chỉ đọc dữ liệu và xuất report:
+
+* **thay đổi** Validate config và Capability Registry.
+* **thay đổi** Đọc External Apps Health + drift baseline.
+* **thay đổi** Đọc Recommendation Queue thật.
+* **thay đổi** Kiểm tra latest Full System Tester report.
+* **thay đổi** Validate schema report gần đây.
+* **thay đổi** Liệt kê docs/config/report source nên feed.
+
+**thay đổi** Feed Readiness không tự feed dữ liệu, không train, không chạy cleanup và không sửa file người dùng.
+
+---
+
 ## Config Layer
 
 **thay đổi** Các tool không nên hard-code paths/thresholds nếu giá trị đó có thể thay đổi theo máy.

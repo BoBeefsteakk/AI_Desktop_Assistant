@@ -36,6 +36,7 @@ TOOLS_TO_TEST = [
     {"name": "Capability Registry", "module": "tools.core.capability_registry", "function": "run_capability_registry", "risk": "safe"},
     {"name": "Recommendation Center", "module": "tools.core.recommendation_center", "function": "run_recommendation_center", "risk": "safe"},
     {"name": "Guided Action Runner", "module": "tools.core.guided_action_runner", "function": "run_guided_action_runner", "risk": "medium"},
+    {"name": "Feed Assistant Readiness", "module": "tools.core.feed_readiness", "function": "run_feed_readiness", "risk": "safe"},
     {"name": "File Location Opener", "module": "tools.core.file_location_opener", "function": "open_file_location", "risk": "safe"},
 ]
 

@@ -8,12 +8,12 @@
 
 **thay đổi** Kết quả hiện tại:
 
-* **thay đổi** Main CLI đang expose 30 tool.
-* **thay đổi** Capability Registry valid 30/30, không thiếu entry so với Tool Tester.
-* **thay đổi** Tool Tester pass 30/30.
+* **thay đổi** Main CLI đang expose 31 tool.
+* **thay đổi** Capability Registry valid 31/31, không thiếu entry so với Tool Tester.
+* **thay đổi** Tool Tester pass 31/31.
 * **thay đổi** Behavior Tester pass 18/18.
-* **thay đổi** Full System Tester pass 20/20.
-* **thay đổi** Capability summary: 17 safe, 7 medium, 6 dangerous; 11 tool có thể thay đổi file; 12 tool cần confirmation; 9 tool dùng external app.
+* **thay đổi** Full System Tester pass 21/21.
+* **thay đổi** Capability summary: 18 safe, 7 medium, 6 dangerous; 11 tool có thể thay đổi file; 12 tool cần confirmation; 9 tool dùng external app.
 
 ## Luồng Tool Tổng Chuẩn
 
@@ -28,6 +28,7 @@
 7. **thay đổi** System Advisor v2 chỉ tạo recommendation, không tự cleanup, không xóa, không move.
 8. **thay đổi** Recommendation Center gom recommendation thành queue read-only để user review.
 9. **thay đổi** Guided Action Runner mở tool được đề xuất từ recommendation sau khi user xác nhận `OPEN`.
+10. **thay đổi** Feed Assistant Readiness đóng gói pre-feed checklist/report, nhưng chưa feed/train thật.
 10. **thay đổi** Nếu user chọn chạy tool thật, tool đó vẫn tự xử lý confirmation, risk classification, safe executor, manifest/undo và report/log.
 11. **thay đổi** Audit Center, Report Manager và Undo Manager lưu lại lịch sử, report, manifest để kiểm tra sau.
 
@@ -88,7 +89,7 @@
 
 **thay đổi** Gap 6: Advisor real-run calibration đã chạy trên `D:\`, đã sửa lỗi Unicode output và lọc test reports khỏi queue mặc định.
 
-**thay đổi** Gap 7: Feed assistant chưa nên làm cho đến khi health report và recommendation workflow ổn định hơn.
+**thay đổi** Gap 7: Feed Assistant readiness report đã hoàn thành; chưa train/feed thật ở bước này.
 
 ## Kế Hoạch Chuẩn Từ Bây Giờ
 
@@ -185,13 +186,24 @@
 * **thay đổi** Report schema đủ ổn định để assistant đọc.
 * **thay đổi** Advisor real run đã được review thủ công.
 
-**thay đổi** Chưa train ở giai đoạn này.
+**thay đổi** Trạng thái: đã hoàn thành readiness report/checklist.
+
+**thay đổi** Kết quả mới nhất:
+
+* **thay đổi** `tools/core/feed_readiness.py` đã được thêm.
+* **thay đổi** Main CLI expose `Feed Assistant Readiness` ở mục 31.
+* **thay đổi** Readiness report kiểm tra config, registry, external apps/drift, queue, latest full test, report schema, audit snapshot và docs feed source.
+* **thay đổi** Latest readiness: ready, 7 pass, 1 warn, 0 fail.
+* **thay đổi** Warning duy nhất là còn 5 pending recommendation thật cần review trước automation.
+* **thay đổi** Tool Tester pass 31/31, Behavior Tester pass 18/18, Full System Tester pass 21/21.
+
+**thay đổi** Chưa train/feed thật ở giai đoạn này.
 
 ## Bước Nên Làm Ngay
 
-**thay đổi** Bước tiếp theo chuẩn nhất là Feed Assistant readiness report.
+**thay đổi** Bước tiếp theo chuẩn nhất là review 5 pending recommendations thật trong Recommendation Center.
 
-**thay đổi** Lý do: Advisor real-run và External App drift detection đã ổn, bước còn lại của mốc pre-feed là đóng gói checklist/report để assistant đọc được trạng thái hệ thống một cách sạch.
+**thay đổi** Lý do: mốc pre-feed đã có readiness report; trước khi automation sâu hơn cần xử lý hoặc đánh dấu các gợi ý thật đang pending.
 
 ## Deletion Safety / UX v2
 
@@ -227,7 +239,7 @@
 
 **thay đổi** External Apps Manager da co lua chon xem health v2 va xuat health report v2.
 
-**thay đổi** External App Health path drift detection đã hoàn thành. Bước kế tiếp trong kế hoạch chuẩn là Feed Assistant readiness report.
+**thay đổi** External App Health path drift detection đã hoàn thành. Feed Assistant readiness report cũng đã hoàn thành; bước kế tiếp là review queue thật.
 
 ## Recommendation Workflow v1
 
@@ -266,7 +278,7 @@
 * **thay đổi** Dry-run tạo report nhưng không execute target tool.
 * **thay đổi** Recommendation không tự chuyển `handled`; user phải xác nhận sau khi tool đích chạy xong.
 
-**thay đổi** Bước kế tiếp trong kế hoạch chuẩn là Feed Assistant readiness report.
+**thay đổi** Feed Assistant readiness report đã hoàn thành; bước kế tiếp trong kế hoạch chuẩn là review queue thật.
 
 ## Natural Command v3 Nhẹ
 

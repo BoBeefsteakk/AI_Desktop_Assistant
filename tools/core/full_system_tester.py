@@ -37,6 +37,7 @@ from tools.core.external_apps import (
     build_external_apps_health_state,
     get_external_apps_status,
 )
+from tools.core.feed_readiness import build_feed_readiness_result
 from tools.core.risk_classifier import PROTECTED, REVIEW_REQUIRED, SAFE_DELETE, classify_file_risk
 from tools.core.safe_executor import safe_delete
 from tools.core.safety_utils import safe_move, save_manifest
@@ -147,6 +148,7 @@ def test_main_menu_coverage() -> dict[str, Any]:
         "Capability Registry",
         "Recommendation Center",
         "Guided Action Runner",
+        "Feed Assistant Readiness",
     ]
     missing = [label for label in expected if label not in main_text]
 
@@ -860,6 +862,49 @@ def test_natural_command_v3_queue_contract() -> dict[str, Any]:
         cleanup_sandbox(sandbox)
 
 
+def test_feed_readiness_contract() -> dict[str, Any]:
+    result = build_feed_readiness_result()
+    summary = result["summary"]
+    check_ids = {item["id"] for item in result["checks"]}
+
+    expected_checks = {
+        "config",
+        "capability_registry",
+        "external_apps",
+        "recommendation_queue",
+        "full_system_tester",
+        "report_schema",
+        "audit_snapshot",
+        "feed_sources",
+    }
+    assert_condition(
+        result["schema"] == "feed_readiness_v1",
+        "Feed Readiness should expose v1 schema.",
+    )
+    assert_condition(
+        expected_checks.issubset(check_ids),
+        f"Feed Readiness missing checks: {expected_checks - check_ids}",
+    )
+    assert_condition(
+        summary["fail_count"] == 0,
+        "Feed Readiness should have no hard blockers in current repo state.",
+    )
+    assert_condition(
+        result["capability_summary"]["total"] >= len(TOOLS_TO_TEST),
+        "Feed Readiness should include capability summary.",
+    )
+    assert_condition(
+        result["external_apps_summary"]["available"] == result["external_apps_summary"]["total"],
+        "Feed Readiness should see all configured external apps available.",
+    )
+
+    return {
+        "summary": summary,
+        "check_ids": sorted(check_ids),
+        "queue_summary": result["recommendation_queue_summary"],
+    }
+
+
 def test_dependency_health() -> dict[str, Any]:
     modules = ["psutil", "send2trash", "watchdog"]
     results = []
@@ -911,6 +956,7 @@ FULL_SYSTEM_TESTS: list[tuple[str, Callable[[], dict[str, Any]]]] = [
     ("Recommendation Center Contract", test_recommendation_center_contract),
     ("Guided Action Runner Contract", test_guided_action_runner_contract),
     ("Natural Command v3 Queue Contract", test_natural_command_v3_queue_contract),
+    ("Feed Readiness Contract", test_feed_readiness_contract),
     ("Dependency Health", test_dependency_health),
     ("Git Submodule Health", test_git_submodule_health),
 ]

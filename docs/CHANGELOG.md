@@ -2,6 +2,16 @@
 
 ## 2026-06-01
 
+### Feed Assistant Readiness
+
+* **thay đổi** Thêm `tools/core/feed_readiness.py` để kiểm tra trạng thái pre-feed theo dạng read-only.
+* **thay đổi** Feed Readiness kiểm tra config, Capability Registry, External Apps/drift, Recommendation Queue, latest Full System report, schema report gần đây, audit snapshot và feed source docs.
+* **thay đổi** Main CLI expose `Feed Assistant Readiness` ở mục 31.
+* **thay đổi** Capability Registry, Tool Tester, Natural Command và Full System Tester đã có entry/contract cho Feed Readiness.
+* **thay đổi** Recommendation Center chỉ lấy structured recommendations từ nguồn được phép như `system_advisor`, `external_apps`, `audit_center`, tránh report readiness/test làm nhiễu queue thật.
+* **thay đổi** Readiness report mới nhất: ready, 7 pass, 1 warn, 0 fail; warning duy nhất là còn 5 pending recommendation cần review trước automation.
+* **thay đổi** Tool Tester pass 31/31, Behavior Tester pass 18/18, Full System Tester pass 21/21.
+
 ### External App Path Drift Detection
 
 * **thay đổi** External Apps Health v2 có baseline local tại `data/external_apps_health_state.json` để so sánh lần chạy trước và lần chạy hiện tại.
@@ -377,19 +387,19 @@ Nâng cấp:
 
 Tool Tester:
 
-Passed: 30
+Passed: 31
 
 Failed: 0
 
 Behavior Tester:
 
-Passed: 17
+Passed: 18
 
 Failed: 0
 
 Full System Tester:
 
-Passed: 19
+Passed: 21
 
 Failed: 0
 

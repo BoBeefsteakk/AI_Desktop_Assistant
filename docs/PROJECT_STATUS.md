@@ -190,7 +190,7 @@ Chức năng:
 
 **thay đổi** Kết quả hiện tại:
 
-Passed: 30
+Passed: 31
 Failed: 0
 
 ---
@@ -349,6 +349,30 @@ Kết quả:
 * **thay đổi** Health report vẫn read-only: không tự tải app, không tự sửa config, không chạy installer.
 * **thay đổi** Real export hiện tại: 16/16 external apps available, drift 0, recommendation 0.
 * **thay đổi** Recommendation Center đã đọc buffer lớn hơn trước khi lọc test reports, nên queue thật vẫn giữ 5 recommendation Advisor dù test suite sinh nhiều report.
+
+---
+
+### Feed Assistant Readiness
+
+**thay đổi** Đã hoàn thành tool pre-feed readiness.
+
+Chức năng:
+
+* **thay đổi** Thêm `tools/core/feed_readiness.py`.
+* **thay đổi** Main CLI expose `Feed Assistant Readiness` ở mục 31.
+* **thay đổi** Kiểm tra config, Capability Registry, External Apps/drift, Recommendation Queue, latest Full System report, recent report schema, audit snapshot và feed source docs.
+* **thay đổi** Xuất report `feed_readiness` với schema `feed_readiness_v1`.
+* **thay đổi** Chỉ read-only: không feed/train thật, không cleanup, không sửa config/path.
+* **thay đổi** Natural Command có thể route các lệnh như `feed assistant`, `feed readiness`, `san sang feed`.
+
+Kết quả mới nhất:
+
+* **thay đổi** Readiness status: ready.
+* **thay đổi** Checks: 7 pass, 1 warn, 0 fail.
+* **thay đổi** Warning duy nhất: còn 5 pending recommendation thật cần review trước khi automation.
+* **thay đổi** Tool Tester pass 31/31.
+* **thay đổi** Behavior Tester pass 18/18.
+* **thay đổi** Full System Tester pass 21/21.
 
 ---
 
@@ -514,11 +538,12 @@ Process Monitor:
 * **thay đổi** Kiểm tra Recommendation Center contract bằng report giả
 * **thay đổi** Kiểm tra Guided Action Runner contract bằng report giả và dry-run
 * **thay đổi** Kiểm tra Natural Command v3 queue contract bằng report giả và dry-run
+* **thay đổi** Kiểm tra Feed Readiness contract
 * **thay đổi** Kiểm tra default queue loại test-tagged reports
 
 Kết quả hiện tại:
 
-Passed: 20
+Passed: 21
 Failed: 0
 
 ---
@@ -582,10 +607,11 @@ Lý do:
 * **thay đổi** Guided Action Runner
 * **thay đổi** Advisor Real Run Calibration
 * **thay đổi** External App Path Drift Detection
+* **thay đổi** Feed Assistant Readiness
 
 Cần làm tiếp để ổn định tool tổng:
 
-* **thay đổi** Ưu tiên 1: Feed Assistant readiness report
+* **thay đổi** Ưu tiên 1: Review 5 pending recommendations thật trong queue trước khi bật automation sâu hơn
 * **thay đổi** Ưu tiên 2: Mở rộng Undo System cho các thao tác không có manifest nếu cần
 * **thay đổi** Mở rộng Natural Command v3 thành intent engine sau khi có thêm lịch sử/report để feed assistant
 * **thay đổi** Chuẩn hóa Recommendation Center thành queue có trạng thái handled/deferred nếu cần workflow dài hơn

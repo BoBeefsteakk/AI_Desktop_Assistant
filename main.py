@@ -26,6 +26,7 @@ from tools.core.behavior_tester import run_behavior_tester
 from tools.core.capability_registry import run_capability_registry
 from tools.core.config_manager import run_config_manager
 from tools.core.external_apps import run_external_apps_manager
+from tools.core.feed_readiness import run_feed_readiness
 from tools.core.full_system_tester import run_full_system_tester
 from tools.core.guided_action_runner import run_guided_action_runner
 from tools.core.recommendation_center import run_recommendation_center
@@ -73,6 +74,7 @@ def main():
 28. Capability Registry
 29. Recommendation Center
 30. Guided Action Runner
+31. Feed Assistant Readiness
 
 0. Thoat
 
@@ -175,6 +177,9 @@ def main():
 
         elif choice == "30":
             run_guided_action_runner()
+
+        elif choice == "31":
+            run_feed_readiness()
 
         else:
             print("Lua chon khong hop le.")
