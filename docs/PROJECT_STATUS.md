@@ -245,15 +245,15 @@ Chức năng:
 
 Kết quả hiện tại:
 
-* Capability count: 29
+* Capability count: 30
 * Categories: automation, core, search, storage, system
 * Risk levels: safe, medium, dangerous
 
 ---
 
-### Natural Command v2
+### Natural Command v3
 
-**thay đổi** Da nang Natural Command tu keyword hard-code sang router dua tren Capability Registry.
+**thay đổi** Da nang Natural Command tu keyword hard-code sang router dua tren Capability Registry va them dieu khien recommendation queue theo index.
 
 Chuc nang:
 
@@ -261,6 +261,9 @@ Chuc nang:
 * **thay đổi** Giu nguyen flow `find <tu khoa>` va `tim <tu khoa>` qua File Indexer/Everything fallback
 * **thay đổi** Route lenh nhu `check disk`, `don cache`, `folder size`, `test tong`, `capability` sang capability tuong ung
 * **thay đổi** Tool risk medium/dangerous hoac co the thay doi file se hoi xac nhan truoc khi mo tool
+* **thay đổi** Them lenh `xem goi y`, `lam goi y so N`, `hoan muc N`, `danh dau muc N da xu ly`, `bo qua muc N`
+* **thay đổi** Lenh mo recommendation theo index di qua Guided Action Runner, khong bypass confirmation
+* **thay đổi** Lenh state update chi ghi queue state, khong xoa/move/cleanup
 * **thay đổi** Behavior Tester co case rieng de test router ma khong chay thao tac nguy hiem
 
 ---
@@ -343,11 +346,12 @@ Các case đã kiểm tra:
 * **thay đổi** Recommendation Center Queue test: kiểm tra collect queue, enrich suggested tool và suggestion-only contract
 * **thay đổi** Recommendation Workflow State Transitions test: kiểm tra pending/deferred/handled/ignored trên state file sandbox
 * **thay đổi** Guided Action Runner Contract test: kiểm tra resolve suggested tool, target confirmation metadata, dry-run không execute và không auto handled
+* **thay đổi** Natural Command v3 Queue Actions test: kiểm tra preview/open/state update theo index, dry-run không execute target tool
 * **thay đổi** Sandbox test dùng timestamp microsecond để tránh trùng khi chạy song song
 
 Kết quả hiện tại:
 
-Passed: 17
+Passed: 18
 Failed: 0
 
 ---
@@ -479,10 +483,11 @@ Process Monitor:
 * **thay đổi** Kiểm tra System Advisor v2 contract bằng dữ liệu giả
 * **thay đổi** Kiểm tra Recommendation Center contract bằng report giả
 * **thay đổi** Kiểm tra Guided Action Runner contract bằng report giả và dry-run
+* **thay đổi** Kiểm tra Natural Command v3 queue contract bằng report giả và dry-run
 
 Kết quả hiện tại:
 
-Passed: 19
+Passed: 20
 Failed: 0
 
 ---
@@ -540,18 +545,17 @@ Lý do:
 * **thay đổi** WizTree Adapter read-only
 * **thay đổi** External Apps Integration
 * **thay đổi** Capability Registry
-* **thay đổi** Natural Command v2
+* **thay đổi** Natural Command v3
 * **thay đổi** System Advisor v2
 * **thay đổi** Recommendation Center
 * **thay đổi** Guided Action Runner
 
 Cần làm tiếp để ổn định tool tổng:
 
-* **thay đổi** Ưu tiên 1: Natural Command v3 Nhẹ để điều khiển queue qua lệnh tự nhiên
-* **thay đổi** Ưu tiên 2: Advisor real run calibration trên máy thật
-* **thay đổi** Ưu tiên 3: Path drift detection cho External App Health nếu app bị di chuyển
-* **thay đổi** Mở rộng Undo System cho các thao tác không có manifest nếu cần
-* **thay đổi** Mở rộng Natural Command v2 thành intent engine sau khi có thêm lịch sử/report để feed assistant
+* **thay đổi** Ưu tiên 1: Advisor real run calibration trên máy thật
+* **thay đổi** Ưu tiên 2: Path drift detection cho External App Health nếu app bị di chuyển
+* **thay đổi** Ưu tiên 3: Mở rộng Undo System cho các thao tác không có manifest nếu cần
+* **thay đổi** Mở rộng Natural Command v3 thành intent engine sau khi có thêm lịch sử/report để feed assistant
 * **thay đổi** Chuẩn hóa Recommendation Center thành queue có trạng thái handled/deferred nếu cần workflow dài hơn
 * Bổ sung thêm case vào Full System Tester khi phát hiện lỗi thực tế mới
 

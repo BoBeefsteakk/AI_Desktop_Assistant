@@ -261,7 +261,7 @@ Full System Tester kiểm tra:
 * Không trùng id/entrypoint
 * Field bắt buộc không thiếu
 
-**thay đổi** Natural Command v2 dùng metadata này để quyết định route và mức xác nhận trước khi chạy tool.
+**thay đổi** Natural Command v3 dùng metadata này để quyết định route, mức xác nhận trước khi chạy tool và điều khiển recommendation queue theo index.
 
 **thay đổi** System Advisor v2 dùng metadata này để gắn suggested tool/risk/confirmation vào recommendation, nhưng chỉ gợi ý và không tự chạy tool.
 
@@ -382,6 +382,7 @@ Các lớp kiểm tra:
 * Git submodule health
 * **thay đổi** External adapter sample parsers như WizTree CSV
 * **thay đổi** Guided Action Runner dry-run contract
+* **thay đổi** Natural Command v3 queue dry-run contract
 
 ---
 

@@ -43,7 +43,7 @@ Hoàn thành
 * **thay đổi** WizTree Adapter read-only để scan dung lượng nhanh qua CSV
 * **thay đổi** External Apps Integration cho Everything, smartctl, Sysinternals, ExifTool, FFmpeg, rclone
 * **thay đổi** Capability Registry cho toàn bộ tool
-* **thay đổi** Natural Command v2 route lệnh qua Capability Registry và confirmation theo risk
+* **thay đổi** Natural Command v3 route lệnh qua Capability Registry, confirmation theo risk và điều khiển recommendation queue theo index
 * **thay đổi** System Advisor v2 read-only snapshot + structured recommendations
 * **thay đổi** Recommendation Center read-only gom gợi ý từ Advisor/Audit thành queue
 * **thay đổi** Recommendation Workflow v1 có trạng thái pending/deferred/handled/ignored
@@ -51,7 +51,6 @@ Hoàn thành
 
 Cần rà soát tiếp:
 
-* **thay đổi** Natural Command v3 nhẹ cho recommendation queue
 * **thay đổi** Advisor real run calibration trước khi feed assistant
 * **thay đổi** External App Health path drift detection nếu app bị di chuyển
 
@@ -127,7 +126,8 @@ Một lệnh test tổng hợp trước khi refactor lớn hoặc feed assistant
 * **thay đổi** System Advisor v2 Contract test
 * **thay đổi** Recommendation Center Contract test
 * **thay đổi** Guided Action Runner Contract test
-* Full System Tester hiện pass 19/19
+* **thay đổi** Natural Command v3 Queue Contract test
+* Full System Tester hiện pass 20/20
 
 ---
 

@@ -460,7 +460,11 @@ def test_natural_command_router(sandbox: Path) -> dict[str, Any]:
     search_route = natural_command.resolve_command("find naruto")
     cache_route = natural_command.resolve_command("don cache")
     full_test_route = natural_command.resolve_command("test tong")
-    recommendation_route = natural_command.resolve_command("goi y tiep theo")
+    recommendation_route = natural_command.resolve_command("recommendation")
+    queue_preview_route = natural_command.resolve_command("xem goi y")
+    queue_open_route = natural_command.resolve_command("lam goi y so 1")
+    queue_defer_route = natural_command.resolve_command("hoan muc 2")
+    queue_handled_route = natural_command.resolve_command("danh dau muc 3 da xu ly")
     guided_route = natural_command.resolve_command("lam goi y")
     unknown_route = natural_command.resolve_command("khong hieu lenh nay")
 
@@ -495,6 +499,27 @@ def test_natural_command_router(sandbox: Path) -> dict[str, Any]:
         "Natural Command should route Recommendation Center.",
     )
     assert_condition(
+        queue_preview_route["type"] == "recommendation_queue_preview",
+        "Natural Command v3 should preview recommendation queue.",
+    )
+    assert_condition(
+        queue_open_route["type"] == "recommendation_open"
+        and queue_open_route["index"] == 1,
+        "Natural Command v3 should route recommendation open by index.",
+    )
+    assert_condition(
+        queue_defer_route["type"] == "recommendation_state_update"
+        and queue_defer_route["index"] == 2
+        and queue_defer_route["state"] == "deferred",
+        "Natural Command v3 should route deferred state update.",
+    )
+    assert_condition(
+        queue_handled_route["type"] == "recommendation_state_update"
+        and queue_handled_route["index"] == 3
+        and queue_handled_route["state"] == "handled",
+        "Natural Command v3 should route handled state update.",
+    )
+    assert_condition(
         guided_route["type"] == "capability"
         and guided_route["capability"]["id"] == "guided_action_runner",
         "Natural Command should route Guided Action Runner.",
@@ -522,6 +547,8 @@ def test_natural_command_router(sandbox: Path) -> dict[str, Any]:
         "cache_route": cache_route["capability"]["id"],
         "full_test_route": full_test_route["capability"]["id"],
         "recommendation_route": recommendation_route["capability"]["id"],
+        "queue_preview_type": queue_preview_route["type"],
+        "queue_open_index": queue_open_route["index"],
         "guided_route": guided_route["capability"]["id"],
         "unknown_type": unknown_route["type"],
     }
@@ -923,6 +950,108 @@ def test_guided_action_runner_contract(sandbox: Path) -> dict[str, Any]:
     }
 
 
+def test_natural_command_v3_queue_actions(sandbox: Path) -> dict[str, Any]:
+    state_file = sandbox / "natural_command_v3_queue.jsonl"
+    seed = sandbox.name
+    recommendation_id = f"natural-command-v3-{seed}"
+
+    create_report(
+        tool_name="system_advisor",
+        action="natural_command_v3_contract",
+        status="success",
+        risk_level="safe",
+        input_data={
+            "sandbox": str(sandbox),
+        },
+        results={
+            "recommendations": [
+                {
+                    "id": recommendation_id,
+                    "severity": "critical",
+                    "title": "Natural command v3 contract",
+                    "detail": f"Natural Command should control this queue item {seed}.",
+                    "source": "behavior_test",
+                    "suggested_tool_id": "audit_center",
+                    "suggestion_only": True,
+                }
+            ],
+        },
+        recommendations=[],
+        summary={
+            "total": 1,
+            "critical_count": 1,
+            "undo_available": False,
+        },
+        undo_available=False,
+        tags=["natural_command_v3", "behavior_test"],
+    )
+
+    preview = guided_action_runner.preview_guided_actions(
+        report_limit=30,
+        state_file=state_file,
+    )
+    context = guided_action_runner.find_guided_action_context(
+        preview["contexts"],
+        recommendation_id=recommendation_id,
+    )
+    assert_condition(context is not None, "Natural Command v3 should have a seeded queue item.")
+
+    index = preview["contexts"].index(context) + 1
+    dry_run = natural_command.run_recommendation_open_command(
+        index,
+        report_limit=30,
+        state_file=state_file,
+        dry_run=True,
+        require_confirmation=False,
+    )
+    assert_condition(dry_run["status"] == "dry_run", "Natural Command v3 open should support dry-run.")
+    assert_condition(dry_run["executed"] is False, "Natural Command v3 dry-run should not execute target tool.")
+
+    deferred = natural_command.run_recommendation_state_command(
+        index,
+        "deferred",
+        report_limit=30,
+        state_file=state_file,
+    )
+    assert_condition(deferred["status"] == "success", "Natural Command v3 should defer by index.")
+
+    deferred_queue = recommendation_center.collect_recommendation_queue(
+        report_limit=30,
+        state_file=state_file,
+        states={"deferred"},
+    )
+    assert_condition(
+        any(item["id"] == recommendation_id for item in deferred_queue),
+        "Natural Command v3 state update should persist deferred state.",
+    )
+
+    handled = natural_command.run_recommendation_state_command(
+        index,
+        "handled",
+        report_limit=30,
+        state_file=state_file,
+    )
+    assert_condition(handled["status"] == "success", "Natural Command v3 should mark handled by index.")
+
+    visible = recommendation_center.collect_recommendation_queue(
+        report_limit=30,
+        state_file=state_file,
+        states=recommendation_center.DEFAULT_VISIBLE_STATES,
+    )
+    assert_condition(
+        not any(item["id"] == recommendation_id and item["workflow_state"] == "handled" for item in visible),
+        "Handled recommendation should be hidden from default visible queue.",
+    )
+
+    return {
+        "recommendation_id": recommendation_id,
+        "index": index,
+        "dry_run_report": dry_run["report"],
+        "deferred_state": deferred["state"],
+        "handled_state": handled["state"],
+    }
+
+
 def test_external_apps_health_v2_contract(sandbox: Path) -> dict[str, Any]:
     health = external_apps.build_external_apps_health(include_versions=False)
     apps_by_name = {
@@ -1012,6 +1141,7 @@ def run_behavior_tester() -> None:
         ("Recommendation Center Queue", test_recommendation_center_queue),
         ("Recommendation Workflow State Transitions", test_recommendation_workflow_state_transitions),
         ("Guided Action Runner Contract", test_guided_action_runner_contract),
+        ("Natural Command v3 Queue Actions", test_natural_command_v3_queue_actions),
         ("External Apps Health v2 Contract", test_external_apps_health_v2_contract),
     ]
 

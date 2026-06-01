@@ -32,7 +32,7 @@ Active workspace hiện tại là `D:\tool`. Snapshot cũ đã được chuyển
 - File Indexer
 - **thay đổi** Everything-backed fast search
 - Natural Command
-- **thay đổi** Natural Command v2: route lenh tu nhien qua Capability Registry, tu hoi xac nhan voi tool co risk
+- **thay đổi** Natural Command v3: route lệnh qua Capability Registry và điều khiển recommendation queue theo index
 
 ### Core
 - Config Manager
@@ -76,12 +76,12 @@ Automation Tools	Done
 Search Tools	Done
 Core Utilities	Done
 Tool Tester	Passed 30/30
-Behavior Tester	Passed 17/17
-Full System Tester	Passed 19/19
+Behavior Tester	Passed 18/18
+Full System Tester	Passed 20/20
 WizTree Adapter	Done
 External Apps Integration	Done
 Capability Registry	Done
-Natural Command v2	Done
+Natural Command v3	Done
 System Advisor v2	Done
 Recommendation Center	Done
 Guided Action Runner	Done

@@ -4,15 +4,15 @@
 
 ## Trạng Thái Đã Verify
 
-**thay đổi** Ngày rà lại: 2026-05-31.
+**thay đổi** Ngày rà lại: 2026-06-01.
 
 **thay đổi** Kết quả hiện tại:
 
 * **thay đổi** Main CLI đang expose 30 tool.
 * **thay đổi** Capability Registry valid 30/30, không thiếu entry so với Tool Tester.
 * **thay đổi** Tool Tester pass 30/30.
-* **thay đổi** Behavior Tester pass 17/17.
-* **thay đổi** Full System Tester pass 19/19.
+* **thay đổi** Behavior Tester pass 18/18.
+* **thay đổi** Full System Tester pass 20/20.
 * **thay đổi** Capability summary: 17 safe, 7 medium, 6 dangerous; 11 tool có thể thay đổi file; 12 tool cần confirmation; 9 tool dùng external app.
 
 ## Luồng Tool Tổng Chuẩn
@@ -20,7 +20,7 @@
 **thay đổi** Luồng đúng hiện tại:
 
 1. **thay đổi** User vào `main.py` hoặc Natural Command.
-2. **thay đổi** Natural Command v2 normalize lệnh và lookup qua Capability Registry.
+2. **thay đổi** Natural Command v3 normalize lệnh, lookup qua Capability Registry và điều khiển recommendation queue theo index.
 3. **thay đổi** Capability Registry cho biết tool nào được route, risk ra sao, có sửa file không, có cần confirmation không.
 4. **thay đổi** Config System đọc path/threshold/protected folders/external apps từ `config/user_settings.json`.
 5. **thay đổi** External Apps chỉ đóng vai trò helper read-only hoặc tăng tốc scan: Everything, WizTree, smartctl, ExifTool, FFprobe, Sysinternals.
@@ -61,7 +61,7 @@
 **thay đổi** Tool intelligence layer:
 
 * **thay đổi** Capability Registry
-* **thay đổi** Natural Command v2
+* **thay đổi** Natural Command v3
 * **thay đổi** System Advisor v2
 * **thay đổi** Recommendation Center
 * **thay đổi** Guided Action Runner
@@ -84,7 +84,7 @@
 
 **thay đổi** Gap 4: Guided Action Runner đã có, mở tool từ recommendation với màn xác nhận risk thống nhất và dry-run contract test.
 
-**thay đổi** Gap 5: Natural Command chưa điều khiển được queue kiểu "xem gợi ý số 1", "hoãn mục 2", "mở tool của mục 3".
+**thay đổi** Gap 5: Natural Command v3 đã điều khiển được queue kiểu `xem goi y`, `lam goi y so 1`, `hoan muc 2`, `danh dau muc 3 da xu ly`, `bo qua muc 4`.
 
 **thay đổi** Gap 6: Chưa có lần chạy System Advisor v2 thực tế có review thủ công output trên máy thật để calibrate recommendation.
 
@@ -144,6 +144,8 @@
 * **thay đổi** `hoãn mục 2`
 * **thay đổi** `đánh dấu mục 3 đã xử lý`
 
+**thay đổi** Trạng thái: đã hoàn thành. Parser v3 xử lý preview/open/state update theo index, open vẫn đi qua Guided Action Runner và test dry-run không execute target tool.
+
 ### Bước 5 - Advisor Real Run Calibration
 
 **thay đổi** Mục tiêu: chạy System Advisor v2 trên máy thật, xem recommendation có hợp lý không.
@@ -170,9 +172,9 @@
 
 ## Bước Nên Làm Ngay
 
-**thay đổi** Bước tiếp theo chuẩn nhất là Natural Command v3 Nhẹ.
+**thay đổi** Bước tiếp theo chuẩn nhất là Advisor Real Run Calibration.
 
-**thay đổi** Lý do: Guided Action Runner đã có, nên bước tiếp theo là cho Natural Command điều khiển queue kiểu xem/mở/hoãn/đánh dấu recommendation mà vẫn đi qua runner an toàn.
+**thay đổi** Lý do: Natural Command v3 đã có, nên cần chạy Advisor trên máy thật để xem recommendation có hợp lý, không quá ồn và route đúng sang queue/runner.
 
 ## Deletion Safety / UX v2
 
@@ -208,7 +210,7 @@
 
 **thay đổi** External Apps Manager da co lua chon xem health v2 va xuat health report v2.
 
-**thay đổi** Buoc ke tiep theo trong ke hoach chuan la Natural Command v3 Nhe.
+**thay đổi** Buoc ke tiep theo trong ke hoach chuan la Advisor Real Run Calibration.
 
 ## Recommendation Workflow v1
 
@@ -247,4 +249,22 @@
 * **thay đổi** Dry-run tạo report nhưng không execute target tool.
 * **thay đổi** Recommendation không tự chuyển `handled`; user phải xác nhận sau khi tool đích chạy xong.
 
-**thay đổi** Bước kế tiếp trong kế hoạch chuẩn là Natural Command v3 Nhẹ.
+**thay đổi** Bước kế tiếp trong kế hoạch chuẩn là Advisor Real Run Calibration.
+
+## Natural Command v3 Nhẹ
+
+**thay đổi** Natural Command v3 đã thêm parser riêng cho recommendation queue trước khi fallback sang Capability Registry.
+
+**thay đổi** Lệnh hỗ trợ:
+
+* **thay đổi** `xem goi y`: preview queue pending/deferred.
+* **thay đổi** `lam goi y so N`: mở recommendation số N qua Guided Action Runner.
+* **thay đổi** `hoan muc N`: chuyển recommendation số N sang `deferred`.
+* **thay đổi** `danh dau muc N da xu ly`: chuyển recommendation số N sang `handled`.
+* **thay đổi** `bo qua muc N`: chuyển recommendation số N sang `ignored`.
+
+**thay đổi** Safety contract:
+
+* **thay đổi** Lệnh mở theo index vẫn cần confirmation của Guided Action Runner khi chạy thật.
+* **thay đổi** Lệnh state update chỉ ghi state queue, không xóa/move/cleanup.
+* **thay đổi** Test dry-run chứng minh Natural Command không execute target tool trong test.

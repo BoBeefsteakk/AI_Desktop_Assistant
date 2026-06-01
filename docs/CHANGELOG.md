@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-01
+
+### Natural Command v3
+
+* **thay đổi** Natural Command nhận lệnh queue trực tiếp: `xem goi y`, `lam goi y so 1`, `hoan muc 2`, `danh dau muc 3 da xu ly`, `bo qua muc 4`
+* **thay đổi** Lệnh mở recommendation theo index đi qua Guided Action Runner, vẫn cần xác nhận `OPEN` khi chạy thật
+* **thay đổi** Lệnh state update chỉ ghi queue state, không cleanup, không xóa/move file
+* **thay đổi** Thêm dry-run helper để test không execute target tool
+* **thay đổi** Behavior Tester thêm Natural Command v3 Queue Actions và hiện pass 18/18
+* **thay đổi** Full System Tester thêm Natural Command v3 Queue Contract và hiện pass 20/20
+
 ## 2026-05-31
 
 ### Guided Action Runner
@@ -13,8 +24,8 @@
 * **thay đổi** Main CLI expose Guided Action Runner ở mục 30
 * **thay đổi** Natural Command route lệnh `lam goi y`/`mo goi y` sang Guided Action Runner
 * **thay đổi** Tool Tester mở rộng lên 30 tool
-* **thay đổi** Behavior Tester thêm Guided Action Runner Contract và hiện pass 17/17
-* **thay đổi** Full System Tester thêm Guided Action Runner Contract và hiện pass 19/19
+* **thay đổi** Behavior Tester thêm Guided Action Runner Contract
+* **thay đổi** Full System Tester thêm Guided Action Runner Contract
 
 ### Recommendation Workflow v1
 
@@ -35,8 +46,8 @@
 * **thay đổi** Tool Tester mở rộng lên 30 tool
 * **thay đổi** Behavior Tester thêm case Recommendation Center Queue
 * **thay đổi** Full System Tester thêm case Recommendation Center Contract
-* **thay đổi** Behavior Tester hiện pass 17/17
-* **thay đổi** Full System Tester hiện pass 19/19
+* **thay đổi** Behavior Tester hiện pass 18/18
+* **thay đổi** Full System Tester hiện pass 20/20
 
 ### System Advisor v2
 

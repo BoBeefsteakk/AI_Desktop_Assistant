@@ -38,6 +38,7 @@ from tools.core.safe_executor import safe_delete
 from tools.core.safety_utils import safe_move, save_manifest
 from tools.core.tool_tester import TOOLS_TO_TEST
 from tools.core.undo_manager import preview_manifest, restore_manifest
+from tools.search import natural_command
 from tools.storage.wiztree_adapter import (
     get_top_wiztree_files,
     get_top_wiztree_folders,
@@ -714,6 +715,109 @@ def test_guided_action_runner_contract() -> dict[str, Any]:
         cleanup_sandbox(sandbox)
 
 
+def test_natural_command_v3_queue_contract() -> dict[str, Any]:
+    sandbox = make_sandbox()
+    state_file = sandbox / "natural_command_v3_queue.jsonl"
+    recommendation_id = f"full-natural-command-v3-{sandbox.name}"
+
+    try:
+        preview_decision = natural_command.resolve_command("xem goi y")
+        open_decision = natural_command.resolve_command("lam goi y so 1")
+        handled_decision = natural_command.resolve_command("danh dau muc 1 da xu ly")
+
+        assert_condition(
+            preview_decision["type"] == "recommendation_queue_preview",
+            "Natural Command v3 should resolve queue preview.",
+        )
+        assert_condition(
+            open_decision["type"] == "recommendation_open" and open_decision["index"] == 1,
+            "Natural Command v3 should resolve open by index.",
+        )
+        assert_condition(
+            handled_decision["type"] == "recommendation_state_update"
+            and handled_decision["state"] == "handled",
+            "Natural Command v3 should resolve handled state update.",
+        )
+
+        create_report(
+            tool_name="system_advisor",
+            action="natural_command_v3_contract",
+            status="success",
+            risk_level="safe",
+            input_data={
+                "sandbox": str(sandbox),
+            },
+            results={
+                "recommendations": [
+                    {
+                        "id": recommendation_id,
+                        "severity": "critical",
+                        "title": "Full natural command v3 contract",
+                        "detail": f"Natural Command queue contract {sandbox.name}.",
+                        "source": "full_system_test",
+                        "suggested_tool_id": "audit_center",
+                        "suggestion_only": True,
+                    }
+                ],
+            },
+            recommendations=[],
+            summary={
+                "total": 1,
+                "critical_count": 1,
+                "undo_available": False,
+            },
+            undo_available=False,
+            tags=["natural_command_v3", "full_system"],
+        )
+
+        preview = preview_guided_actions(
+            report_limit=30,
+            state_file=state_file,
+        )
+        context = find_guided_action_context(
+            preview["contexts"],
+            recommendation_id=recommendation_id,
+        )
+        assert_condition(context is not None, "Natural Command v3 queue test should collect seeded item.")
+
+        index = preview["contexts"].index(context) + 1
+        dry_run = natural_command.run_recommendation_open_command(
+            index,
+            report_limit=30,
+            state_file=state_file,
+            dry_run=True,
+            require_confirmation=False,
+        )
+        assert_condition(dry_run["status"] == "dry_run", "Natural Command v3 dry-run should not execute target.")
+
+        handled = natural_command.run_recommendation_state_command(
+            index,
+            "handled",
+            report_limit=30,
+            state_file=state_file,
+        )
+        handled_queue = collect_recommendation_queue(
+            report_limit=30,
+            state_file=state_file,
+            states={"handled"},
+        )
+        assert_condition(handled["status"] == "success", "Natural Command v3 should update state.")
+        assert_condition(
+            any(item["id"] == recommendation_id for item in handled_queue),
+            "Natural Command v3 handled state should persist.",
+        )
+
+        return {
+            "recommendation_id": recommendation_id,
+            "index": index,
+            "dry_run_report": dry_run["report"],
+            "handled_state": handled["state"],
+        }
+
+    finally:
+        cleanup_sandbox(sandbox)
+
+
 def test_dependency_health() -> dict[str, Any]:
     modules = ["psutil", "send2trash", "watchdog"]
     results = []
@@ -764,6 +868,7 @@ FULL_SYSTEM_TESTS: list[tuple[str, Callable[[], dict[str, Any]]]] = [
     ("System Advisor v2 Contract", test_system_advisor_v2_contract),
     ("Recommendation Center Contract", test_recommendation_center_contract),
     ("Guided Action Runner Contract", test_guided_action_runner_contract),
+    ("Natural Command v3 Queue Contract", test_natural_command_v3_queue_contract),
     ("Dependency Health", test_dependency_health),
     ("Git Submodule Health", test_git_submodule_health),
 ]
