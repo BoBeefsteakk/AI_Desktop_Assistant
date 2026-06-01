@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from config.settings import (
+    DATA_DIR,
     EXTERNAL_APP_PATHS,
     EXTERNAL_APP_TIMEOUT_SECONDS,
     EXTERNAL_APPS_ENABLED,
@@ -50,6 +51,7 @@ APP_IMPACT_DESCRIPTIONS: dict[str, str] = {
 INDIRECT_APP_DEPENDENCIES: dict[str, list[str]] = {
     "everything_app": ["file_indexer", "natural_command"],
 }
+EXTERNAL_APPS_HEALTH_STATE_FILE = DATA_DIR / "external_apps_health_state.json"
 
 
 def get_external_app_path(app_name: str) -> Path | None:
@@ -165,12 +167,26 @@ def get_external_apps_status(include_versions: bool = False) -> dict[str, Any]:
 
     for app_name, path in sorted(get_configured_external_app_paths().items()):
         enabled = get_external_app_enabled(app_name)
+        path_exists = path.exists()
         record = {
             "name": app_name,
             "path": str(path),
             "enabled": enabled,
-            "available": enabled and path.exists(),
+            "available": enabled and path_exists,
+            "path_exists": path_exists,
         }
+        if path_exists:
+            try:
+                stat = path.stat()
+                record.update({
+                    "path_size": stat.st_size,
+                    "path_modified": datetime.fromtimestamp(stat.st_mtime).isoformat(timespec="seconds"),
+                })
+            except OSError:
+                record.update({
+                    "path_size": None,
+                    "path_modified": None,
+                })
         if include_versions and record["available"]:
             record["version"] = get_external_app_version(app_name)
         apps.append(record)
@@ -278,6 +294,213 @@ def build_external_app_recommendations(health: dict[str, Any]) -> list[dict[str,
     )
 
 
+def build_external_apps_health_state(health: dict[str, Any]) -> dict[str, Any]:
+    apps = {}
+
+    for app in health.get("apps", []):
+        apps[app["name"]] = {
+            "name": app["name"],
+            "path": app.get("path"),
+            "enabled": bool(app.get("enabled")),
+            "available": bool(app.get("available")),
+            "state": app.get("state"),
+            "version": app.get("version"),
+            "path_size": app.get("path_size"),
+            "path_modified": app.get("path_modified"),
+        }
+
+    return {
+        "schema": "external_apps_health_state_v1",
+        "captured_at": datetime.now().isoformat(timespec="seconds"),
+        "apps": apps,
+    }
+
+
+def load_external_apps_health_state(
+    state_file: str | Path | None = None,
+) -> dict[str, Any] | None:
+    path = Path(state_file) if state_file is not None else EXTERNAL_APPS_HEALTH_STATE_FILE
+    if not path.exists():
+        return None
+
+    try:
+        with path.open("r", encoding="utf-8") as file:
+            data = json.load(file)
+    except (OSError, json.JSONDecodeError):
+        return None
+
+    return data if isinstance(data, dict) else None
+
+
+def save_external_apps_health_state(
+    health: dict[str, Any],
+    state_file: str | Path | None = None,
+) -> Path:
+    path = Path(state_file) if state_file is not None else EXTERNAL_APPS_HEALTH_STATE_FILE
+    path.parent.mkdir(parents=True, exist_ok=True)
+    state = build_external_apps_health_state(health)
+
+    with path.open("w", encoding="utf-8") as file:
+        json.dump(state, file, ensure_ascii=False, indent=2)
+
+    return path
+
+
+def normalize_previous_apps(previous_state: dict[str, Any] | None) -> dict[str, dict[str, Any]]:
+    if not previous_state:
+        return {}
+
+    apps = previous_state.get("apps", {})
+    if isinstance(apps, dict):
+        return {
+            str(name): item
+            for name, item in apps.items()
+            if isinstance(item, dict)
+        }
+
+    if isinstance(apps, list):
+        return {
+            str(item.get("name")): item
+            for item in apps
+            if isinstance(item, dict) and item.get("name")
+        }
+
+    return {}
+
+
+def make_external_app_drift_event(
+    app: dict[str, Any],
+    drift_type: str,
+    severity: str,
+    title: str,
+    detail: str,
+    previous: dict[str, Any],
+) -> dict[str, Any]:
+    dependent_tool_ids = [tool["id"] for tool in app.get("dependent_tools", [])]
+    return {
+        "id": f"external-app-{app['name']}-{drift_type}",
+        "severity": severity,
+        "title": title,
+        "detail": detail,
+        "source": "external_apps_drift",
+        "app_name": app["name"],
+        "state": app.get("state"),
+        "drift_type": drift_type,
+        "previous": previous,
+        "current": {
+            "path": app.get("path"),
+            "available": bool(app.get("available")),
+            "state": app.get("state"),
+            "version": app.get("version"),
+            "path_size": app.get("path_size"),
+            "path_modified": app.get("path_modified"),
+        },
+        "dependent_tool_ids": dependent_tool_ids,
+        "suggested_tool_id": "external_apps_manager",
+        "suggestion_only": True,
+    }
+
+
+def detect_external_app_drift(
+    health: dict[str, Any],
+    previous_state: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    previous_apps = normalize_previous_apps(previous_state)
+    if not previous_apps:
+        return []
+
+    events = []
+
+    for app in health.get("apps", []):
+        previous = previous_apps.get(app["name"])
+        if not previous:
+            continue
+
+        previous_path = str(previous.get("path") or "")
+        current_path = str(app.get("path") or "")
+        previous_available = bool(previous.get("available"))
+        current_available = bool(app.get("available"))
+        dependent_tool_ids = [tool["id"] for tool in app.get("dependent_tools", [])]
+        severity = "warning" if dependent_tool_ids else "info"
+
+        if previous_path != current_path:
+            events.append(make_external_app_drift_event(
+                app,
+                "path_changed",
+                severity,
+                "External app path da doi",
+                (
+                    f"{app['name']} doi path tu {previous_path or '<missing>'} "
+                    f"sang {current_path or '<missing>'}. "
+                    f"Anh huong tool: {', '.join(dependent_tool_ids) or 'chua co tool phu thuoc truc tiep'}."
+                ),
+                previous,
+            ))
+
+        if previous_available != current_available:
+            state_text = "available" if current_available else "missing"
+            events.append(make_external_app_drift_event(
+                app,
+                "availability_changed",
+                severity,
+                "External app availability da doi",
+                (
+                    f"{app['name']} chuyen tu "
+                    f"{'available' if previous_available else 'missing'} sang {state_text}. "
+                    f"Path hien tai: {current_path or '<missing>'}."
+                ),
+                previous,
+            ))
+
+        previous_version = previous.get("version")
+        current_version = app.get("version")
+        if previous_version and current_version and previous_version != current_version:
+            events.append(make_external_app_drift_event(
+                app,
+                "version_changed",
+                "info",
+                "External app version da doi",
+                (
+                    f"{app['name']} doi version tu {previous_version} sang {current_version}. "
+                    "Nen biet de doi chieu neu tool hanh xu khac truoc."
+                ),
+                previous,
+            ))
+
+        same_path = previous_path == current_path
+        previous_size = previous.get("path_size")
+        current_size = app.get("path_size")
+        previous_modified = previous.get("path_modified")
+        current_modified = app.get("path_modified")
+        if (
+            same_path
+            and previous_available
+            and current_available
+            and (
+                (previous_size is not None and current_size is not None and previous_size != current_size)
+                or (
+                    previous_modified
+                    and current_modified
+                    and previous_modified != current_modified
+                )
+            )
+        ):
+            events.append(make_external_app_drift_event(
+                app,
+                "binary_changed",
+                "info",
+                "External app file da thay doi",
+                (
+                    f"{app['name']} van o cung path nhung file size/modified da doi. "
+                    "Co the do update app; neu tool loi, hay xem lai app nay truoc."
+                ),
+                previous,
+            ))
+
+    severity_order = {"critical": 0, "warning": 1, "info": 2}
+    return sorted(events, key=lambda item: (severity_order.get(item["severity"], 99), item["id"]))
+
+
 def external_app_recommendation_to_text(recommendation: dict[str, Any]) -> str:
     return (
         f"[{recommendation['severity'].upper()}] "
@@ -285,7 +508,10 @@ def external_app_recommendation_to_text(recommendation: dict[str, Any]) -> str:
     )
 
 
-def build_external_apps_health(include_versions: bool = False) -> dict[str, Any]:
+def build_external_apps_health(
+    include_versions: bool = False,
+    previous_state: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     status = get_external_apps_status(include_versions=include_versions)
     dependency_map = get_external_app_dependency_map()
     apps_by_name = {item["name"]: item for item in status["apps"]}
@@ -337,6 +563,16 @@ def build_external_apps_health(include_versions: bool = False) -> dict[str, Any]
     recommendations = build_external_app_recommendations({
         "apps": apps,
     })
+    drift_events = detect_external_app_drift(
+        {
+            "apps": apps,
+        },
+        previous_state,
+    )
+    recommendations = sorted(
+        [*recommendations, *drift_events],
+        key=lambda item: ({"critical": 0, "warning": 1, "info": 2}.get(item["severity"], 99), item["id"]),
+    )
 
     summary = {
         "total": len(apps),
@@ -347,11 +583,19 @@ def build_external_apps_health(include_versions: bool = False) -> dict[str, Any]
         "with_dependents": sum(1 for app in apps if app["dependent_tool_count"] > 0),
         "impacted_tool_count": len(impacted_tool_ids),
         "recommendation_count": len(recommendations),
+        "drift_event_count": len(drift_events),
+        "warning_drift_count": sum(1 for item in drift_events if item["severity"] == "warning"),
+        "path_drift_count": sum(1 for item in drift_events if item.get("drift_type") == "path_changed"),
+        "availability_drift_count": sum(1 for item in drift_events if item.get("drift_type") == "availability_changed"),
+        "version_drift_count": sum(1 for item in drift_events if item.get("drift_type") == "version_changed"),
+        "binary_drift_count": sum(1 for item in drift_events if item.get("drift_type") == "binary_changed"),
     }
 
     return {
         "enabled": EXTERNAL_APPS_ENABLED,
         "schema": "external_apps_health_v2",
+        "drift_schema": "external_apps_drift_v1",
+        "previous_state_loaded": bool(previous_state),
         "summary": summary,
         "total": summary["total"],
         "available": summary["available"],
@@ -359,6 +603,7 @@ def build_external_apps_health(include_versions: bool = False) -> dict[str, Any]
         "apps": apps,
         "dependency_map": dependency_map,
         "impacted_tool_ids": sorted(impacted_tool_ids),
+        "drift_events": drift_events,
         "recommendations": recommendations,
         "recommendation_text": [
             external_app_recommendation_to_text(item)
@@ -380,13 +625,18 @@ def print_external_apps_status(include_versions: bool = False) -> None:
 
 
 def print_external_apps_health(include_versions: bool = False) -> None:
-    health = build_external_apps_health(include_versions=include_versions)
+    previous_state = load_external_apps_health_state()
+    health = build_external_apps_health(
+        include_versions=include_versions,
+        previous_state=previous_state,
+    )
     summary = health["summary"]
 
     print("\n========== EXTERNAL APPS HEALTH V2 ==========")
     print(f"Available: {summary['available']}/{summary['total']}")
     print(f"Missing/disabled/unconfigured: {health['missing']}")
     print(f"Impacted tools: {summary['impacted_tool_count']}")
+    print(f"Drift events: {summary['drift_event_count']}")
 
     for item in health["apps"]:
         mark = "OK" if item["state"] == "available" else item["state"].upper()
@@ -403,10 +653,19 @@ def print_external_apps_health(include_versions: bool = False) -> None:
             print(f"- {recommendation}")
 
 
-def export_external_apps_report(include_versions: bool = True) -> dict[str, Any]:
-    health = build_external_apps_health(include_versions=include_versions)
+def export_external_apps_report(
+    include_versions: bool = True,
+    *,
+    update_state: bool = True,
+    state_file: str | Path | None = None,
+) -> dict[str, Any]:
+    previous_state = load_external_apps_health_state(state_file)
+    health = build_external_apps_health(
+        include_versions=include_versions,
+        previous_state=previous_state,
+    )
     summary = health["summary"]
-    report_status = "success" if health["missing"] == 0 else "warning"
+    report_status = "success" if health["missing"] == 0 and summary["warning_drift_count"] == 0 else "warning"
     report = create_report(
         tool_name="external_apps",
         action="health_v2",
@@ -414,12 +673,12 @@ def export_external_apps_report(include_versions: bool = True) -> dict[str, Any]
         risk_level="safe",
         input_data={
             "include_versions": include_versions,
+            "state_file": str(Path(state_file) if state_file is not None else EXTERNAL_APPS_HEALTH_STATE_FILE),
+            "previous_state_loaded": bool(previous_state),
+            "update_state": update_state,
         },
         results=health,
-        recommendations=health["recommendation_text"] or [
-            "External app paths are healthy.",
-            "External apps remain helper integrations; they do not delete or move user data by themselves.",
-        ],
+        recommendations=health["recommendation_text"],
         summary={
             "total": summary["total"],
             "available_count": summary["available"],
@@ -429,11 +688,15 @@ def export_external_apps_report(include_versions: bool = True) -> dict[str, Any]
             "with_dependents": summary["with_dependents"],
             "impacted_tool_count": summary["impacted_tool_count"],
             "recommendation_count": summary["recommendation_count"],
+            "drift_event_count": summary["drift_event_count"],
+            "warning_drift_count": summary["warning_drift_count"],
+            "path_drift_count": summary["path_drift_count"],
             "undo_available": False,
         },
         undo_available=False,
-        tags=["external_apps", "config", "safe", "health_v2"],
+        tags=["external_apps", "config", "safe", "health_v2", "drift_v1"],
     )
+    saved_state_file = save_external_apps_health_state(health, state_file) if update_state else None
 
     log_action(
         "external_apps",
@@ -444,14 +707,19 @@ def export_external_apps_report(include_versions: bool = True) -> dict[str, Any]
             "total": summary["total"],
             "missing": health["missing"],
             "impacted_tool_count": summary["impacted_tool_count"],
+            "drift_event_count": summary["drift_event_count"],
             "report": str(report),
+            "state_file": str(saved_state_file) if saved_state_file else None,
         },
     )
 
     print(f"Report: {report}")
+    if saved_state_file:
+        print(f"State: {saved_state_file}")
     return {
         "status": report_status,
         "report": str(report),
+        "state_file": str(saved_state_file) if saved_state_file else None,
         "external_apps": health,
     }
 

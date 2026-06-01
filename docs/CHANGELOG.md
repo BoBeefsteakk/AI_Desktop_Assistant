@@ -2,6 +2,15 @@
 
 ## 2026-06-01
 
+### External App Path Drift Detection
+
+* **thay đổi** External Apps Health v2 có baseline local tại `data/external_apps_health_state.json` để so sánh lần chạy trước và lần chạy hiện tại.
+* **thay đổi** Health report phát hiện `path_changed`, `availability_changed`, `version_changed`, `binary_changed` cho app ngoài.
+* **thay đổi** Drift được đưa vào structured recommendations với `source=external_apps_drift`, nhưng tool vẫn chỉ read-only và không tự sửa config/path.
+* **thay đổi** Export report mới nhất ghi nhận 16/16 app available, drift 0, recommendation 0.
+* **thay đổi** Recommendation Center đọc buffer report lớn hơn trước khi lọc test reports để test report không che mất Advisor report thật.
+* **thay đổi** Behavior Tester vẫn pass 18/18, Tool Tester pass 30/30, Full System Tester pass 20/20 sau drift detection.
+
 ### Advisor Real Run Calibration
 
 * **thay đổi** Chạy System Advisor thật trên `D:\` bằng Python scanner read-only

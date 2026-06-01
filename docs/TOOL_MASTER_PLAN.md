@@ -78,7 +78,7 @@
 
 **thay đổi** Gap 1: External App Health Report v2 da co mapping app -> tool phu thuoc.
 
-**thay đổi** Gap 2: External App Health hiện có status/version/path basic, nhưng chưa có drift detection/cảnh báo path đổi theo thời gian.
+**thay đổi** Gap 2: External App Health path drift detection đã hoàn thành; health report hiện cảnh báo nếu app/path/version/helper binary đổi so với baseline lần trước.
 
 **thay đổi** Gap 3: Recommendation Center da co trang thai persistent pending/deferred/handled/ignored.
 
@@ -159,6 +159,21 @@
 
 **thay đổi** Trạng thái: đã hoàn thành lượt calibration đầu. Kết quả `D:\` hiện có 5 recommendation thực tế, không còn recommendation nhiễu từ report test/contract.
 
+### Bước 5.5 - External App Path Drift Detection
+
+**thay đổi** Mục tiêu: phát hiện sớm khi app ngoài bị move, mất file, đổi version hoặc update binary làm tool phụ thuộc chạy sai/chậm.
+
+**thay đổi** Trạng thái: đã hoàn thành.
+
+**thay đổi** Kết quả:
+
+* **thay đổi** Baseline local nằm ở `data/external_apps_health_state.json` và đã ignore khỏi git.
+* **thay đổi** Export External Apps Health report sẽ load baseline cũ, sinh drift events, rồi cập nhật baseline mới.
+* **thay đổi** Drift event có các loại `path_changed`, `availability_changed`, `version_changed`, `binary_changed`.
+* **thay đổi** Drift được đưa vào structured recommendation `source=external_apps_drift`, nhưng không tự sửa config/path.
+* **thay đổi** Real export hiện tại: 16/16 app available, drift 0, recommendation 0.
+* **thay đổi** Recommendation Center đọc buffer report lớn hơn trước khi lọc test reports, tránh test report che mất Advisor report thật.
+
 ### Bước 6 - Feed Assistant Chuẩn Bị
 
 **thay đổi** Chỉ bắt đầu khi các điều kiện sau đạt:
@@ -174,9 +189,9 @@
 
 ## Bước Nên Làm Ngay
 
-**thay đổi** Bước tiếp theo chuẩn nhất là External App Health path drift detection.
+**thay đổi** Bước tiếp theo chuẩn nhất là Feed Assistant readiness report.
 
-**thay đổi** Lý do: Advisor real-run đã sạch hơn, bước còn lại trước mốc pre-feed là phát hiện sớm khi path app ngoài bị đổi/mất.
+**thay đổi** Lý do: Advisor real-run và External App drift detection đã ổn, bước còn lại của mốc pre-feed là đóng gói checklist/report để assistant đọc được trạng thái hệ thống một cách sạch.
 
 ## Deletion Safety / UX v2
 
@@ -212,7 +227,7 @@
 
 **thay đổi** External Apps Manager da co lua chon xem health v2 va xuat health report v2.
 
-**thay đổi** Buoc ke tiep theo trong ke hoach chuan la External App Health path drift detection.
+**thay đổi** External App Health path drift detection đã hoàn thành. Bước kế tiếp trong kế hoạch chuẩn là Feed Assistant readiness report.
 
 ## Recommendation Workflow v1
 
@@ -251,7 +266,7 @@
 * **thay đổi** Dry-run tạo report nhưng không execute target tool.
 * **thay đổi** Recommendation không tự chuyển `handled`; user phải xác nhận sau khi tool đích chạy xong.
 
-**thay đổi** Bước kế tiếp trong kế hoạch chuẩn là External App Health path drift detection.
+**thay đổi** Bước kế tiếp trong kế hoạch chuẩn là Feed Assistant readiness report.
 
 ## Natural Command v3 Nhẹ
 

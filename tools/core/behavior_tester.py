@@ -1110,10 +1110,45 @@ def test_external_apps_health_v2_contract(sandbox: Path) -> dict[str, Any]:
         "External Apps Health summary total should match app list.",
     )
 
+    state_file = sandbox / "external_apps_state.json"
+    saved_state = external_apps.save_external_apps_health_state(
+        health,
+        state_file=state_file,
+    )
+    loaded_state = external_apps.load_external_apps_health_state(state_file)
+    no_drift_health = external_apps.build_external_apps_health(
+        include_versions=False,
+        previous_state=loaded_state,
+    )
+
+    assert_condition(saved_state.exists(), "External Apps Health should save drift baseline state.")
+    assert_condition(
+        no_drift_health["summary"]["drift_event_count"] == 0,
+        "Unchanged external app baseline should not create drift events.",
+    )
+
+    drift_state = external_apps.build_external_apps_health_state(health)
+    drift_state["apps"]["everything_cli"]["path"] = r"D:\old_external_path\es.exe"
+    drift_health = external_apps.build_external_apps_health(
+        include_versions=False,
+        previous_state=drift_state,
+    )
+    drift_ids = {item["id"] for item in drift_health["drift_events"]}
+
+    assert_condition(
+        "external-app-everything_cli-path_changed" in drift_ids,
+        "External Apps Health should detect configured path drift.",
+    )
+    assert_condition(
+        any(item["source"] == "external_apps_drift" for item in drift_health["recommendations"]),
+        "External Apps Health should expose drift as structured recommendations.",
+    )
+
     return {
         "summary": health["summary"],
         "checked_apps": sorted(required_apps),
         "impacted_tool_ids": health["impacted_tool_ids"],
+        "drift_event_ids": sorted(drift_ids),
     }
 
 

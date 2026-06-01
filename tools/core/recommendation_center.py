@@ -449,8 +449,9 @@ def collect_recommendation_queue(
     state_file: str | Path | None = None,
     states: set[str] | list[str] | tuple[str, ...] | None = None,
 ) -> list[dict[str, Any]]:
+    raw_report_limit = report_limit if include_test_reports else max(report_limit * 4, 300)
     report_records = filter_report_records_for_queue(
-        read_recent_report_index(limit=report_limit),
+        read_recent_report_index(limit=raw_report_limit),
         include_test_reports=include_test_reports,
     )
     queue = []

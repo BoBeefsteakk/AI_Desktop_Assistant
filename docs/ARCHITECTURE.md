@@ -409,6 +409,14 @@ WizTree Adapter:
 * Sysinternals được nhận diện cho process/startup diagnostics
 * 7-Zip/rclone sẵn trong registry cho archive/backup flow sau này
 
+**thay đổi** External App Path Drift Detection:
+
+* **thay đổi** `tools/core/external_apps.py` lưu baseline local tại `data/external_apps_health_state.json`.
+* **thay đổi** Baseline được cập nhật khi export External Apps Health report, không commit vào git.
+* **thay đổi** Health v2 so sánh baseline với trạng thái hiện tại để phát hiện `path_changed`, `availability_changed`, `version_changed`, `binary_changed`.
+* **thay đổi** Drift chỉ tạo report/recommendation read-only; không tự sửa config, không tải app, không chạy installer.
+* **thay đổi** Recommendation Center đọc buffer report lớn hơn rồi mới lọc test reports, tránh test report che mất Advisor/External Apps report thật.
+
 ---
 
 ## Config Layer

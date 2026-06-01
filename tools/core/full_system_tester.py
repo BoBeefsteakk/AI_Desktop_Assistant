@@ -32,7 +32,11 @@ from tools.core.guided_action_runner import (
     find_guided_action_context,
     preview_guided_actions,
 )
-from tools.core.external_apps import build_external_apps_health, get_external_apps_status
+from tools.core.external_apps import (
+    build_external_apps_health,
+    build_external_apps_health_state,
+    get_external_apps_status,
+)
 from tools.core.risk_classifier import PROTECTED, REVIEW_REQUIRED, SAFE_DELETE, classify_file_risk
 from tools.core.safe_executor import safe_delete
 from tools.core.safety_utils import safe_move, save_manifest
@@ -428,9 +432,31 @@ def test_external_apps_registry() -> dict[str, Any]:
         "No tool should be impacted when all configured external apps are available.",
     )
 
+    no_drift_health = build_external_apps_health(
+        include_versions=False,
+        previous_state=build_external_apps_health_state(health),
+    )
+    assert_condition(
+        no_drift_health["summary"]["drift_event_count"] == 0,
+        "External apps drift detector should stay quiet for identical baseline.",
+    )
+
+    drift_state = build_external_apps_health_state(health)
+    drift_state["apps"]["everything_cli"]["path"] = r"D:\old_external_path\es.exe"
+    drift_health = build_external_apps_health(
+        include_versions=False,
+        previous_state=drift_state,
+    )
+    drift_ids = {item["id"] for item in drift_health["drift_events"]}
+    assert_condition(
+        "external-app-everything_cli-path_changed" in drift_ids,
+        "External apps health should detect path drift.",
+    )
+
     return {
         "status": status,
         "health_summary": health["summary"],
+        "drift_event_ids": sorted(drift_ids),
     }
 
 

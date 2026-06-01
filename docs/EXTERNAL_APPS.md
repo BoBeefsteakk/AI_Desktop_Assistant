@@ -83,3 +83,20 @@
 * **thay đổi** `5` test Everything search.
 
 **thay đổi** Health v2 van read-only: khong auto tai app, khong sua path, khong chay installer.
+
+## External App Path Drift Detection
+
+**thay đổi** Health v2 hiện có drift detection dựa trên baseline local `D:\tool\data\external_apps_health_state.json`.
+
+**thay đổi** Baseline này chỉ lưu trạng thái app ngoài của máy hiện tại và đã được ignore khỏi git.
+
+**thay đổi** Drift detection đang bắt các trường hợp:
+
+* **thay đổi** `path_changed`: config/path app đổi so với lần export trước.
+* **thay đổi** `availability_changed`: app từ OK thành missing hoặc ngược lại.
+* **thay đổi** `version_changed`: version đổi khi có dữ liệu version.
+* **thay đổi** `binary_changed`: cùng path nhưng file size/modified đổi.
+
+**thay đổi** Khi drift ảnh hưởng tool đang phụ thuộc app đó, report tạo structured recommendation `source=external_apps_drift` để Recommendation Center/Guided Action Runner nhìn thấy.
+
+**thay đổi** Export thật gần nhất: 16/16 app available, drift 0, recommendation 0.

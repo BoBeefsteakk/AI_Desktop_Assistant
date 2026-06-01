@@ -49,10 +49,10 @@ Hoàn thành
 * **thay đổi** Recommendation Workflow v1 có trạng thái pending/deferred/handled/ignored
 * **thay đổi** Guided Action Runner mở tool từ recommendation qua xác nhận `OPEN`, không bypass confirmation
 * **thay đổi** Advisor real run calibration lượt đầu trên `D:\`, đã lọc report test khỏi queue thật
+* **thay đổi** External App Health path drift detection với baseline local và structured drift recommendations
 
 Cần rà soát tiếp:
 
-* **thay đổi** External App Health path drift detection nếu app bị di chuyển
 * **thay đổi** Feed Assistant readiness report trước khi feed/train
 
 ---

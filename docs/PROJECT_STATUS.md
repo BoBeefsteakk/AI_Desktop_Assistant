@@ -337,6 +337,21 @@ Kết quả:
 
 ---
 
+### External App Path Drift Detection
+
+**thay đổi** Đã hoàn thành drift detection cho External Apps Health v2.
+
+Kết quả:
+
+* **thay đổi** Baseline local nằm ở `D:\tool\data\external_apps_health_state.json` và không commit vào git.
+* **thay đổi** Health report phát hiện `path_changed`, `availability_changed`, `version_changed`, `binary_changed`.
+* **thay đổi** Drift sinh structured recommendation `source=external_apps_drift` để queue/guided runner đọc được.
+* **thay đổi** Health report vẫn read-only: không tự tải app, không tự sửa config, không chạy installer.
+* **thay đổi** Real export hiện tại: 16/16 external apps available, drift 0, recommendation 0.
+* **thay đổi** Recommendation Center đã đọc buffer lớn hơn trước khi lọc test reports, nên queue thật vẫn giữ 5 recommendation Advisor dù test suite sinh nhiều report.
+
+---
+
 ### Behavior Tester
 
 **thay đổi** Đã bổ sung test hành vi trong sandbox.
@@ -566,12 +581,12 @@ Lý do:
 * **thay đổi** Recommendation Center
 * **thay đổi** Guided Action Runner
 * **thay đổi** Advisor Real Run Calibration
+* **thay đổi** External App Path Drift Detection
 
 Cần làm tiếp để ổn định tool tổng:
 
-* **thay đổi** Ưu tiên 1: Path drift detection cho External App Health nếu app bị di chuyển
-* **thay đổi** Ưu tiên 2: Feed Assistant readiness report
-* **thay đổi** Ưu tiên 3: Mở rộng Undo System cho các thao tác không có manifest nếu cần
+* **thay đổi** Ưu tiên 1: Feed Assistant readiness report
+* **thay đổi** Ưu tiên 2: Mở rộng Undo System cho các thao tác không có manifest nếu cần
 * **thay đổi** Mở rộng Natural Command v3 thành intent engine sau khi có thêm lịch sử/report để feed assistant
 * **thay đổi** Chuẩn hóa Recommendation Center thành queue có trạng thái handled/deferred nếu cần workflow dài hơn
 * Bổ sung thêm case vào Full System Tester khi phát hiện lỗi thực tế mới

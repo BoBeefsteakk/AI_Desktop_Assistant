@@ -41,6 +41,7 @@ Active workspace hiện tại là `D:\tool`. Snapshot cũ đã được chuyển
 - Undo Manager
 - Full System Tester
 - **thay đổi** External Apps Manager
+- **thay đổi** External App Drift Detection: cảnh báo nếu path/app/version helper đổi so với baseline lần trước
 - **thay đổi** Capability Registry
 - **thay đổi** Recommendation Center
 - **thay đổi** Guided Action Runner: mở tool từ recommendation với cổng xác nhận risk, không bypass confirmation của tool thật
@@ -81,6 +82,7 @@ Behavior Tester	Passed 18/18
 Full System Tester	Passed 20/20
 WizTree Adapter	Done
 External Apps Integration	Done
+External App Drift Detection	Done
 Capability Registry	Done
 Natural Command v3	Done
 System Advisor v2	Done
