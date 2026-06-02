@@ -227,6 +227,21 @@
 
 **thay đổi** Bước tiếp theo chuẩn nhất đã đổi: không xóa `D:\Downloads\Riot Games` vì là game data, không xóa các archive/bộ cài thật nếu user còn cần; mọi case cleanup/move nhạy cảm phải được tái hiện trong Scenario Tester bằng file giả trước.
 
+## Step 2 Real Workflow Dry Run
+
+**thay đổi** Đã triển khai bước 2 bằng workflow read-only/dry-run trên máy thật.
+
+**thay đổi** Kết quả:
+
+* **thay đổi** System Advisor snapshot thật trên `D:\`: 5 recommendation, 0 critical, 2 warning, 3 info.
+* **thay đổi** `D:\Downloads` root có 0 file lẻ, nên không chạy Download Organizer trên file thật.
+* **thay đổi** Queue sau review: 0 pending, 2 deferred, 2 handled, 1 ignored.
+* **thay đổi** 2 deferred còn lại là `large-archive-files` và `large-video-files`; cả hai cần user quyết định thủ công trước khi xóa/move.
+* **thay đổi** Guided Action Runner dry-run đã route đúng target tool và không execute tool thật.
+* **thay đổi** Feed Readiness sau bước 2: ready, 8 pass, 0 warn, 0 fail.
+
+**thay đổi** Nguyên tắc tiếp theo: nếu muốn xử lý archive/video thật, phải chọn rõ từng nhóm file hoặc tái hiện thêm case bằng Scenario Tester trước.
+
 ## Deletion Safety / UX v2
 
 **thay đổi** Risk Classifier da duoc tach thanh nhieu lop thay vi chi dua vao mot danh sach `protected_dir_names`.

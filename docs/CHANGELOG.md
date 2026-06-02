@@ -2,6 +2,16 @@
 
 ## 2026-06-02
 
+### Step 2 Real Workflow Dry Run
+
+* **thay đổi** Đã chạy System Advisor snapshot thật trên `D:\` theo chế độ read-only, không xóa/move file.
+* **thay đổi** Advisor report mới: `D:\tool\reports\system_advisor_20260602_200124.json`.
+* **thay đổi** Recommendation queue sau sync có 5 item: 0 critical, 2 warning, 3 info.
+* **thay đổi** Đã review queue: `downloads-folder-heavy` và `largest-folder-review` -> handled; `large-archive-files` và `large-video-files` -> deferred; `heavy-processes` -> ignored.
+* **thay đổi** Lý do chính: `D:\Downloads` root có 0 file lẻ, Riot Games/app/archive/video đều cần quyết định thủ công, không tự cleanup.
+* **thay đổi** Guided Action Runner dry-run 2 item deferred, cả hai đều `executed=False`: archive -> Large File Finder, video -> Media Organizer.
+* **thay đổi** Feed Readiness sau Step 2: ready, 8 pass, 0 warn, 0 fail.
+
 ### Scenario Tester
 
 * **thay đổi** Thêm `tools/core/scenario_tester.py` để test các case nhạy cảm bằng file giả trong sandbox.

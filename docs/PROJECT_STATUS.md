@@ -215,6 +215,26 @@ Failed: 0
 
 ---
 
+### Step 2 Real Workflow Dry Run
+
+**thay đổi** Đã chạy thử workflow tổng trên dữ liệu thật theo chế độ read-only/dry-run.
+
+Kết quả:
+
+* **thay đổi** System Advisor đọc snapshot thật trên `D:\`, không xóa/move file.
+* **thay đổi** Advisor report: `D:\tool\reports\system_advisor_20260602_200124.json`.
+* **thay đổi** Recommendation Center export: `D:\tool\reports\recommendation_center_20260602_200406.json`.
+* **thay đổi** Queue sau review: 0 pending, 2 deferred, 2 handled, 1 ignored.
+* **thay đổi** `downloads-folder-heavy` -> handled vì `D:\Downloads` root có 0 file lẻ, Download Organizer không có gì để move.
+* **thay đổi** `large-archive-files` -> deferred vì có Premiere/archive/backup assets, cần user quyết định thủ công.
+* **thay đổi** `heavy-processes` -> ignored vì `fczf.exe` có vẻ là app/game đang chạy và `MemCompression` là hành vi hệ thống Windows.
+* **thay đổi** `large-video-files` -> deferred vì video là media/backup export, cần user chọn nơi lưu hoặc quyết định giữ.
+* **thay đổi** `largest-folder-review` -> handled vì trùng ngữ cảnh với Downloads heavy đã kiểm tra.
+* **thay đổi** Guided Action Runner dry-run 2 item deferred, không execute target tool.
+* **thay đổi** Feed Readiness mới nhất: ready, 8 pass, 0 warn, 0 fail.
+
+---
+
 ### WizTree Adapter
 
 **thay đổi** Đã tích hợp WizTree theo hướng read-only adapter.
