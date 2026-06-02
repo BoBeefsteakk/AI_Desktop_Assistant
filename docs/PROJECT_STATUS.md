@@ -235,6 +235,23 @@ Kết quả:
 
 ---
 
+### Step 3 Deferred Storage Review
+
+**thay đổi** Đã review sâu 2 deferred còn lại bằng report read-only.
+
+Kết quả:
+
+* **thay đổi** Report: `D:\tool\reports\step3_deferred_storage_review_20260602_201152.json`.
+* **thay đổi** Archive/bộ cài lớn: 4 file, tổng khoảng 5.48 GB.
+* **thay đổi** 2 file thuộc `D:\Downloads\app`/Premiere installer bundle và 2 file thuộc backup/asset; tất cả là `manual_review_only`.
+* **thay đổi** Video lớn: 22 file, tổng khoảng 21.34 GB.
+* **thay đổi** Video gồm 1 Steam Workshop media nên không nên move/delete bằng assistant, và 21 backup/export videos cần user chọn chính sách giữ/chuyển.
+* **thay đổi** Không có auto-delete candidate trong Step 3.
+* **thay đổi** Queue giữ nguyên trạng thái sạch: 0 pending, 2 deferred, 2 handled, 1 ignored.
+* **thay đổi** Feed Readiness sau Step 3: ready, 8 pass, 0 warn, 0 fail.
+
+---
+
 ### WizTree Adapter
 
 **thay đổi** Đã tích hợp WizTree theo hướng read-only adapter.

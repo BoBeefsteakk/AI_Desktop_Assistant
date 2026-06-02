@@ -2,6 +2,16 @@
 
 ## 2026-06-02
 
+### Step 3 Deferred Storage Review
+
+* **thay đổi** Đã deep review 2 mục deferred còn lại bằng report read-only, không xóa/move file thật.
+* **thay đổi** Review report: `D:\tool\reports\step3_deferred_storage_review_20260602_201152.json`.
+* **thay đổi** Archive/bộ cài lớn: 4 file, tổng khoảng 5.48 GB; tất cả là `manual_review_only`, không có auto-delete candidate.
+* **thay đổi** Archive gồm 2 file Premiere/Downloads app và 2 file backup/asset; cần user quyết định từng file.
+* **thay đổi** Video lớn: 22 file, tổng khoảng 21.34 GB; gồm 1 Steam Workshop app-managed media và 21 backup/export videos.
+* **thay đổi** `large-archive-files` và `large-video-files` tiếp tục ở `deferred` với note chi tiết trỏ về Step 3 report.
+* **thay đổi** Feed Readiness sau Step 3: ready, 8 pass, 0 warn, 0 fail.
+
 ### Step 2 Real Workflow Dry Run
 
 * **thay đổi** Đã chạy System Advisor snapshot thật trên `D:\` theo chế độ read-only, không xóa/move file.

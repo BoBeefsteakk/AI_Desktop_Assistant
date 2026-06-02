@@ -242,6 +242,21 @@
 
 **thay đổi** Nguyên tắc tiếp theo: nếu muốn xử lý archive/video thật, phải chọn rõ từng nhóm file hoặc tái hiện thêm case bằng Scenario Tester trước.
 
+## Step 3 Deferred Storage Review
+
+**thay đổi** Đã review sâu 2 mục deferred còn lại, vẫn theo chế độ read-only.
+
+**thay đổi** Kết quả:
+
+* **thay đổi** Report chính: `D:\tool\reports\step3_deferred_storage_review_20260602_201152.json`.
+* **thay đổi** `large-archive-files`: 4 file, khoảng 5.48 GB, gồm Premiere/Downloads app installer bundle và backup/asset archives.
+* **thay đổi** `large-video-files`: 22 file, khoảng 21.34 GB, gồm Steam Workshop media và backup/export videos.
+* **thay đổi** Không có auto-delete candidate; toàn bộ vẫn là manual/deferred.
+* **thay đổi** Queue hiện tại: 0 pending, 2 deferred, 2 handled, 1 ignored.
+* **thay đổi** Feed Readiness sau bước 3: ready, 8 pass, 0 warn, 0 fail.
+
+**thay đổi** Bước kế tiếp chỉ nên làm nếu user chọn rõ chính sách cho 2 nhóm deferred: giữ nguyên, chuyển sang ổ/folder khác, hoặc xóa từng file cụ thể sau khi tự xác nhận.
+
 ## Deletion Safety / UX v2
 
 **thay đổi** Risk Classifier da duoc tach thanh nhieu lop thay vi chi dua vao mot danh sach `protected_dir_names`.
