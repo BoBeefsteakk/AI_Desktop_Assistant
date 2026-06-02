@@ -50,7 +50,7 @@
 
 **thay đổi** Các app ngoài hiện được móc qua `tools/core/external_apps.py` và cấu hình trong `config/user_settings.json`.
 
-**thay đổi** Bước tiếp theo theo `D:\tool\docs\TOOL_MASTER_PLAN.md` là External App Health Report v2: map app -> tool phụ thuộc, path/version, impact nếu missing và recommendation khi app lỗi.
+**thay đổi** External App Health Report v2 và drift detection đã hoàn thành; app ngoài hiện chỉ đóng vai trò helper read-only/diagnostics cho Advisor, Recommendation Center và các tool phụ thuộc.
 
 | App | Tool đang dùng | Cách dùng |
 | --- | --- | --- |

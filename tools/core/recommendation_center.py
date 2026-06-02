@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from config.settings import DATA_DIR
+from tools.core.action_policy import get_policy_for_recommendation
 from tools.core.assistant_logger import log_action
 from tools.core.capability_registry import get_capability_by_id
 from tools.core.report_manager import create_report, read_recent_report_index
@@ -409,6 +410,7 @@ def attach_workflow_state(
         fingerprint = make_recommendation_fingerprint(item)
         state_event = state_map.get(fingerprint)
         workflow_state = state_event["state"] if state_event else "pending"
+        policy = get_policy_for_recommendation(item)
 
         enriched.append({
             **item,
@@ -416,6 +418,9 @@ def attach_workflow_state(
             "workflow_state": workflow_state,
             "workflow_note": state_event.get("note", "") if state_event else "",
             "workflow_updated_at": state_event.get("updated_at", "") if state_event else "",
+            "action_policy_decision": policy.get("decision") if policy else None,
+            "action_policy_reason": policy.get("reason") if policy else None,
+            "action_policy_id": policy.get("fingerprint") if policy else None,
         })
 
     return enriched
@@ -554,6 +559,7 @@ def summarize_recommendation_queue(queue: list[dict[str, Any]]) -> dict[str, Any
         "deferred_count": 0,
         "handled_count": 0,
         "ignored_count": 0,
+        "action_policy_count": 0,
     }
 
     for item in queue:
@@ -567,6 +573,8 @@ def summarize_recommendation_queue(queue: list[dict[str, Any]]) -> dict[str, Any
             summary["suggested_tool_count"] += 1
         if item.get("suggested_tool_needs_confirmation"):
             summary["needs_confirmation_count"] += 1
+        if item.get("action_policy_decision"):
+            summary["action_policy_count"] += 1
 
     return summary
 
@@ -599,6 +607,7 @@ def recommendation_to_line(item: dict[str, Any], index: int) -> str:
         f"{index:>2}. [{str(item.get('severity')).upper()}] "
         f"{item.get('title')} | State: {workflow_state} | Tool: {tool_name} ({tool_risk})\n"
         f"    {item.get('detail')}\n"
+        f"    Policy: {item.get('action_policy_decision') or '-'}\n"
         f"    ID: {item.get('fingerprint')}\n"
         f"    Report: {item.get('report_path')}"
     )

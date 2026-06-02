@@ -53,11 +53,12 @@ Hoàn thành
 * **thay đổi** Feed Assistant Readiness report/checklist trước feed/train
 * **thay đổi** Review Recommendation Queue thật và scan storage pending bằng read-only report
 * **thay đổi** Scenario Tester fake-file sandbox cho các case xóa/move dễ gây nhầm
+* **thay đổi** Action Policy Manager để ghi nhớ quyết định keep/move/delete/manual/ignore theo path/context/recommendation
 
 Cần rà soát tiếp:
 
 * **thay đổi** Không test cleanup trên file thật khi chưa cần; nếu gặp case mới thì tái hiện trước trong Scenario Tester bằng file giả.
-* **thay đổi** User quyết định có xóa/move archive/bộ cài lớn thật hay xử lý `D:\Downloads\Riot Games` không.
+* **thay đổi** User quyết định chính sách cụ thể cho archive/bộ cài/video thật nếu muốn giải phóng dung lượng; `Riot Games` hiện được policy `ignore_forever`.
 
 ---
 
@@ -135,7 +136,8 @@ Một lệnh test tổng hợp trước khi refactor lớn hoặc feed assistant
 * **thay đổi** Feed Readiness Contract test
 * **thay đổi** Scenario Tester Contract test chạy fake-file sandbox
 * **thay đổi** Default queue excludes test-tagged reports
-* Full System Tester hiện pass 22/22
+* **thay đổi** Action Policy Contract test
+* Full System Tester hiện pass 23/23
 
 ---
 
@@ -147,7 +149,8 @@ Assistant có thể:
 
 * Phân tích file
 * Đề xuất dọn dẹp
-* Tự động xử lý SAFE_DELETE
+* **thay đổi** Ghi nhớ chính sách user trước khi đề xuất/xử lý
+* **thay đổi** Chưa tự động xử lý SAFE_DELETE ở mốc hiện tại; cần policy + confirm rõ trước khi mở rộng
 
 ---
 

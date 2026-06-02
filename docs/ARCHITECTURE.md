@@ -40,6 +40,7 @@ Chứa các thành phần dùng chung.
 Bao gồm:
 
 * assistant_logger.py
+* **thay đổi** action_policy.py
 * **thay đổi** audit_center.py
 * **thay đổi** capability_registry.py
 * report_manager.py
@@ -270,6 +271,32 @@ Full System Tester kiểm tra:
 
 ---
 
+## Action Policy Layer
+
+**thay đổi** Action Policy Manager là lớp ghi nhớ quyết định của user trước khi recommendation được mở thành action thật.
+
+Nguồn dữ liệu:
+
+* **thay đổi** `tools/core/action_policy.py`
+* **thay đổi** State local `data/action_policy.jsonl`
+* **thay đổi** Report `action_policy` trong `reports/`
+
+Policy ghi:
+
+* **thay đổi** `target_type`: path_exact, path_prefix, path_contains, context, recommendation, file_extension
+* **thay đổi** `target`: path/pattern/context/recommendation id
+* **thay đổi** `decision`: keep, move_later, delete_candidate, ignore_forever, needs_backup, manual_only
+* **thay đổi** `reason`, `source`, `tags`, `active`, `updated_at`
+
+Nguyên tắc:
+
+* **thay đổi** Policy chỉ hướng dẫn quyết định, không tự xóa/move file.
+* **thay đổi** `delete_candidate` chỉ là nhãn cần user xác nhận từng file; không đồng nghĩa auto-delete.
+* **thay đổi** Game/app-managed/backup context được ưu tiên giữ hoặc review thủ công.
+* **thay đổi** Recommendation Center và Feed Readiness đọc policy để giảm đề xuất sai hoặc lặp lại.
+
+---
+
 ## Advisor Layer
 
 **thay đổi** System Advisor v2 là lớp phân tích read-only trước AI Decision Engine.
@@ -307,6 +334,7 @@ Nguồn dữ liệu:
 * Report chi tiết của System Advisor v2
 * Report warning/error từ các tool khác
 * Capability Registry để enrich suggested tool
+* **thay đổi** Action Policy để hiển thị quyết định giữ/hoãn/manual/backup cho recommendation đã biết
 
 Output:
 
@@ -320,6 +348,7 @@ Nguyên tắc:
 * Không xóa/move/sửa file
 * Chỉ gom, lọc, xuất report và giúp người dùng chọn bước tiếp theo
 * **thay đổi** Queue mặc định bỏ qua report test/contract và chỉ giữ snapshot mới nhất của các report dạng `system_advisor`/`external_apps`
+* **thay đổi** Queue có thể kèm `action_policy_decision`, nhưng vẫn không tự thực thi action.
 
 ## Guided Action Layer
 
@@ -387,6 +416,7 @@ Các lớp kiểm tra:
 * **thay đổi** Natural Command v3 queue dry-run contract
 * **thay đổi** Default recommendation queue không lấy test-tagged reports
 * **thay đổi** Scenario Tester contract chạy fake-file sandbox và cleanup guard
+* **thay đổi** Action Policy Contract kiểm tra baseline policy, path/context matching và Step 3 coverage
 
 ---
 
@@ -447,6 +477,7 @@ WizTree Adapter:
 * **thay đổi** Validate config và Capability Registry.
 * **thay đổi** Đọc External Apps Health + drift baseline.
 * **thay đổi** Đọc Recommendation Queue thật.
+* **thay đổi** Đọc Action Policy và kiểm tra coverage cho Step 3 deferred items.
 * **thay đổi** Kiểm tra latest Full System Tester report.
 * **thay đổi** Validate schema report gần đây.
 * **thay đổi** Liệt kê docs/config/report source nên feed.

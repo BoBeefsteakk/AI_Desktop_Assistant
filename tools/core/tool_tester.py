@@ -38,6 +38,7 @@ TOOLS_TO_TEST = [
     {"name": "Guided Action Runner", "module": "tools.core.guided_action_runner", "function": "run_guided_action_runner", "risk": "medium"},
     {"name": "Feed Assistant Readiness", "module": "tools.core.feed_readiness", "function": "run_feed_readiness", "risk": "safe"},
     {"name": "Scenario Tester", "module": "tools.core.scenario_tester", "function": "run_scenario_tester", "risk": "safe"},
+    {"name": "Action Policy Manager", "module": "tools.core.action_policy", "function": "run_action_policy_manager", "risk": "safe"},
     {"name": "File Location Opener", "module": "tools.core.file_location_opener", "function": "open_file_location", "risk": "safe"},
 ]
 

@@ -45,6 +45,7 @@ Active workspace hiện tại là `D:\tool`. Snapshot cũ đã được chuyển
 - **thay đổi** Capability Registry
 - **thay đổi** Recommendation Center
 - **thay đổi** Guided Action Runner: mở tool từ recommendation với cổng xác nhận risk, không bypass confirmation của tool thật
+- **thay đổi** Action Policy Manager: lưu quyết định keep/move/delete/manual/ignore theo path/context/recommendation trước khi automation đụng file thật
 - **thay đổi** Feed Assistant Readiness
 - **thay đổi** Scenario Tester: chạy fake-file sandbox cho Downloads, media, game data, archive, temp/junk và manifest restore
 
@@ -79,10 +80,10 @@ Storage Tools	Done
 Automation Tools	Done
 Search Tools	Done
 Core Utilities	Done
-Tool Tester	Passed 32/32
+Tool Tester	Passed 33/33
 Scenario Tester	Passed 6/6
 Behavior Tester	Passed 18/18
-Full System Tester	Passed 22/22
+Full System Tester	Passed 23/23
 WizTree Adapter	Done
 External Apps Integration	Done
 External App Drift Detection	Done
@@ -95,6 +96,7 @@ Feed Assistant Readiness	Done
 Scenario Tester	Done
 Recommendation Queue Review	Done
 Pending Storage Review	Done
+Action Policy Manager	Done
 Refactor Tools Folder	Done
 Config System	Done
 Audit System	Basic Done

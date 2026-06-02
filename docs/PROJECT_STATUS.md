@@ -231,7 +231,7 @@ Kết quả:
 * **thay đổi** `large-video-files` -> deferred vì video là media/backup export, cần user chọn nơi lưu hoặc quyết định giữ.
 * **thay đổi** `largest-folder-review` -> handled vì trùng ngữ cảnh với Downloads heavy đã kiểm tra.
 * **thay đổi** Guided Action Runner dry-run 2 item deferred, không execute target tool.
-* **thay đổi** Feed Readiness mới nhất: ready, 8 pass, 0 warn, 0 fail.
+* **thay đổi** Feed Readiness tại thời điểm Step 2: ready, 8 pass, 0 warn, 0 fail.
 
 ---
 
@@ -249,6 +249,24 @@ Kết quả:
 * **thay đổi** Không có auto-delete candidate trong Step 3.
 * **thay đổi** Queue giữ nguyên trạng thái sạch: 0 pending, 2 deferred, 2 handled, 1 ignored.
 * **thay đổi** Feed Readiness sau Step 3: ready, 8 pass, 0 warn, 0 fail.
+
+---
+
+### Step 4 Action Policy / User Decision Layer
+
+**thay đổi** Đã thêm Action Policy Manager để lưu quyết định xử lý theo path/context/recommendation trước khi automation đụng file thật.
+
+Kết quả:
+
+* **thay đổi** File state local: `D:\tool\data\action_policy.jsonl`, đã ignore khỏi git.
+* **thay đổi** Baseline policy hiện có 11 rule: 5 `ignore_forever`, 3 `manual_only`, 2 `needs_backup`, 1 `move_later`, 0 `delete_candidate`.
+* **thay đổi** `Riot Games`, `League of Legends` và Steam Workshop được giữ ở `ignore_forever`.
+* **thay đổi** `D:\Downloads\app` được giữ ở `manual_only`; archive/bộ cài lớn chưa được auto-delete.
+* **thay đổi** `D:\backup` được giữ ở `needs_backup`; video/export/backup cần user chọn chính sách trước.
+* **thay đổi** Step 3 coverage: 26/26 item deferred đã có policy phủ, uncovered 0.
+* **thay đổi** Action Policy report: `D:\tool\reports\action_policy_20260602_202932.json`.
+* **thay đổi** Feed Readiness mới nhất: ready, 9 pass, 0 warn, 0 fail.
+* **thay đổi** Tool Tester pass 33/33; Full System Tester pass 23/23.
 
 ---
 
@@ -302,7 +320,7 @@ Chức năng:
 
 Kết quả hiện tại:
 
-* **thay đổi** Capability count: 32
+* **thay đổi** Capability count: 33
 * Categories: automation, core, search, storage, system
 * Risk levels: safe, medium, dangerous
 
@@ -417,7 +435,7 @@ Chức năng:
 
 * **thay đổi** Thêm `tools/core/feed_readiness.py`.
 * **thay đổi** Main CLI expose `Feed Assistant Readiness` ở mục 31.
-* **thay đổi** Kiểm tra config, Capability Registry, External Apps/drift, Recommendation Queue, latest Full System report, recent report schema, audit snapshot và feed source docs.
+* **thay đổi** Kiểm tra config, Capability Registry, External Apps/drift, Recommendation Queue, Action Policy, latest Full System report, recent report schema, audit snapshot và feed source docs.
 * **thay đổi** Xuất report `feed_readiness` với schema `feed_readiness_v1`.
 * **thay đổi** Chỉ read-only: không feed/train thật, không cleanup, không sửa config/path.
 * **thay đổi** Natural Command có thể route các lệnh như `feed assistant`, `feed readiness`, `san sang feed`.
@@ -425,12 +443,12 @@ Chức năng:
 Kết quả mới nhất:
 
 * **thay đổi** Readiness status: ready.
-* **thay đổi** Checks: 8 pass, 0 warn, 0 fail.
+* **thay đổi** Checks: 9 pass, 0 warn, 0 fail.
 * **thay đổi** Không còn warning trong readiness snapshot mới nhất.
-* **thay đổi** Tool Tester pass 32/32.
+* **thay đổi** Tool Tester pass 33/33.
 * **thay đổi** Behavior Tester pass 18/18.
 * **thay đổi** Scenario Tester pass 6/6.
-* **thay đổi** Full System Tester pass 22/22.
+* **thay đổi** Full System Tester pass 23/23.
 
 ---
 
@@ -467,7 +485,7 @@ Kết quả:
 * **thay đổi** `downloads-folder-heavy` chuyển `handled` cho flow Download Organizer vì không có root file để organize.
 * **thay đổi** `large-archive-files` chuyển `deferred` vì cần user quyết định file nào được xóa hoặc chuyển chỗ.
 * **thay đổi** Queue mới nhất: 0 pending, 2 deferred, 2 handled, 1 ignored.
-* **thay đổi** Feed Readiness mới nhất: ready, 8 pass, 0 warn, 0 fail.
+* **thay đổi** Feed Readiness tại thời điểm pending storage review: ready, 8 pass, 0 warn, 0 fail.
 
 Reports:
 
@@ -565,6 +583,7 @@ Process Monitor:
 * **thay đổi** Recommendation Center
 * **thay đổi** Guided Action Runner
 * **thay đổi** Scenario Tester
+* **thay đổi** Action Policy Manager
 
 ---
 
@@ -643,10 +662,11 @@ Process Monitor:
 * **thay đổi** Kiểm tra Feed Readiness contract
 * **thay đổi** Kiểm tra Scenario Tester contract bằng sandbox fake-file và cleanup guard
 * **thay đổi** Kiểm tra default queue loại test-tagged reports
+* **thay đổi** Kiểm tra Action Policy Contract và Feed Readiness check `action_policy`
 
 Kết quả hiện tại:
 
-Passed: 22
+Passed: 23
 Failed: 0
 
 ---
@@ -712,6 +732,7 @@ Lý do:
 * **thay đổi** External App Path Drift Detection
 * **thay đổi** Feed Assistant Readiness
 * **thay đổi** Scenario Tester fake-file sandbox
+* **thay đổi** Action Policy Manager
 
 Cần làm tiếp để ổn định tool tổng:
 

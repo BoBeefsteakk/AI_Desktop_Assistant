@@ -8,6 +8,7 @@ reports/
 backups/
 data/file_index.json
 data/recommendation_queue.jsonl
+data/action_policy.jsonl
 data/external_apps_health_state.json
 data/wiztree_exports/
 external/

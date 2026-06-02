@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from config.settings import BASE_DIR, USER_SETTINGS_FILE, validate_user_settings
+from tools.core.action_policy import build_action_policy_health
 from tools.core.assistant_logger import log_action
 from tools.core.audit_center import get_audit_snapshot
 from tools.core.capability_registry import (
@@ -122,6 +123,7 @@ def build_feed_sources() -> dict[str, Any]:
         "capability_registry",
         "recommendation_center",
         "audit_center",
+        "action_policy",
     ]:
         latest = get_latest_report_by_tool(tool_name)
         latest_reports[tool_name] = latest
@@ -135,6 +137,7 @@ def build_feed_sources() -> dict[str, Any]:
         "latest_reports": latest_reports,
         "state_files": {
             "recommendation_queue": str(BASE_DIR / "data" / "recommendation_queue.jsonl"),
+            "action_policy": str(BASE_DIR / "data" / "action_policy.jsonl"),
             "external_apps_health_state": str(BASE_DIR / "data" / "external_apps_health_state.json"),
         },
     }
@@ -223,6 +226,25 @@ def build_feed_readiness_result() -> dict[str, Any]:
         },
     ))
 
+    action_policy_health = build_action_policy_health()
+    action_policy_validation = action_policy_health["validation"]
+    action_policy_coverage = action_policy_health["step3_coverage"]
+    action_policy_status = "pass"
+    if action_policy_validation["status"] != "valid":
+        action_policy_status = "fail"
+    elif action_policy_coverage.get("uncovered_count", 0) > 0:
+        action_policy_status = "warn"
+    checks.append(make_check(
+        "action_policy",
+        action_policy_status,
+        "Action policy",
+        (
+            f"{action_policy_health['summary']['total']} active policies, "
+            f"{action_policy_coverage.get('uncovered_count', 0)} uncovered Step 3 items."
+        ),
+        action_policy_health,
+    ))
+
     latest_full_system = get_latest_report_by_tool("full_system_tester")
     full_system_status = "fail"
     full_system_detail = "No Full System Tester report found."
@@ -305,6 +327,8 @@ def build_feed_readiness_result() -> dict[str, Any]:
         "capability_summary": capability_summary,
         "external_apps_summary": external_summary,
         "recommendation_queue_summary": queue_summary,
+        "action_policy_summary": action_policy_health["summary"],
+        "action_policy_validation": action_policy_validation,
         "feed_sources": feed_sources,
         "recommendations": recommendations,
     }
@@ -354,6 +378,7 @@ def export_feed_readiness_report() -> dict[str, Any]:
             "warn_count": summary["warn_count"],
             "fail_count": summary["fail_count"],
             "pending_recommendation_count": result["recommendation_queue_summary"]["pending_count"],
+            "action_policy_count": result["action_policy_summary"]["total"],
             "external_app_available_count": result["external_apps_summary"]["available"],
             "external_app_total": result["external_apps_summary"]["total"],
             "external_app_drift_count": result["external_apps_summary"]["drift_event_count"],

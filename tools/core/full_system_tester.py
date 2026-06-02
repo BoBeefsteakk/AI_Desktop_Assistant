@@ -9,6 +9,13 @@ from typing import Any, Callable
 
 from config.settings import BASE_DIR, USER_SETTINGS_FILE, validate_user_settings
 from tools.core.audit_center import get_audit_snapshot
+from tools.core.action_policy import (
+    build_action_policy_health,
+    get_matching_policies_for_path,
+    get_policy_for_recommendation,
+    seed_default_action_policies,
+    validate_action_policies,
+)
 from tools.core.behavior_tester import make_sandbox, cleanup_sandbox, write_text
 from tools.core.capability_registry import (
     get_capabilities,
@@ -152,6 +159,7 @@ def test_main_menu_coverage() -> dict[str, Any]:
         "Guided Action Runner",
         "Feed Assistant Readiness",
         "Scenario Tester",
+        "Action Policy Manager",
     ]
     missing = [label for label in expected if label not in main_text]
 
@@ -865,6 +873,75 @@ def test_natural_command_v3_queue_contract() -> dict[str, Any]:
         cleanup_sandbox(sandbox)
 
 
+def test_action_policy_contract() -> dict[str, Any]:
+    sandbox = make_sandbox()
+    policy_file = sandbox / "action_policy.jsonl"
+
+    try:
+        seed = seed_default_action_policies(policy_file=policy_file)
+        validation = validate_action_policies(policy_file=policy_file)
+        health = build_action_policy_health(policy_file=policy_file)
+
+        riot_matches = get_matching_policies_for_path(
+            r"D:\Downloads\Riot Games\League of Legends\Game\data.wad",
+            policy_file=policy_file,
+        )
+        steam_matches = get_matching_policies_for_path(
+            r"D:\Steam\steamapps\workshop\content\431960\video.mp4",
+            policy_file=policy_file,
+        )
+        downloads_app_matches = get_matching_policies_for_path(
+            r"D:\Downloads\app\Premiere_Setup.rar",
+            policy_file=policy_file,
+        )
+        backup_matches = get_matching_policies_for_path(
+            r"D:\backup\backup\export\clip.mp4",
+            policy_file=policy_file,
+        )
+        archive_recommendation_policy = get_policy_for_recommendation(
+            {"id": "large-archive-files"},
+            policy_file=policy_file,
+        )
+        video_recommendation_policy = get_policy_for_recommendation(
+            {"id": "large-video-files"},
+            policy_file=policy_file,
+        )
+
+        assert_condition(seed["created_count"] >= 6, "Action Policy seed should create baseline policies.")
+        assert_condition(validation["status"] == "valid", f"Action Policy validation failed: {validation['issues']}")
+        assert_condition(riot_matches[0]["decision"] == "ignore_forever", "Riot Games should be ignore_forever.")
+        assert_condition(steam_matches[0]["decision"] == "ignore_forever", "Steam Workshop should be ignore_forever.")
+        assert_condition(downloads_app_matches[0]["decision"] == "manual_only", "Downloads app should be manual_only.")
+        assert_condition(backup_matches[0]["decision"] == "needs_backup", "Backup path should need backup policy.")
+        assert_condition(
+            archive_recommendation_policy["decision"] == "manual_only",
+            "Large archive recommendation should be manual_only.",
+        )
+        assert_condition(
+            video_recommendation_policy["decision"] == "move_later",
+            "Large video recommendation should be move_later.",
+        )
+        assert_condition(
+            health["validation"]["status"] == "valid",
+            "Action Policy health should include valid validation.",
+        )
+
+        return {
+            "seed": seed,
+            "validation": validation,
+            "summary": health["summary"],
+            "riot_policy": riot_matches[0],
+            "steam_policy": steam_matches[0],
+            "downloads_app_policy": downloads_app_matches[0],
+            "backup_policy": backup_matches[0],
+            "archive_recommendation_policy": archive_recommendation_policy,
+            "video_recommendation_policy": video_recommendation_policy,
+        }
+
+    finally:
+        cleanup_sandbox(sandbox)
+
+
 def test_feed_readiness_contract() -> dict[str, Any]:
     result = build_feed_readiness_result()
     summary = result["summary"]
@@ -875,6 +952,7 @@ def test_feed_readiness_contract() -> dict[str, Any]:
         "capability_registry",
         "external_apps",
         "recommendation_queue",
+        "action_policy",
         "full_system_tester",
         "report_schema",
         "audit_snapshot",
@@ -999,6 +1077,7 @@ FULL_SYSTEM_TESTS: list[tuple[str, Callable[[], dict[str, Any]]]] = [
     ("Recommendation Center Contract", test_recommendation_center_contract),
     ("Guided Action Runner Contract", test_guided_action_runner_contract),
     ("Natural Command v3 Queue Contract", test_natural_command_v3_queue_contract),
+    ("Action Policy Contract", test_action_policy_contract),
     ("Feed Readiness Contract", test_feed_readiness_contract),
     ("Scenario Tester Contract", test_scenario_tester_contract),
     ("Dependency Health", test_dependency_health),

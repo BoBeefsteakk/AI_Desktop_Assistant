@@ -2,6 +2,18 @@
 
 ## 2026-06-02
 
+### Step 4 Action Policy / User Decision Layer
+
+* **thay đổi** Thêm `tools/core/action_policy.py` làm lớp quyết định read-only trước khi automation xử lý file thật.
+* **thay đổi** Seed baseline policy an toàn: `Riot Games`/`League of Legends`/Steam Workshop -> `ignore_forever`, `D:\Downloads\app` -> `manual_only`, `D:\backup` -> `needs_backup`.
+* **thay đổi** Recommendation `large-archive-files` được policy `manual_only`; `large-video-files` được policy `move_later`.
+* **thay đổi** Recommendation Center hiển thị `action_policy_decision` cho từng gợi ý để user biết item đang bị giữ, hoãn, cần backup hay phải review thủ công.
+* **thay đổi** Feed Readiness có check mới `action_policy`; latest report: `D:\tool\reports\feed_readiness_20260602_202933.json`, ready, 9 pass, 0 warn, 0 fail.
+* **thay đổi** Action Policy report mới: `D:\tool\reports\action_policy_20260602_202932.json`, 11 policy, Step 3 coverage 26/26, uncovered 0.
+* **thay đổi** Main CLI expose `Action Policy Manager` ở mục 33; Tool Tester pass 33/33.
+* **thay đổi** Full System Tester thêm `Action Policy Contract` và pass 23/23 tại `D:\tool\reports\full_system_tester_20260602_202910.json`.
+* **thay đổi** Không có auto-delete mới ở bước này; policy chỉ ghi quyết định và báo cáo, không xóa/move file.
+
 ### Step 3 Deferred Storage Review
 
 * **thay đổi** Đã deep review 2 mục deferred còn lại bằng report read-only, không xóa/move file thật.
@@ -47,7 +59,7 @@
 * **thay đổi** Chuyển `downloads-folder-heavy` sang `handled` cho flow Download Organizer vì không có root file để organize.
 * **thay đổi** Chuyển `large-archive-files` sang `deferred` vì xóa/move archive cần user chọn cụ thể.
 * **thay đổi** Queue mới nhất: 0 pending, 2 deferred, 2 handled, 1 ignored.
-* **thay đổi** Feed Readiness mới nhất: ready, 8 pass, 0 warn, 0 fail.
+* **thay đổi** Feed Readiness tại thời điểm pending storage review: ready, 8 pass, 0 warn, 0 fail.
 
 ### Recommendation Queue Review
 

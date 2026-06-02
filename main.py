@@ -21,6 +21,7 @@ from tools.automation.startup_launcher import run_startup_launcher
 from tools.automation.download_organizer import run_download_organizer
 from tools.automation.download_watcher import run_download_watcher
 from tools.core.assistant_logger import run_assistant_logger
+from tools.core.action_policy import run_action_policy_manager
 from tools.core.audit_center import run_audit_center
 from tools.core.behavior_tester import run_behavior_tester
 from tools.core.capability_registry import run_capability_registry
@@ -77,6 +78,7 @@ def main():
 30. Guided Action Runner
 31. Feed Assistant Readiness
 32. Scenario Tester
+33. Action Policy Manager
 
 0. Thoat
 
@@ -185,6 +187,9 @@ def main():
 
         elif choice == "32":
             run_scenario_tester()
+
+        elif choice == "33":
+            run_action_policy_manager()
 
         else:
             print("Lua chon khong hop le.")

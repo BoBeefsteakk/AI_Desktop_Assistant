@@ -4,17 +4,17 @@
 
 ## Trạng Thái Đã Verify
 
-**thay đổi** Ngày rà lại: 2026-06-01.
+**thay đổi** Ngày rà lại: 2026-06-02.
 
 **thay đổi** Kết quả hiện tại:
 
-* **thay đổi** Main CLI đang expose 32 tool.
-* **thay đổi** Capability Registry valid 32/32, không thiếu entry so với Tool Tester.
-* **thay đổi** Tool Tester pass 32/32.
+* **thay đổi** Main CLI đang expose 33 tool.
+* **thay đổi** Capability Registry valid 33/33, không thiếu entry so với Tool Tester.
+* **thay đổi** Tool Tester pass 33/33.
 * **thay đổi** Behavior Tester pass 18/18.
 * **thay đổi** Scenario Tester pass 6/6.
-* **thay đổi** Full System Tester pass 22/22.
-* **thay đổi** Capability summary: 19 safe, 7 medium, 6 dangerous; 11 tool có thể thay đổi file; 12 tool cần confirmation; 9 tool dùng external app.
+* **thay đổi** Full System Tester pass 23/23.
+* **thay đổi** Capability summary: 20 safe, 7 medium, 6 dangerous; 11 tool có thể thay đổi file; 12 tool cần confirmation; 9 tool dùng external app.
 
 ## Luồng Tool Tổng Chuẩn
 
@@ -28,11 +28,12 @@
 6. **thay đổi** System Advisor v2 gom snapshot read-only từ storage, disk/SMART, process, external apps và audit reports.
 7. **thay đổi** System Advisor v2 chỉ tạo recommendation, không tự cleanup, không xóa, không move.
 8. **thay đổi** Recommendation Center gom recommendation thành queue read-only để user review.
-9. **thay đổi** Guided Action Runner mở tool được đề xuất từ recommendation sau khi user xác nhận `OPEN`.
-10. **thay đổi** Scenario Tester tái hiện case rủi ro bằng file giả trước khi đụng dữ liệu thật.
-11. **thay đổi** Feed Assistant Readiness đóng gói pre-feed checklist/report, nhưng chưa feed/train thật.
-12. **thay đổi** Nếu user chọn chạy tool thật, tool đó vẫn tự xử lý confirmation, risk classification, safe executor, manifest/undo và report/log.
-13. **thay đổi** Audit Center, Report Manager và Undo Manager lưu lại lịch sử, report, manifest để kiểm tra sau.
+9. **thay đổi** Action Policy Manager gắn quyết định keep/move/delete/manual/ignore theo path/context/recommendation trước khi mở action thật.
+10. **thay đổi** Guided Action Runner mở tool được đề xuất từ recommendation sau khi user xác nhận `OPEN`.
+11. **thay đổi** Scenario Tester tái hiện case rủi ro bằng file giả trước khi đụng dữ liệu thật.
+12. **thay đổi** Feed Assistant Readiness đóng gói pre-feed checklist/report, nhưng chưa feed/train thật.
+13. **thay đổi** Nếu user chọn chạy tool thật, tool đó vẫn tự xử lý confirmation, risk classification, safe executor, manifest/undo và report/log.
+14. **thay đổi** Audit Center, Report Manager và Undo Manager lưu lại lịch sử, report, manifest để kiểm tra sau.
 
 ## Nguyên Tắc Không Được Phá
 
@@ -47,6 +48,8 @@
 **thay đổi** Tool medium/dangerous hoặc `mutates_files=True` phải có confirmation ở flow phù hợp.
 
 **thay đổi** External apps không được tự xóa/move dữ liệu; chỉ được đọc metadata, scan, search hoặc export dữ liệu read-only.
+
+**thay đổi** Action Policy không được tự thực thi cleanup; policy chỉ là lớp quyết định/ghi nhớ để Advisor, Recommendation Center và user nhìn rõ file nào phải giữ, hoãn, backup hoặc review thủ công.
 
 **thay đổi** Full System Tester phải pass trước khi feed assistant hoặc refactor lớn.
 
@@ -68,6 +71,7 @@
 * **thay đổi** System Advisor v2
 * **thay đổi** Recommendation Center
 * **thay đổi** Guided Action Runner
+* **thay đổi** Action Policy Manager
 
 **thay đổi** External app layer:
 
@@ -94,6 +98,8 @@
 **thay đổi** Gap 7: Feed Assistant readiness report đã hoàn thành; chưa train/feed thật ở bước này.
 
 **thay đổi** Gap 8: Scenario Tester đã hoàn thành để test fake-file trước khi xử lý case thật như Riot Games/archive/bộ cài.
+
+**thay đổi** Gap 9: Action Policy Manager đã hoàn thành baseline Step 4; Step 3 deferred items được phủ policy 26/26, uncovered 0.
 
 ## Kế Hoạch Chuẩn Từ Bây Giờ
 
@@ -138,7 +144,7 @@
 
 **thay đổi** Trạng thái: đã hoàn thành. Main CLI expose mục 30, Capability Registry/Tool Tester/Natural Command đã có entry, Behavior Tester và Full System Tester đều có contract test dry-run.
 
-### Bước 4 - Natural Command v3 Nhẹ
+### Bước 4 cũ - Natural Command v3 Nhẹ
 
 **thay đổi** Mục tiêu: điều khiển recommendation queue bằng lệnh tự nhiên.
 
@@ -197,9 +203,9 @@
 * **thay đổi** `tools/core/feed_readiness.py` đã được thêm.
 * **thay đổi** Main CLI expose `Feed Assistant Readiness` ở mục 31.
 * **thay đổi** Readiness report kiểm tra config, registry, external apps/drift, queue, latest full test, report schema, audit snapshot và docs feed source.
-* **thay đổi** Latest readiness: ready, 8 pass, 0 warn, 0 fail.
+* **thay đổi** Latest readiness: ready, 9 pass, 0 warn, 0 fail.
 * **thay đổi** Không còn warning trong readiness snapshot mới nhất.
-* **thay đổi** Tool Tester pass 32/32, Behavior Tester pass 18/18, Scenario Tester pass 6/6, Full System Tester pass 22/22.
+* **thay đổi** Tool Tester pass 33/33, Behavior Tester pass 18/18, Scenario Tester pass 6/6, Full System Tester pass 23/23.
 
 **thay đổi** Chưa train/feed thật ở giai đoạn này.
 
@@ -257,6 +263,24 @@
 
 **thay đổi** Bước kế tiếp chỉ nên làm nếu user chọn rõ chính sách cho 2 nhóm deferred: giữ nguyên, chuyển sang ổ/folder khác, hoặc xóa từng file cụ thể sau khi tự xác nhận.
 
+## Step 4 Action Policy / User Decision Layer
+
+**thay đổi** Đã triển khai Action Policy Manager để biến quyết định của user thành rule đọc được bởi Recommendation Center và Feed Readiness.
+
+**thay đổi** Kết quả:
+
+* **thay đổi** File state local: `D:\tool\data\action_policy.jsonl`, đã ignore khỏi git.
+* **thay đổi** Baseline có 11 policy: `ignore_forever`, `manual_only`, `needs_backup`, `move_later`; chưa có `delete_candidate`.
+* **thay đổi** Game data như `Riot Games`/`League of Legends` và Steam Workshop được `ignore_forever`.
+* **thay đổi** `D:\Downloads\app` và recommendation archive lớn là `manual_only`.
+* **thay đổi** `D:\backup` và backup/export context là `needs_backup`.
+* **thay đổi** Video lớn là `move_later`, chỉ move khi user chọn destination/chính sách giữ.
+* **thay đổi** Recommendation Center hiện hiển thị policy decision cho từng item.
+* **thay đổi** Feed Readiness có check `action_policy`: ready, 9 pass, 0 warn, 0 fail.
+* **thay đổi** Full System Tester có `Action Policy Contract`: pass 23/23.
+
+**thay đổi** Ý nghĩa: tới đây assistant vẫn chưa tự cleanup, nhưng đã có lớp ghi nhớ quyết định để tránh hỏi lại/đề xuất sai với nhóm file user đã nói là cần giữ.
+
 ## Deletion Safety / UX v2
 
 **thay đổi** Risk Classifier da duoc tach thanh nhieu lop thay vi chi dua vao mot danh sach `protected_dir_names`.
@@ -305,7 +329,7 @@
 
 **thay đổi** External Apps Manager da co lua chon xem health v2 va xuat health report v2.
 
-**thay đổi** External App Health path drift detection và Feed Assistant readiness report đã hoàn thành. Queue thật đã review, hiện còn 2 pending action cần user quyết định.
+**thay đổi** External App Health path drift detection, Feed Assistant readiness report và Action Policy baseline đã hoàn thành. Queue thật hiện còn 2 nhóm deferred đã có policy, chưa có auto-delete.
 
 ## Recommendation Workflow v1
 
@@ -344,7 +368,7 @@
 * **thay đổi** Dry-run tạo report nhưng không execute target tool.
 * **thay đổi** Recommendation không tự chuyển `handled`; user phải xác nhận sau khi tool đích chạy xong.
 
-**thay đổi** Feed Assistant readiness report đã hoàn thành; queue thật đã review, còn 2 pending action cần user quyết định.
+**thay đổi** Feed Assistant readiness report đã hoàn thành; queue thật đã review, còn 2 nhóm deferred đã có Action Policy và cần user quyết định nếu muốn xử lý file thật.
 
 ## Natural Command v3 Nhẹ
 
