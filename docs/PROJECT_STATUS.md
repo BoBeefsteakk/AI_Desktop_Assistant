@@ -190,7 +190,27 @@ Chức năng:
 
 **thay đổi** Kết quả hiện tại:
 
-Passed: 31
+Passed: 32
+Failed: 0
+
+---
+
+### Scenario Tester
+
+**thay đổi** Đã thêm sandbox scenario tester dùng file giả, không xóa hoặc chỉnh file thật của user.
+
+Chức năng:
+
+* **thay đổi** Tạo sandbox riêng tại `D:\_ai_desktop_assistant_scenario_tests\run_<timestamp>`.
+* **thay đổi** Mô phỏng Downloads root, file đang tải dở, archive/bộ cài, game data `Riot Games`, media, temp/junk và empty folders.
+* **thay đổi** Test Download Organizer và Media Organizer bằng move + manifest restore trên file giả.
+* **thay đổi** Test risk guardrail: game data và archive chỉ `review_required`, file project bị `safe_delete` block.
+* **thay đổi** Cleanup sandbox chỉ được phép trong prefix test đã kiểm soát.
+* **thay đổi** Main CLI expose `Scenario Tester` ở mục 32.
+
+Kết quả hiện tại:
+
+Passed: 6
 Failed: 0
 
 ---
@@ -245,7 +265,7 @@ Chức năng:
 
 Kết quả hiện tại:
 
-* Capability count: 30
+* **thay đổi** Capability count: 32
 * Categories: automation, core, search, storage, system
 * Risk levels: safe, medium, dangerous
 
@@ -368,11 +388,12 @@ Chức năng:
 Kết quả mới nhất:
 
 * **thay đổi** Readiness status: ready.
-* **thay đổi** Checks: 7 pass, 1 warn, 0 fail.
-* **thay đổi** Warning duy nhất: còn 5 pending recommendation thật cần review trước khi automation.
-* **thay đổi** Tool Tester pass 31/31.
+* **thay đổi** Checks: 8 pass, 0 warn, 0 fail.
+* **thay đổi** Không còn warning trong readiness snapshot mới nhất.
+* **thay đổi** Tool Tester pass 32/32.
 * **thay đổi** Behavior Tester pass 18/18.
-* **thay đổi** Full System Tester pass 21/21.
+* **thay đổi** Scenario Tester pass 6/6.
+* **thay đổi** Full System Tester pass 22/22.
 
 ---
 
@@ -506,6 +527,7 @@ Process Monitor:
 * **thay đổi** Capability Registry
 * **thay đổi** Recommendation Center
 * **thay đổi** Guided Action Runner
+* **thay đổi** Scenario Tester
 
 ---
 
@@ -582,11 +604,12 @@ Process Monitor:
 * **thay đổi** Kiểm tra Guided Action Runner contract bằng report giả và dry-run
 * **thay đổi** Kiểm tra Natural Command v3 queue contract bằng report giả và dry-run
 * **thay đổi** Kiểm tra Feed Readiness contract
+* **thay đổi** Kiểm tra Scenario Tester contract bằng sandbox fake-file và cleanup guard
 * **thay đổi** Kiểm tra default queue loại test-tagged reports
 
 Kết quả hiện tại:
 
-Passed: 21
+Passed: 22
 Failed: 0
 
 ---
@@ -651,6 +674,7 @@ Lý do:
 * **thay đổi** Advisor Real Run Calibration
 * **thay đổi** External App Path Drift Detection
 * **thay đổi** Feed Assistant Readiness
+* **thay đổi** Scenario Tester fake-file sandbox
 
 Cần làm tiếp để ổn định tool tổng:
 
@@ -658,7 +682,7 @@ Cần làm tiếp để ổn định tool tổng:
 * **thay đổi** Ưu tiên 2: Mở rộng Undo System cho các thao tác không có manifest nếu cần
 * **thay đổi** Mở rộng Natural Command v3 thành intent engine sau khi có thêm lịch sử/report để feed assistant
 * **thay đổi** Chuẩn hóa Recommendation Center thành queue có trạng thái handled/deferred nếu cần workflow dài hơn
-* Bổ sung thêm case vào Full System Tester khi phát hiện lỗi thực tế mới
+* **thay đổi** Bổ sung thêm case vào Scenario Tester và Full System Tester khi phát hiện lỗi thực tế mới
 
 ---
 

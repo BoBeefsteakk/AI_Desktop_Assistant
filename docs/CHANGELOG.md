@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-06-02
+
+### Scenario Tester
+
+* **thay đổi** Thêm `tools/core/scenario_tester.py` để test các case nhạy cảm bằng file giả trong sandbox.
+* **thay đổi** Sandbox nằm tại `D:\_ai_desktop_assistant_scenario_tests\run_<timestamp>` và cleanup chỉ được phép trong prefix này.
+* **thay đổi** Test Download Organizer scan skip `.crdownload`, move fake root files và restore bằng manifest.
+* **thay đổi** Test Media Organizer move fake media và restore bằng manifest.
+* **thay đổi** Test guardrail cho `Riot Games`, archive/bộ cài, dev artifact, file project protected và missing path.
+* **thay đổi** Test large file/folder scan, temp/junk risk classification và empty folder scan trên dữ liệu giả.
+* **thay đổi** Main CLI expose `Scenario Tester` ở mục 32.
+* **thay đổi** Tool Tester, Capability Registry, Natural Command và Full System Tester đã có entry/contract cho Scenario Tester.
+* **thay đổi** Scenario Tester chạy riêng pass 6/6; Tool Tester pass 32/32; Full System Tester pass 22/22.
+* **thay đổi** Feed Readiness sau thay đổi pass 8/8, 0 warn, 0 fail.
+
 ## 2026-06-01
 
 ### Pending Storage Review

@@ -39,6 +39,7 @@ from tools.core.external_apps import (
 )
 from tools.core.feed_readiness import build_feed_readiness_result
 from tools.core.risk_classifier import PROTECTED, REVIEW_REQUIRED, SAFE_DELETE, classify_file_risk
+from tools.core.scenario_tester import run_sandbox_scenarios
 from tools.core.safe_executor import safe_delete
 from tools.core.safety_utils import safe_move, save_manifest
 from tools.core.tool_tester import TOOLS_TO_TEST
@@ -67,6 +68,7 @@ STATIC_AUDIT_ALLOWLIST = {
     ("tools/core/safe_executor.py", "send2trash"),
     ("tools/core/safety_utils.py", "shutil.move"),
     ("tools/core/behavior_tester.py", "shutil.rmtree"),
+    ("tools/core/scenario_tester.py", "shutil.rmtree"),
 }
 
 
@@ -149,6 +151,7 @@ def test_main_menu_coverage() -> dict[str, Any]:
         "Recommendation Center",
         "Guided Action Runner",
         "Feed Assistant Readiness",
+        "Scenario Tester",
     ]
     missing = [label for label in expected if label not in main_text]
 
@@ -905,6 +908,46 @@ def test_feed_readiness_contract() -> dict[str, Any]:
     }
 
 
+def test_scenario_tester_contract() -> dict[str, Any]:
+    result = run_sandbox_scenarios(
+        cleanup=True,
+        keep_on_failure=False,
+        create_report_file=True,
+    )
+    test_by_name = {
+        item["name"]: item
+        for item in result["tests"]
+    }
+
+    download_scan = test_by_name["Download Organizer scan skips partial and nested files"]["details"]
+    risk_guardrails = test_by_name["Risk guardrails for game data, archives and project files"]["details"]
+
+    assert_condition(result["status"] == "success", "Scenario Tester should pass all fake-file cases.")
+    assert_condition(result["failed"] == 0, "Scenario Tester should report zero failures.")
+    assert_condition(result["cleanup"]["status"] == "cleaned", "Scenario Tester should clean its sandbox.")
+    assert_condition(
+        download_scan["partial_download_skipped"] is True,
+        "Scenario Tester should prove partial downloads are skipped.",
+    )
+    assert_condition(
+        risk_guardrails["riot"]["risk"] == REVIEW_REQUIRED,
+        "Scenario Tester should keep Riot Games data at review_required.",
+    )
+    assert_condition(
+        risk_guardrails["protected_project_delete"]["status"] == "blocked",
+        "Scenario Tester should prove protected project files cannot be deleted.",
+    )
+
+    return {
+        "status": result["status"],
+        "total": result["total"],
+        "passed": result["passed"],
+        "failed": result["failed"],
+        "cleanup": result["cleanup"],
+        "report": result["report"],
+    }
+
+
 def test_dependency_health() -> dict[str, Any]:
     modules = ["psutil", "send2trash", "watchdog"]
     results = []
@@ -957,6 +1000,7 @@ FULL_SYSTEM_TESTS: list[tuple[str, Callable[[], dict[str, Any]]]] = [
     ("Guided Action Runner Contract", test_guided_action_runner_contract),
     ("Natural Command v3 Queue Contract", test_natural_command_v3_queue_contract),
     ("Feed Readiness Contract", test_feed_readiness_contract),
+    ("Scenario Tester Contract", test_scenario_tester_contract),
     ("Dependency Health", test_dependency_health),
     ("Git Submodule Health", test_git_submodule_health),
 ]

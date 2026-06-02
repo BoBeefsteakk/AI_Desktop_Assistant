@@ -8,12 +8,13 @@
 
 **thay đổi** Kết quả hiện tại:
 
-* **thay đổi** Main CLI đang expose 31 tool.
-* **thay đổi** Capability Registry valid 31/31, không thiếu entry so với Tool Tester.
-* **thay đổi** Tool Tester pass 31/31.
+* **thay đổi** Main CLI đang expose 32 tool.
+* **thay đổi** Capability Registry valid 32/32, không thiếu entry so với Tool Tester.
+* **thay đổi** Tool Tester pass 32/32.
 * **thay đổi** Behavior Tester pass 18/18.
-* **thay đổi** Full System Tester pass 21/21.
-* **thay đổi** Capability summary: 18 safe, 7 medium, 6 dangerous; 11 tool có thể thay đổi file; 12 tool cần confirmation; 9 tool dùng external app.
+* **thay đổi** Scenario Tester pass 6/6.
+* **thay đổi** Full System Tester pass 22/22.
+* **thay đổi** Capability summary: 19 safe, 7 medium, 6 dangerous; 11 tool có thể thay đổi file; 12 tool cần confirmation; 9 tool dùng external app.
 
 ## Luồng Tool Tổng Chuẩn
 
@@ -28,9 +29,10 @@
 7. **thay đổi** System Advisor v2 chỉ tạo recommendation, không tự cleanup, không xóa, không move.
 8. **thay đổi** Recommendation Center gom recommendation thành queue read-only để user review.
 9. **thay đổi** Guided Action Runner mở tool được đề xuất từ recommendation sau khi user xác nhận `OPEN`.
-10. **thay đổi** Feed Assistant Readiness đóng gói pre-feed checklist/report, nhưng chưa feed/train thật.
-10. **thay đổi** Nếu user chọn chạy tool thật, tool đó vẫn tự xử lý confirmation, risk classification, safe executor, manifest/undo và report/log.
-11. **thay đổi** Audit Center, Report Manager và Undo Manager lưu lại lịch sử, report, manifest để kiểm tra sau.
+10. **thay đổi** Scenario Tester tái hiện case rủi ro bằng file giả trước khi đụng dữ liệu thật.
+11. **thay đổi** Feed Assistant Readiness đóng gói pre-feed checklist/report, nhưng chưa feed/train thật.
+12. **thay đổi** Nếu user chọn chạy tool thật, tool đó vẫn tự xử lý confirmation, risk classification, safe executor, manifest/undo và report/log.
+13. **thay đổi** Audit Center, Report Manager và Undo Manager lưu lại lịch sử, report, manifest để kiểm tra sau.
 
 ## Nguyên Tắc Không Được Phá
 
@@ -90,6 +92,8 @@
 **thay đổi** Gap 6: Advisor real-run calibration đã chạy trên `D:\`, đã sửa lỗi Unicode output và lọc test reports khỏi queue mặc định.
 
 **thay đổi** Gap 7: Feed Assistant readiness report đã hoàn thành; chưa train/feed thật ở bước này.
+
+**thay đổi** Gap 8: Scenario Tester đã hoàn thành để test fake-file trước khi xử lý case thật như Riot Games/archive/bộ cài.
 
 ## Kế Hoạch Chuẩn Từ Bây Giờ
 
@@ -193,9 +197,9 @@
 * **thay đổi** `tools/core/feed_readiness.py` đã được thêm.
 * **thay đổi** Main CLI expose `Feed Assistant Readiness` ở mục 31.
 * **thay đổi** Readiness report kiểm tra config, registry, external apps/drift, queue, latest full test, report schema, audit snapshot và docs feed source.
-* **thay đổi** Latest readiness: ready, 7 pass, 1 warn, 0 fail.
-* **thay đổi** Warning duy nhất là còn 5 pending recommendation thật cần review trước automation.
-* **thay đổi** Tool Tester pass 31/31, Behavior Tester pass 18/18, Full System Tester pass 21/21.
+* **thay đổi** Latest readiness: ready, 8 pass, 0 warn, 0 fail.
+* **thay đổi** Không còn warning trong readiness snapshot mới nhất.
+* **thay đổi** Tool Tester pass 32/32, Behavior Tester pass 18/18, Scenario Tester pass 6/6, Full System Tester pass 22/22.
 
 **thay đổi** Chưa train/feed thật ở giai đoạn này.
 
@@ -221,7 +225,7 @@
 
 **thay đổi** Queue mới nhất: 0 pending, 2 deferred, 2 handled, 1 ignored.
 
-**thay đổi** Bước tiếp theo chuẩn nhất là user chọn rõ có muốn xóa/move các archive/bộ cài lớn hoặc xử lý `D:\Downloads\Riot Games` không; tool không được tự quyết định phần này.
+**thay đổi** Bước tiếp theo chuẩn nhất đã đổi: không xóa `D:\Downloads\Riot Games` vì là game data, không xóa các archive/bộ cài thật nếu user còn cần; mọi case cleanup/move nhạy cảm phải được tái hiện trong Scenario Tester bằng file giả trước.
 
 ## Deletion Safety / UX v2
 
@@ -241,6 +245,20 @@
 * **thay đổi** Browser cache va temp file trong vung an toan co the la `safe_delete`.
 * **thay đổi** AppData/user app data/dev artifacts mac dinh la `review_required`, khong auto delete bang lenh `all`.
 * **thay đổi** Empty Folder Finder doi `all` thanh chi chon `SAFE_DELETE`; muon chon hang loat folder `REVIEW_REQUIRED` phai dung lua chon `review` va xac nhan rieng.
+
+## Scenario Tester Layer
+
+**thay đổi** `tools/core/scenario_tester.py` là lớp test bằng file giả cho các case user dễ gặp trước khi chạy tool thật.
+
+**thay đổi** Scope hiện tại:
+
+* **thay đổi** Downloads root: file ảnh/tài liệu/bộ cài, file `.crdownload` đang tải dở, folder app nested.
+* **thay đổi** Game/app data: `Riot Games` và archive/bộ cài chỉ được phân loại `review_required`, không tự xóa.
+* **thay đổi** Move/restore: Download Organizer và Media Organizer được test bằng fake move + manifest restore.
+* **thay đổi** Cleanup scan: temp/junk/empty folders chỉ scan và phân loại trên sandbox, không xóa file thật.
+* **thay đổi** Cleanup sandbox dùng guard path bắt buộc nằm dưới `D:\_ai_desktop_assistant_scenario_tests`.
+
+**thay đổi** Khi gặp case thật gây khó hiểu, bước đúng là tái hiện bằng Scenario Tester trước rồi mới sửa tool thật nếu cần.
 
 ## External App Health Report v2
 

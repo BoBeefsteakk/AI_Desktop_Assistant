@@ -30,6 +30,7 @@ from tools.core.feed_readiness import run_feed_readiness
 from tools.core.full_system_tester import run_full_system_tester
 from tools.core.guided_action_runner import run_guided_action_runner
 from tools.core.recommendation_center import run_recommendation_center
+from tools.core.scenario_tester import run_scenario_tester
 from tools.core.tool_tester import run_tool_tester
 from tools.core.undo_manager import run_undo_manager
 
@@ -75,6 +76,7 @@ def main():
 29. Recommendation Center
 30. Guided Action Runner
 31. Feed Assistant Readiness
+32. Scenario Tester
 
 0. Thoat
 
@@ -180,6 +182,9 @@ def main():
 
         elif choice == "31":
             run_feed_readiness()
+
+        elif choice == "32":
+            run_scenario_tester()
 
         else:
             print("Lua chon khong hop le.")

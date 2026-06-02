@@ -52,10 +52,12 @@ Hoàn thành
 * **thay đổi** External App Health path drift detection với baseline local và structured drift recommendations
 * **thay đổi** Feed Assistant Readiness report/checklist trước feed/train
 * **thay đổi** Review Recommendation Queue thật và scan storage pending bằng read-only report
+* **thay đổi** Scenario Tester fake-file sandbox cho các case xóa/move dễ gây nhầm
 
 Cần rà soát tiếp:
 
-* **thay đổi** User quyết định có xóa/move archive/bộ cài lớn hoặc xử lý `D:\Downloads\Riot Games` không
+* **thay đổi** Không test cleanup trên file thật khi chưa cần; nếu gặp case mới thì tái hiện trước trong Scenario Tester bằng file giả.
+* **thay đổi** User quyết định có xóa/move archive/bộ cài lớn thật hay xử lý `D:\Downloads\Riot Games` không.
 
 ---
 
@@ -131,8 +133,9 @@ Một lệnh test tổng hợp trước khi refactor lớn hoặc feed assistant
 * **thay đổi** Guided Action Runner Contract test
 * **thay đổi** Natural Command v3 Queue Contract test
 * **thay đổi** Feed Readiness Contract test
+* **thay đổi** Scenario Tester Contract test chạy fake-file sandbox
 * **thay đổi** Default queue excludes test-tagged reports
-* Full System Tester hiện pass 21/21
+* Full System Tester hiện pass 22/22
 
 ---
 

@@ -53,6 +53,7 @@ Bao gồm:
 * **thay đổi** undo_manager.py
 * **thay đổi** full_system_tester.py
 * **thay đổi** recommendation_center.py
+* **thay đổi** scenario_tester.py
 
 ---
 
@@ -385,6 +386,24 @@ Các lớp kiểm tra:
 * **thay đổi** Guided Action Runner dry-run contract
 * **thay đổi** Natural Command v3 queue dry-run contract
 * **thay đổi** Default recommendation queue không lấy test-tagged reports
+* **thay đổi** Scenario Tester contract chạy fake-file sandbox và cleanup guard
+
+---
+
+## Scenario Test Layer
+
+**thay đổi** Scenario Tester là lớp test tình huống bằng file giả, dùng trước khi đụng dữ liệu thật.
+
+Nguồn dữ liệu:
+
+* **thay đổi** Sandbox `D:\_ai_desktop_assistant_scenario_tests\run_<timestamp>`
+* **thay đổi** Fake Downloads, media, Riot Games, archive/bộ cài, temp/junk và empty folders
+
+Nguyên tắc:
+
+* **thay đổi** Không dùng file thật của user để test xóa/move.
+* **thay đổi** Chỉ move/restore trong sandbox và luôn kiểm tra manifest restore.
+* **thay đổi** Cleanup sandbox bị khóa bằng path guard, chỉ cho phép trong prefix test.
 
 ---
 
