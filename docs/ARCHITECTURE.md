@@ -427,16 +427,20 @@ Nguồn dữ liệu:
 
 Output:
 
-* **thay đổi** Report `bot_controller` với schema `bot_controller_v1`.
+* **thay đổi** Report `bot_controller` với schema `bot_controller_v2`.
 * **thay đổi** Summary tổng: recommendation, candidate, policy, readiness, safe-to-execute, needs-selection, do-not-touch.
 * **thay đổi** Decision screen gồm `ok`, `select`, `cancel`, `details`.
+* **thay đổi** Selection UI schema `bot_selection_ui_v2`.
+* **thay đổi** Selection Decision schema `bot_selection_decision_v2`.
 
 Nguyên tắc:
 
-* **thay đổi** Bot Controller v1 chỉ scan và lập kế hoạch.
+* **thay đổi** Bot Controller v2 chỉ scan, lập kế hoạch và ghi decision report.
 * **thay đổi** `executes_file_operations=false`.
 * **thay đổi** `ok` không chạy gì nếu không có item `can_execute_now`.
-* **thay đổi** `select` chỉ trả danh sách cần user chọn, chưa có UI chọn file thật.
+* **thay đổi** `select` trả Selection UI có mã item và allowed decisions.
+* **thay đổi** Selection Decision chỉ ghi ý định; `delete_candidate` không phải lệnh xóa.
+* **thay đổi** Nhóm `do_not_touch` bị locked và chỉ được `keep`.
 * **thay đổi** Không đụng policy `ignore_forever` hoặc `keep`.
 * **thay đổi** Không bypass confirmation/manifest/undo của tool thật.
 
@@ -509,7 +513,7 @@ Các lớp kiểm tra:
 * **thay đổi** Scenario Tester contract chạy fake-file sandbox và cleanup guard
 * **thay đổi** Action Policy Contract kiểm tra baseline policy, path/context matching và Step 3 coverage
 * **thay đổi** Candidate Review, Dry-run Action Planner và Pre-feed Bundle contract
-* **thay đổi** AI Bot Controller contract kiểm tra decision screen, dry-run action plan và OK không execute file trong v1
+* **thay đổi** AI Bot Controller contract kiểm tra decision screen, Selection UI v2, Selection Decision v2, locked item bị block và OK không execute file trong v2
 
 ---
 

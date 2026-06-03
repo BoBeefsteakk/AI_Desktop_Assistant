@@ -20,6 +20,17 @@ from tools.core.report_manager import create_report, read_recent_report_index
 
 BOT_CONTROLLER_TOOL = "bot_controller"
 BOT_DECISIONS = {"ok", "select", "cancel", "details"}
+BOT_CONTROLLER_SCHEMA = "bot_controller_v2"
+BOT_SELECTION_UI_SCHEMA = "bot_selection_ui_v2"
+BOT_SELECTION_DECISION_SCHEMA = "bot_selection_decision_v2"
+SELECTION_DECISIONS = {
+    "keep",
+    "manual_review",
+    "needs_backup",
+    "move_later",
+    "delete_candidate",
+    "skip",
+}
 LATEST_REPORT_TOOLS = {
     "system_advisor",
     "recommendation_center",
@@ -81,6 +92,7 @@ def group_plan_items(plan: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
         slim_item = {
             "path": item.get("path"),
             "name": item.get("name"),
+            "size": item.get("size"),
             "size_text": item.get("size_text"),
             "candidate_group": item.get("candidate_group"),
             "context": item.get("context"),
@@ -108,6 +120,311 @@ def summarize_grouped_plan(groups: dict[str, list[dict[str, Any]]]) -> dict[str,
         "needs_selection_count": len(groups["needs_selection"]),
         "do_not_touch_count": len(groups["do_not_touch"]),
         "review_only_count": len(groups["review_only"]),
+    }
+
+
+def get_allowed_selection_decisions(item: dict[str, Any], group_name: str) -> list[str]:
+    if group_name == "do_not_touch":
+        return ["keep"]
+
+    plan_action = str(item.get("plan_action") or "")
+    mapping = {
+        "keep": ["keep"],
+        "manual_review": ["keep", "manual_review", "move_later", "delete_candidate", "skip"],
+        "backup_first": ["keep", "needs_backup", "manual_review", "skip"],
+        "move_later": ["keep", "move_later", "skip"],
+        "delete_candidate": ["keep", "delete_candidate", "skip"],
+        "review_unknown": ["keep", "manual_review", "skip"],
+    }
+    return mapping.get(plan_action, ["keep", "manual_review", "skip"])
+
+
+def get_recommended_selection_decision(item: dict[str, Any], group_name: str) -> str:
+    if group_name == "do_not_touch":
+        return "keep"
+
+    plan_action = str(item.get("plan_action") or "")
+    mapping = {
+        "manual_review": "manual_review",
+        "backup_first": "needs_backup",
+        "move_later": "move_later",
+        "delete_candidate": "delete_candidate",
+        "keep": "keep",
+    }
+    return mapping.get(plan_action, "manual_review")
+
+
+def make_selection_item(
+    item: dict[str, Any],
+    *,
+    selection_id: str,
+    group_name: str,
+) -> dict[str, Any]:
+    allowed_decisions = get_allowed_selection_decisions(item, group_name)
+    return {
+        **item,
+        "selection_id": selection_id,
+        "selection_group": group_name,
+        "allowed_decisions": allowed_decisions,
+        "recommended_decision": get_recommended_selection_decision(item, group_name),
+        "locked": group_name == "do_not_touch",
+        "execution_enabled": False,
+    }
+
+
+def build_selection_session_from_groups(
+    groups: dict[str, list[dict[str, Any]]],
+    *,
+    include_items: bool = True,
+) -> dict[str, Any]:
+    prefixes = {
+        "safe_to_execute": "S",
+        "needs_selection": "M",
+        "do_not_touch": "D",
+        "review_only": "R",
+    }
+    selection_groups: dict[str, list[dict[str, Any]]] = {}
+
+    for group_name, items in groups.items():
+        prefix = prefixes.get(group_name, "X")
+        selection_groups[group_name] = [
+            make_selection_item(
+                item,
+                selection_id=f"{prefix}{index:03d}",
+                group_name=group_name,
+            )
+            for index, item in enumerate(items, start=1)
+        ]
+
+    summary = {
+        "safe_to_execute_count": len(selection_groups["safe_to_execute"]),
+        "needs_selection_count": len(selection_groups["needs_selection"]),
+        "do_not_touch_count": len(selection_groups["do_not_touch"]),
+        "review_only_count": len(selection_groups["review_only"]),
+        "selectable_count": (
+            len(selection_groups["safe_to_execute"])
+            + len(selection_groups["needs_selection"])
+            + len(selection_groups["review_only"])
+        ),
+        "locked_count": len(selection_groups["do_not_touch"]),
+        "execution_enabled": False,
+    }
+
+    return {
+        "schema": BOT_SELECTION_UI_SCHEMA,
+        "status": "ready" if summary["selectable_count"] or summary["locked_count"] else "empty",
+        "summary": summary,
+        "groups": selection_groups if include_items else {
+            key: [] for key in selection_groups
+        },
+        "decision_contract": {
+            "valid_decisions": sorted(SELECTION_DECISIONS),
+            "locked_group": "do_not_touch",
+            "decision_report_only": True,
+            "executes_file_operations": False,
+        },
+    }
+
+
+def build_selection_session(
+    *,
+    bot_result: dict[str, Any] | None = None,
+    include_items: bool = True,
+) -> dict[str, Any]:
+    result = bot_result or build_bot_controller_result(include_items=True)
+    groups = result["action_plan"]["groups"]
+    if not any(groups.values()) and (
+        result["summary"]["safe_to_execute_count"] > 0
+        or result["summary"]["needs_selection_count"] > 0
+        or result["summary"]["do_not_touch_count"] > 0
+    ):
+        result = build_bot_controller_result(include_items=True)
+        groups = result["action_plan"]["groups"]
+    return build_selection_session_from_groups(groups, include_items=include_items)
+
+
+def iter_selection_items(session: dict[str, Any]) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    for group_items in session.get("groups", {}).values():
+        items.extend(group_items)
+    return items
+
+
+def build_selection_decision(
+    decisions: dict[str, str],
+    *,
+    session: dict[str, Any] | None = None,
+    note: str | None = None,
+) -> dict[str, Any]:
+    selection_session = session or build_selection_session(include_items=True)
+    item_by_id = {
+        item["selection_id"]: item
+        for item in iter_selection_items(selection_session)
+    }
+    normalized_decisions = {
+        str(selection_id).strip().upper(): str(decision).strip().lower()
+        for selection_id, decision in (decisions or {}).items()
+        if str(selection_id).strip()
+    }
+
+    selected = []
+    skipped = []
+    blocked = []
+    invalid = []
+    unselected = []
+
+    for selection_id, decision in normalized_decisions.items():
+        item = item_by_id.get(selection_id)
+        if item is None:
+            invalid.append({
+                "selection_id": selection_id,
+                "decision": decision,
+                "reason": "Unknown selection id.",
+            })
+            continue
+
+        if decision not in SELECTION_DECISIONS:
+            invalid.append({
+                "selection_id": selection_id,
+                "path": item.get("path"),
+                "decision": decision,
+                "allowed_decisions": item["allowed_decisions"],
+                "reason": "Unknown decision.",
+            })
+            continue
+
+        if item["locked"] and decision != "keep":
+            blocked.append({
+                "selection_id": selection_id,
+                "path": item.get("path"),
+                "decision": decision,
+                "allowed_decisions": item["allowed_decisions"],
+                "reason": "Item is locked by policy and can only be kept.",
+            })
+            continue
+
+        if decision not in item["allowed_decisions"]:
+            invalid.append({
+                "selection_id": selection_id,
+                "path": item.get("path"),
+                "decision": decision,
+                "allowed_decisions": item["allowed_decisions"],
+                "reason": "Decision is not allowed for this item.",
+            })
+            continue
+
+        record = {
+            "selection_id": selection_id,
+            "path": item.get("path"),
+            "name": item.get("name"),
+            "size_text": item.get("size_text"),
+            "selection_group": item.get("selection_group"),
+            "policy_decision": item.get("policy_decision"),
+            "plan_action": item.get("plan_action"),
+            "decision": decision,
+            "execution_enabled": False,
+        }
+        if decision == "skip":
+            skipped.append(record)
+        else:
+            selected.append(record)
+
+    explicitly_seen = set(normalized_decisions)
+    for selection_id, item in item_by_id.items():
+        if item["locked"] or selection_id in explicitly_seen:
+            continue
+        unselected.append({
+            "selection_id": selection_id,
+            "path": item.get("path"),
+            "name": item.get("name"),
+            "recommended_decision": item.get("recommended_decision"),
+            "allowed_decisions": item.get("allowed_decisions"),
+        })
+
+    by_decision: dict[str, int] = {}
+    for item in selected:
+        decision = item["decision"]
+        by_decision[decision] = by_decision.get(decision, 0) + 1
+
+    status = "ready"
+    if invalid or blocked:
+        status = "needs_fix"
+    elif not selected and not skipped:
+        status = "empty_selection"
+
+    return {
+        "schema": BOT_SELECTION_DECISION_SCHEMA,
+        "status": status,
+        "summary": {
+            "input_decision_count": len(normalized_decisions),
+            "selected_count": len(selected),
+            "skipped_count": len(skipped),
+            "blocked_count": len(blocked),
+            "invalid_count": len(invalid),
+            "unselected_count": len(unselected),
+            "by_decision": by_decision,
+            "execution_enabled": False,
+            "undo_available": False,
+        },
+        "note": note,
+        "selected": selected,
+        "skipped": skipped,
+        "blocked": blocked,
+        "invalid": invalid,
+        "unselected": unselected,
+        "selection_session_summary": selection_session["summary"],
+        "safety_contract": {
+            "decision_report_only": True,
+            "executes_file_operations": False,
+            "requires_execution_adapter": True,
+            "requires_manifest_for_move": True,
+            "delete_candidate_is_not_delete": True,
+        },
+    }
+
+
+def export_selection_decision_report(
+    decisions: dict[str, str],
+    *,
+    note: str | None = None,
+) -> dict[str, Any]:
+    decision_report = build_selection_decision(decisions, note=note)
+    status = "success" if decision_report["status"] != "needs_fix" else "warning"
+    report = create_report(
+        tool_name=BOT_CONTROLLER_TOOL,
+        action="export_selection_decision",
+        status=status,
+        risk_level="safe",
+        input_data={
+            "decision_count": len(decisions or {}),
+            "note": note,
+        },
+        results=decision_report,
+        recommendations=[
+            "This is a decision report only; it does not delete or move files.",
+            "Blocked or invalid items must be fixed before any future execution adapter can use them.",
+            "delete_candidate means user intent only, not immediate deletion.",
+        ],
+        summary=decision_report["summary"],
+        undo_available=False,
+        tags=["bot_controller", "selection", "decision_report", "read_only"],
+    )
+    log_action(
+        BOT_CONTROLLER_TOOL,
+        "export_selection_decision_report",
+        status,
+        {
+            "report": str(report),
+            "selected_count": decision_report["summary"]["selected_count"],
+            "invalid_count": decision_report["summary"]["invalid_count"],
+            "blocked_count": decision_report["summary"]["blocked_count"],
+        },
+    )
+    print(f"Report: {report}")
+    return {
+        "status": status,
+        "report": str(report),
+        "decision": decision_report,
     }
 
 
@@ -146,6 +463,10 @@ def build_bot_controller_result(
     action_plan = build_action_plan(include_items=True)
     grouped_plan = group_plan_items(action_plan)
     group_summary = summarize_grouped_plan(grouped_plan)
+    selection_ui = build_selection_session_from_groups(
+        grouped_plan,
+        include_items=include_items,
+    )
     readiness = build_feed_readiness_result()
     action_policy = build_action_policy_health()
     latest_reports = {
@@ -187,7 +508,7 @@ def build_bot_controller_result(
         status = "no_current_actions"
 
     return {
-        "schema": "bot_controller_v1",
+        "schema": BOT_CONTROLLER_SCHEMA,
         "status": status,
         "mode": "latest_reports_orchestrator",
         "summary": {
@@ -223,6 +544,7 @@ def build_bot_controller_result(
             },
             "safety_contract": action_plan["safety_contract"],
         },
+        "selection_ui": selection_ui,
         "action_policy": action_policy,
         "feed_readiness": {
             "summary": readiness["summary"],
@@ -242,6 +564,9 @@ def build_bot_controller_result(
             "executes_file_operations": False,
             "safe_ok_requires_can_execute_now": True,
             "selection_required_for_manual_items": True,
+            "selection_ui_schema": BOT_SELECTION_UI_SCHEMA,
+            "selection_decision_schema": BOT_SELECTION_DECISION_SCHEMA,
+            "selection_report_only": True,
             "never_touch_policy_decisions": ["ignore_forever", "keep"],
         },
     }
@@ -288,12 +613,13 @@ def execute_bot_decision(
         }
 
     if decision == "select":
+        selection_session = build_selection_session(bot_result=result, include_items=True)
         return {
             "status": "selection_required",
             "executed": False,
             "decision": decision,
-            "items": result["action_plan"]["groups"]["needs_selection"],
-            "message": "Manual selection UI is not implemented yet; use Candidate Review report for now.",
+            "selection_ui": selection_session,
+            "message": "Selection UI is ready; export a decision report before any future execution.",
         }
 
     if decision == "ok":
@@ -309,7 +635,7 @@ def execute_bot_decision(
             "executed": False,
             "decision": decision,
             "safe_item_count": len(safe_items),
-            "message": "Bot Controller v1 found safe items but execution is not enabled in this milestone.",
+            "message": "Bot Controller v2 found safe items but execution is not enabled in this milestone.",
         }
 
     return {
@@ -333,13 +659,13 @@ def export_bot_controller_report(*, include_items: bool = True) -> dict[str, Any
         },
         results=result,
         recommendations=[
-            "Bot Controller v1 scans and plans, but does not execute cleanup automatically.",
+            "Bot Controller v2 scans, plans and exports selection decisions, but does not execute cleanup automatically.",
             "Use OK only when safe_to_execute_count is greater than zero.",
-            "Use selection flow for manual_only, needs_backup and move_later items.",
+            "Use selection flow to create a decision report for manual_only, needs_backup and move_later items.",
         ],
         summary=result["summary"],
         undo_available=False,
-        tags=["bot_controller", "auto_check", "orchestrator", "read_only"],
+        tags=["bot_controller", "auto_check", "orchestrator", "read_only", "selection_ui_v2"],
     )
     log_action(
         BOT_CONTROLLER_TOOL,
@@ -361,7 +687,7 @@ def export_bot_controller_report(*, include_items: bool = True) -> dict[str, Any
 
 def print_bot_summary(result: dict[str, Any]) -> None:
     summary = result["summary"]
-    print("\n========== AI BOT CONTROLLER V1 ==========")
+    print("\n========== AI BOT CONTROLLER V2 ==========")
     print(f"Status: {result['status']}")
     print(f"Recommendations: {summary['visible_recommendation_count']} visible / {summary['all_recommendation_count']} total")
     print(f"Safe to execute: {summary['safe_to_execute_count']}")
@@ -369,21 +695,66 @@ def print_bot_summary(result: dict[str, Any]) -> None:
     print(f"Do not touch: {summary['do_not_touch_count']}")
     print(f"Candidates: {summary['candidate_count']}")
     print(f"Readiness: {summary['readiness_status']}")
+    print(f"Selection UI: {result['selection_ui']['schema']}")
     print("\nDecisions:")
     for key, item in result["decision_screen"].items():
         enabled = "enabled" if item["enabled"] else "disabled"
         print(f"- {key}: {item['label']} [{enabled}]")
 
 
+def print_selection_session(session: dict[str, Any], *, limit: int = 80) -> None:
+    print("\n========== SELECTION UI V2 ==========")
+    summary = session["summary"]
+    print(f"Selectable: {summary['selectable_count']}")
+    print(f"Needs selection: {summary['needs_selection_count']}")
+    print(f"Locked/do not touch: {summary['locked_count']}")
+    print("Allowed input example: M001=keep, M002=move_later, M003=delete_candidate")
+
+    shown = 0
+    for group_name, items in session["groups"].items():
+        if not items:
+            continue
+        print(f"\n[{group_name}]")
+        for item in items:
+            shown += 1
+            locked = " locked" if item["locked"] else ""
+            allowed = "/".join(item["allowed_decisions"])
+            print(
+                f"{item['selection_id']}{locked} | {item.get('size_text') or '-'} | "
+                f"{item.get('plan_action')} | {item.get('path')}"
+            )
+            print(f"  allowed: {allowed}; recommended: {item['recommended_decision']}")
+            if shown >= limit:
+                print(f"... truncated at {limit} items")
+                return
+
+
+def parse_selection_input(raw_text: str) -> dict[str, str]:
+    decisions: dict[str, str] = {}
+    for chunk in raw_text.replace(";", ",").split(","):
+        part = chunk.strip()
+        if not part:
+            continue
+        if "=" not in part:
+            continue
+        selection_id, decision = part.split("=", 1)
+        selection_id = selection_id.strip().upper()
+        decision = decision.strip().lower()
+        if selection_id:
+            decisions[selection_id] = decision
+    return decisions
+
+
 def run_bot_controller() -> None:
     while True:
         print("""
-========== AI BOT CONTROLLER V1 ==========
+========== AI BOT CONTROLLER V2 ==========
 1. Auto check summary
 2. Export bot report
 3. OK - run safe-only decision
-4. Lua chon - show manual selection result
-5. Huy - cancel decision
+4. Preview selection UI v2
+5. Export selection decision report
+6. Huy - cancel decision
 0. Thoat
 """)
         choice = input("Chon: ").strip()
@@ -400,9 +771,17 @@ def run_bot_controller() -> None:
 
         elif choice == "4":
             decision = execute_bot_decision("select")
-            print(decision)
+            print_selection_session(decision["selection_ui"])
 
         elif choice == "5":
+            session = build_selection_session(include_items=True)
+            print_selection_session(session)
+            raw_text = input("Nhap decision (vd M001=keep, M002=move_later), bo trong neu chua chon: ").strip()
+            decisions = parse_selection_input(raw_text)
+            note = input("Ghi chu report (bo trong neu khong co): ").strip() or None
+            export_selection_decision_report(decisions, note=note)
+
+        elif choice == "6":
             decision = execute_bot_decision("cancel")
             print(decision)
 

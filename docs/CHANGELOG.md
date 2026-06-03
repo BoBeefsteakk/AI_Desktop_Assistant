@@ -2,6 +2,22 @@
 
 ## 2026-06-03
 
+### Selection UI / Decision Report v2
+
+* **thay đổi** Nâng `tools/core/bot_controller.py` lên schema `bot_controller_v2`.
+* **thay đổi** Thêm Selection UI schema `bot_selection_ui_v2` để gán mã chọn ổn định cho từng item: nhóm safe, cần chọn thủ công, do-not-touch và review-only.
+* **thay đổi** Thêm Selection Decision schema `bot_selection_decision_v2` để ghi lại quyết định user theo mã như `M001=keep`, `M002=move_later`, `M003=delete_candidate`.
+* **thay đổi** Decision report chỉ ghi ý định/selection; `execution_enabled=false`, `executes_file_operations=false`, không xóa/move file thật.
+* **thay đổi** Item thuộc nhóm `do_not_touch` bị locked; nếu ép chọn `delete_candidate`/move sẽ bị ghi vào `blocked`, không thành action.
+* **thay đổi** Menu Bot Controller có thêm preview Selection UI v2 và export Selection Decision Report.
+* **thay đổi** `select` trong Bot Controller giờ trả selection UI thay vì chỉ trả raw item list.
+* **thay đổi** Bot Controller report mới nhất: `D:\tool\reports\bot_controller_20260603_212757.json`.
+* **thay đổi** Selection decision report mẫu: `D:\tool\reports\bot_controller_20260603_212800.json`, chọn 1 item `keep`, execution vẫn false.
+* **thay đổi** Tool Tester pass 37/37 tại `D:\tool\reports\tool_tester_20260603_212659.json`.
+* **thay đổi** Full System Tester pass 27/27 tại `D:\tool\reports\full_system_tester_20260603_212733.json`.
+* **thay đổi** Feed Readiness pass 9/9 tại `D:\tool\reports\feed_readiness_20260603_212756.json`.
+* **thay đổi** Bước này vẫn chưa bật execution adapter; đây là lớp chọn và ghi quyết định trước khi có thao tác thật.
+
 ### AI Bot Controller v1
 
 * **thay đổi** Thêm `tools/core/bot_controller.py` làm entrypoint bot tổng cho flow auto-check máy.

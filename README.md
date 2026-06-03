@@ -51,7 +51,7 @@ Active workspace hiện tại là `D:\tool`. Snapshot cũ đã được chuyển
 - **thay đổi** Dry-run Action Planner: lập kế hoạch giữ/review/backup/move sau, không execute cleanup
 - **thay đổi** Pre-feed Bundle: đóng gói docs/report summary/policy/queue/readiness thành bundle local để chuẩn bị feed assistant
 - **thay đổi** Feed Assistant Readiness
-- **thay đổi** AI Bot Controller: một entrypoint auto-check tổng, gom recommendation/policy/candidate/plan/readiness thành màn OK/lựa chọn/hủy, hiện vẫn read-only và chưa execute file thật
+- **thay đổi** AI Bot Controller v2: một entrypoint auto-check tổng, gom recommendation/policy/candidate/plan/readiness thành màn OK/lựa chọn/hủy, có Selection UI/Decision Report read-only và chưa execute file thật
 - **thay đổi** Scenario Tester: chạy fake-file sandbox cho Downloads, media, game data, archive, temp/junk và manifest restore
 
 ## Project Structure
@@ -107,6 +107,7 @@ Candidate Review	Done
 Dry-run Action Planner	Done
 Pre-feed Bundle	Done
 AI Bot Controller	Done
+Selection UI / Decision Report	Done
 Refactor Tools Folder	Done
 Config System	Done
 Audit System	Basic Done

@@ -2,7 +2,7 @@
 
 ## Giai đoạn hiện tại
 
-**thay đổi** Giai đoạn 5 - AI Decision Engine / Bot Controller v1 theo chế độ scan-and-plan, chưa execute file thật.
+**thay đổi** Giai đoạn 5 - AI Decision Engine / Bot Controller v2 theo chế độ scan/plan/selection-report, chưa execute file thật.
 
 ---
 
@@ -318,6 +318,37 @@ Kết quả mới nhất:
 
 * **thay đổi** Đây là mốc đầu của app/bot tự động check máy: bot đã biết scan, gom vấn đề, phân loại, đưa lựa chọn.
 * **thay đổi** Chưa bật phần tự xóa/move; bước sau cần selection UI và execution adapter có undo/manifest rõ ràng.
+
+---
+
+### Selection UI / Decision Report v2
+
+**thay đổi** Đã thêm lớp chọn item và ghi quyết định vào report để chuẩn bị cho app/bot tự động kiểu `ok / lựa chọn / hủy`.
+
+Chức năng:
+
+* **thay đổi** `bot_controller` hiện dùng schema `bot_controller_v2`.
+* **thay đổi** Selection UI dùng schema `bot_selection_ui_v2`.
+* **thay đổi** Selection Decision Report dùng schema `bot_selection_decision_v2`.
+* **thay đổi** Mỗi item có mã chọn như `M001`, `D001`, kèm path, size, policy, plan action, allowed decisions và recommended decision.
+* **thay đổi** Nhóm `do_not_touch` bị locked; chỉ được `keep`, không thể chọn delete/move.
+* **thay đổi** Quyết định như `delete_candidate` chỉ là ý định cần xác nhận ở bước sau, không phải thao tác xóa.
+* **thay đổi** Menu Bot Controller có thêm preview selection UI và export selection decision report.
+* **thay đổi** `select` decision trả selection UI thay vì raw list.
+
+Kết quả mới nhất:
+
+* **thay đổi** Bot Controller report: `D:\tool\reports\bot_controller_20260603_212757.json`.
+* **thay đổi** Selection summary: 0 safe-to-execute, 25 selectable needs-selection, 1 locked/do-not-touch.
+* **thay đổi** Selection decision report mẫu: `D:\tool\reports\bot_controller_20260603_212800.json`, selected 1, invalid 0, blocked 0, execution false.
+* **thay đổi** Tool Tester pass 37/37.
+* **thay đổi** Full System Tester pass 27/27.
+* **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail.
+
+Ý nghĩa:
+
+* **thay đổi** User đã có thể ghi quyết định cụ thể cho từng item mà không đụng file thật.
+* **thay đổi** Đây là lớp cần có trước execution adapter; sau này adapter chỉ được đọc decision report hợp lệ, không tự suy diễn.
 
 ---
 
@@ -639,6 +670,7 @@ Process Monitor:
 * **thay đổi** Dry-run Action Planner
 * **thay đổi** Pre-feed Bundle
 * **thay đổi** AI Bot Controller
+* **thay đổi** Selection UI / Decision Report
 
 ---
 
@@ -719,7 +751,7 @@ Process Monitor:
 * **thay đổi** Kiểm tra default queue loại test-tagged reports
 * **thay đổi** Kiểm tra Action Policy Contract và Feed Readiness check `action_policy`
 * **thay đổi** Kiểm tra Candidate Review, Dry-run Action Planner và Pre-feed Bundle contract
-* **thay đổi** Kiểm tra AI Bot Controller contract: decision screen, dry-run-only action plan và OK không execute file trong v1
+* **thay đổi** Kiểm tra AI Bot Controller contract: decision screen, selection UI v2, selection decision v2, locked item bị block và OK không execute file trong v2
 
 Kết quả hiện tại:
 
@@ -798,7 +830,8 @@ Lý do:
 Cần làm tiếp để ổn định tool tổng:
 
 * **thay đổi** Ưu tiên 1: Nếu muốn giải phóng dung lượng thật, user cần chọn rõ file archive/bộ cài nào được xóa/move hoặc chọn cách xử lý `D:\Downloads\Riot Games`
-* **thay đổi** Ưu tiên 2: Mở rộng Undo System cho các thao tác không có manifest nếu cần
+* **thay đổi** Ưu tiên 2: Xây Execution Adapter v1 chỉ đọc Selection Decision Report hợp lệ, có manifest/undo/final confirmation, chưa tự suy diễn từ raw scan
+* **thay đổi** Ưu tiên 3: Mở rộng Undo System cho các thao tác không có manifest nếu cần
 * **thay đổi** Mở rộng Natural Command v3 thành intent engine sau khi có thêm lịch sử/report để feed assistant
 * **thay đổi** Chuẩn hóa Recommendation Center thành queue có trạng thái handled/deferred nếu cần workflow dài hơn
 * **thay đổi** Bổ sung thêm case vào Scenario Tester và Full System Tester khi phát hiện lỗi thực tế mới

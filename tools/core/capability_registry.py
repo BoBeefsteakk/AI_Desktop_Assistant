@@ -609,7 +609,7 @@ CAPABILITIES: list[dict[str, Any]] = [
         "logs_action": True,
         "external_apps": [],
         "tags": ["core", "bot", "orchestrator", "auto_check", "read_only"],
-        "summary": "Single entrypoint that orchestrates recommendations, policy gates, candidate review and action planning.",
+        "summary": "Single entrypoint that orchestrates recommendations, policy gates, candidate review, action planning and selection decision reports.",
     },
     {
         "id": "file_location_opener",

@@ -58,7 +58,7 @@ Hoàn thành
 * **thay đổi** Candidate Review Report cho deferred archive/video
 * **thay đổi** Dry-run Action Planner trước khi chạy thật
 * **thay đổi** Pre-feed Bundle để đóng gói context sạch trước feed assistant
-* **thay đổi** AI Bot Controller v1: entrypoint bot tổng cho auto-check, decision screen OK/lựa chọn/hủy/details, hiện scan-and-plan-only
+* **thay đổi** AI Bot Controller v2: entrypoint bot tổng cho auto-check, decision screen OK/lựa chọn/hủy/details, Selection UI/Decision Report, hiện vẫn không execute file
 
 Cần rà soát tiếp:
 
@@ -144,13 +144,14 @@ Một lệnh test tổng hợp trước khi refactor lớn hoặc feed assistant
 * **thay đổi** Action Policy Contract test
 * **thay đổi** Candidate Review, Dry-run Action Planner và Pre-feed Bundle Contract test
 * **thay đổi** AI Bot Controller Contract test
+* **thay đổi** Selection UI / Decision Report Contract test: validate mã item, locked item và decision report không execute
 * Full System Tester hiện pass 27/27
 
 ---
 
 ## Phase 5 - AI Decision Engine
 
-**thay đổi** Đã bắt đầu bằng AI Bot Controller v1.
+**thay đổi** Đã bắt đầu bằng AI Bot Controller v2 và Selection UI / Decision Report.
 
 Mục tiêu:
 
@@ -160,7 +161,8 @@ Assistant có thể:
 * Đề xuất dọn dẹp
 * **thay đổi** Ghi nhớ chính sách user trước khi đề xuất/xử lý
 * **thay đổi** Chưa tự động xử lý SAFE_DELETE ở mốc hiện tại; cần policy gate + candidate review + dry-run plan + confirm rõ trước khi mở rộng
-* **thay đổi** Bot Controller v1 đã gom queue/policy/candidate/plan/readiness thành một màn quyết định, nhưng chưa execute file thật
+* **thay đổi** Bot Controller v2 đã gom queue/policy/candidate/plan/readiness thành một màn quyết định và export decision report, nhưng chưa execute file thật
+* **thay đổi** Bước tiếp theo của Phase 5 là Execution Adapter v1 có manifest/undo/final confirmation
 
 ---
 

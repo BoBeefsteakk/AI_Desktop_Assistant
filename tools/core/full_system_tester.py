@@ -18,7 +18,11 @@ from tools.core.action_policy import (
 )
 from tools.core.behavior_tester import make_sandbox, cleanup_sandbox, write_text
 from tools.core.action_planner import build_action_plan
-from tools.core.bot_controller import build_bot_controller_result, execute_bot_decision
+from tools.core.bot_controller import (
+    build_bot_controller_result,
+    build_selection_decision,
+    execute_bot_decision,
+)
 from tools.core.candidate_review import build_candidate_review
 from tools.core.capability_registry import (
     get_capabilities,
@@ -1111,14 +1115,15 @@ def test_pre_feed_bundle_contract() -> dict[str, Any]:
 
 
 def test_bot_controller_contract() -> dict[str, Any]:
-    result = build_bot_controller_result(include_items=False)
+    result = build_bot_controller_result(include_items=True)
     summary = result["summary"]
     decision_screen = result["decision_screen"]
+    selection_ui = result["selection_ui"]
 
-    assert_condition(result["schema"] == "bot_controller_v1", "Bot Controller should expose v1 schema.")
+    assert_condition(result["schema"] == "bot_controller_v2", "Bot Controller should expose v2 schema.")
     assert_condition(
         result["safety_contract"]["executes_file_operations"] is False,
-        "Bot Controller v1 must not execute file operations.",
+        "Bot Controller v2 must not execute file operations.",
     )
     assert_condition(
         {"ok", "select", "cancel", "details"}.issubset(decision_screen),
@@ -1132,15 +1137,65 @@ def test_bot_controller_contract() -> dict[str, Any]:
         summary["candidate_count"] == result["candidate_review"]["summary"]["total"],
         "Bot Controller summary should match candidate review.",
     )
+    assert_condition(
+        selection_ui["schema"] == "bot_selection_ui_v2",
+        "Bot Controller should expose selection UI v2.",
+    )
+    assert_condition(
+        selection_ui["summary"]["needs_selection_count"] == summary["needs_selection_count"],
+        "Selection UI should match needs-selection summary.",
+    )
+    assert_condition(
+        selection_ui["decision_contract"]["executes_file_operations"] is False,
+        "Selection UI should be decision-report-only.",
+    )
     ok_result = execute_bot_decision("ok", bot_result=result)
     assert_condition(
         ok_result["executed"] is False,
-        "Bot Controller OK decision should not execute in v1.",
+        "Bot Controller OK decision should not execute in v2.",
     )
+    select_result = execute_bot_decision("select", bot_result=result)
+    assert_condition(
+        select_result["selection_ui"]["schema"] == "bot_selection_ui_v2",
+        "Select decision should return selection UI.",
+    )
+
+    selection_items = selection_ui["groups"]["needs_selection"]
+    if selection_items:
+        first_item = selection_items[0]
+        decision_report = build_selection_decision(
+            {first_item["selection_id"]: "keep"},
+            session=selection_ui,
+        )
+        assert_condition(
+            decision_report["schema"] == "bot_selection_decision_v2",
+            "Selection decision should expose v2 schema.",
+        )
+        assert_condition(
+            decision_report["summary"]["selected_count"] == 1,
+            "Selection decision should record selected items.",
+        )
+        assert_condition(
+            decision_report["safety_contract"]["executes_file_operations"] is False,
+            "Selection decision must not execute file operations.",
+        )
+
+    locked_items = selection_ui["groups"]["do_not_touch"]
+    if locked_items:
+        locked_item = locked_items[0]
+        blocked_report = build_selection_decision(
+            {locked_item["selection_id"]: "delete_candidate"},
+            session=selection_ui,
+        )
+        assert_condition(
+            blocked_report["summary"]["blocked_count"] == 1,
+            "Selection decision should block locked do-not-touch items.",
+        )
 
     return {
         "summary": summary,
         "decision_screen": decision_screen,
+        "selection_summary": selection_ui["summary"],
         "ok_result": ok_result,
     }
 
