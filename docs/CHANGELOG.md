@@ -2,6 +2,23 @@
 
 ## 2026-06-03
 
+### AI Bot Controller v1
+
+* **thay đổi** Thêm `tools/core/bot_controller.py` làm entrypoint bot tổng cho flow auto-check máy.
+* **thay đổi** Bot Controller gom Recommendation Queue, Guided Action context, Action Policy, Candidate Review, Dry-run Action Planner, Feed Readiness và latest reports thành một snapshot tổng.
+* **thay đổi** Màn quyết định hiện có 4 nhánh: `ok`, `select`, `cancel`, `details`.
+* **thay đổi** `ok` chỉ dành cho safe-only action đã có `can_execute_now`; snapshot hiện tại có `safe_to_execute_count=0` nên `ok` trả về `no_safe_actions` và không chạy cleanup.
+* **thay đổi** `select` trả danh sách item cần user chọn thủ công; `cancel` không làm gì; `details` chỉ trả summary/report.
+* **thay đổi** Safety contract của v1: `executes_file_operations=false`, `bot_autonomy=scan_and_plan_only_v1`, không đụng `ignore_forever`/`keep`.
+* **thay đổi** Main CLI expose `AI Bot Controller` ở mục 37; Natural Command route các lệnh như `ai bot`, `auto check`, `kiem tra may`, `bot tong`.
+* **thay đổi** Capability Registry có entry `bot_controller`; Feed Readiness đọc latest `bot_controller` report.
+* **thay đổi** Report Bot Controller mới nhất: `D:\tool\reports\bot_controller_20260603_210546.json`.
+* **thay đổi** Summary Bot Controller mới nhất: 2 visible recommendation, 5 total recommendation, 0 safe-to-execute, 25 needs selection, 1 do-not-touch, readiness ready.
+* **thay đổi** Tool Tester pass 37/37 tại `D:\tool\reports\tool_tester_20260603_210452.json`.
+* **thay đổi** Full System Tester pass 27/27 tại `D:\tool\reports\full_system_tester_20260603_210524.json`.
+* **thay đổi** Feed Readiness pass 9/9 tại `D:\tool\reports\feed_readiness_20260603_210545.json`.
+* **thay đổi** Mốc này vẫn chưa bật auto-delete/auto-move; đây là bot controller scan/plan/decision v1.
+
 ### Step 4 Follow-up Batch: Gate, Review, Planner, Bundle
 
 * **thay đổi** Triển khai đủ 4 bước tiếp theo sau Action Policy: Policy Enforcement Gate, Candidate Review Report, Dry-run Action Planner và Pre-feed Bundle.

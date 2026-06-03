@@ -25,6 +25,7 @@ from tools.core.action_policy import run_action_policy_manager
 from tools.core.action_planner import run_action_planner
 from tools.core.audit_center import run_audit_center
 from tools.core.behavior_tester import run_behavior_tester
+from tools.core.bot_controller import run_bot_controller
 from tools.core.candidate_review import run_candidate_review
 from tools.core.capability_registry import run_capability_registry
 from tools.core.config_manager import run_config_manager
@@ -85,6 +86,7 @@ def main():
 34. Candidate Review
 35. Dry-run Action Planner
 36. Pre-feed Bundle
+37. AI Bot Controller
 
 0. Thoat
 
@@ -205,6 +207,9 @@ def main():
 
         elif choice == "36":
             run_pre_feed_bundle()
+
+        elif choice == "37":
+            run_bot_controller()
 
         else:
             print("Lua chon khong hop le.")

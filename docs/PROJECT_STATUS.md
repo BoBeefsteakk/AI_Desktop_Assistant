@@ -2,7 +2,7 @@
 
 ## Giai đoạn hiện tại
 
-Giai đoạn 2 - Safety Hardening
+**thay đổi** Giai đoạn 5 - AI Decision Engine / Bot Controller v1 theo chế độ scan-and-plan, chưa execute file thật.
 
 ---
 
@@ -291,6 +291,36 @@ Kết quả:
 
 ---
 
+### AI Bot Controller v1
+
+**thay đổi** Đã thêm lớp bot tổng đầu tiên để user không phải nhớ 37 chức năng riêng lẻ.
+
+Chức năng:
+
+* **thay đổi** Thêm `tools/core/bot_controller.py`.
+* **thay đổi** Main CLI expose `AI Bot Controller` ở mục 37.
+* **thay đổi** Natural Command route các lệnh `ai bot`, `auto check`, `kiem tra may`, `tu dong check`, `bot tong`.
+* **thay đổi** Bot Controller gom Recommendation Queue, Guided Action context, Action Policy, Candidate Review, Dry-run Action Planner, Feed Readiness và latest reports.
+* **thay đổi** Màn quyết định chuẩn: `ok`, `select`, `cancel`, `details`.
+* **thay đổi** `ok` chỉ chạy khi có item `can_execute_now`; hiện tại chưa có item an toàn để chạy ngay nên `ok` không execute.
+* **thay đổi** `select` trả danh sách cần user chọn thủ công; `cancel` không làm gì; `details` chỉ xem report.
+* **thay đổi** Safety contract: `executes_file_operations=false`, `bot_autonomy=scan_and_plan_only_v1`, không đụng `ignore_forever`/`keep`.
+
+Kết quả mới nhất:
+
+* **thay đổi** Bot report: `D:\tool\reports\bot_controller_20260603_210546.json`.
+* **thay đổi** Bot summary: 2 visible recommendation, 5 total recommendation, 0 safe-to-execute, 25 needs selection, 1 do-not-touch.
+* **thay đổi** Tool Tester pass 37/37.
+* **thay đổi** Full System Tester pass 27/27.
+* **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail.
+
+Ý nghĩa:
+
+* **thay đổi** Đây là mốc đầu của app/bot tự động check máy: bot đã biết scan, gom vấn đề, phân loại, đưa lựa chọn.
+* **thay đổi** Chưa bật phần tự xóa/move; bước sau cần selection UI và execution adapter có undo/manifest rõ ràng.
+
+---
+
 ### WizTree Adapter
 
 **thay đổi** Đã tích hợp WizTree theo hướng read-only adapter.
@@ -341,7 +371,7 @@ Chức năng:
 
 Kết quả hiện tại:
 
-* **thay đổi** Capability count: 36
+* **thay đổi** Capability count: 37
 * Categories: automation, core, search, storage, system
 * Risk levels: safe, medium, dangerous
 
@@ -466,10 +496,10 @@ Kết quả mới nhất:
 * **thay đổi** Readiness status: ready.
 * **thay đổi** Checks: 9 pass, 0 warn, 0 fail.
 * **thay đổi** Không còn warning trong readiness snapshot mới nhất.
-* **thay đổi** Tool Tester pass 36/36.
+* **thay đổi** Tool Tester pass 37/37.
 * **thay đổi** Behavior Tester pass 18/18.
 * **thay đổi** Scenario Tester pass 6/6.
-* **thay đổi** Full System Tester pass 26/26.
+* **thay đổi** Full System Tester pass 27/27.
 
 ---
 
@@ -608,6 +638,7 @@ Process Monitor:
 * **thay đổi** Candidate Review
 * **thay đổi** Dry-run Action Planner
 * **thay đổi** Pre-feed Bundle
+* **thay đổi** AI Bot Controller
 
 ---
 
@@ -688,10 +719,11 @@ Process Monitor:
 * **thay đổi** Kiểm tra default queue loại test-tagged reports
 * **thay đổi** Kiểm tra Action Policy Contract và Feed Readiness check `action_policy`
 * **thay đổi** Kiểm tra Candidate Review, Dry-run Action Planner và Pre-feed Bundle contract
+* **thay đổi** Kiểm tra AI Bot Controller contract: decision screen, dry-run-only action plan và OK không execute file trong v1
 
 Kết quả hiện tại:
 
-Passed: 26
+Passed: 27
 Failed: 0
 
 ---

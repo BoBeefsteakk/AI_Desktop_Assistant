@@ -42,6 +42,7 @@ TOOLS_TO_TEST = [
     {"name": "Candidate Review", "module": "tools.core.candidate_review", "function": "run_candidate_review", "risk": "safe"},
     {"name": "Dry-run Action Planner", "module": "tools.core.action_planner", "function": "run_action_planner", "risk": "safe"},
     {"name": "Pre-feed Bundle", "module": "tools.core.pre_feed_bundle", "function": "run_pre_feed_bundle", "risk": "safe"},
+    {"name": "AI Bot Controller", "module": "tools.core.bot_controller", "function": "run_bot_controller", "risk": "safe"},
     {"name": "File Location Opener", "module": "tools.core.file_location_opener", "function": "open_file_location", "risk": "safe"},
 ]
 

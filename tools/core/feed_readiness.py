@@ -127,6 +127,7 @@ def build_feed_sources() -> dict[str, Any]:
         "candidate_review",
         "action_planner",
         "pre_feed_bundle",
+        "bot_controller",
     ]:
         latest = get_latest_report_by_tool(tool_name)
         latest_reports[tool_name] = latest

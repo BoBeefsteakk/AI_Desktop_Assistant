@@ -58,6 +58,7 @@ Bao gồm:
 * **thay đổi** candidate_review.py
 * **thay đổi** action_planner.py
 * **thay đổi** pre_feed_bundle.py
+* **thay đổi** bot_controller.py
 
 ---
 
@@ -111,7 +112,7 @@ Ví dụ:
 * file_indexer
 * natural_command
 
-**thay đổi** `natural_command.py` hiện là router v2:
+**thay đổi** `natural_command.py` hiện là router v3:
 
 * Chuẩn hóa lệnh có dấu/không dấu
 * Giữ `find <từ khóa>`/`tim <từ khóa>` cho search nhanh qua File Indexer
@@ -411,6 +412,36 @@ Dry-run Action Planner:
 
 ---
 
+## Bot Controller Layer
+
+**thay đổi** AI Bot Controller là lớp orchestrator nằm trên Advisor, Recommendation, Policy, Candidate Review và Action Planner.
+
+Nguồn dữ liệu:
+
+* **thay đổi** Recommendation Queue và Guided Action contexts.
+* **thay đổi** Action Policy health.
+* **thay đổi** Candidate Review.
+* **thay đổi** Dry-run Action Planner.
+* **thay đổi** Feed Readiness.
+* **thay đổi** Latest reports.
+
+Output:
+
+* **thay đổi** Report `bot_controller` với schema `bot_controller_v1`.
+* **thay đổi** Summary tổng: recommendation, candidate, policy, readiness, safe-to-execute, needs-selection, do-not-touch.
+* **thay đổi** Decision screen gồm `ok`, `select`, `cancel`, `details`.
+
+Nguyên tắc:
+
+* **thay đổi** Bot Controller v1 chỉ scan và lập kế hoạch.
+* **thay đổi** `executes_file_operations=false`.
+* **thay đổi** `ok` không chạy gì nếu không có item `can_execute_now`.
+* **thay đổi** `select` chỉ trả danh sách cần user chọn, chưa có UI chọn file thật.
+* **thay đổi** Không đụng policy `ignore_forever` hoặc `keep`.
+* **thay đổi** Không bypass confirmation/manifest/undo của tool thật.
+
+---
+
 ## Pre-feed Bundle Layer
 
 **thay đổi** Pre-feed Bundle đóng gói context sạch trước feed assistant.
@@ -478,6 +509,7 @@ Các lớp kiểm tra:
 * **thay đổi** Scenario Tester contract chạy fake-file sandbox và cleanup guard
 * **thay đổi** Action Policy Contract kiểm tra baseline policy, path/context matching và Step 3 coverage
 * **thay đổi** Candidate Review, Dry-run Action Planner và Pre-feed Bundle contract
+* **thay đổi** AI Bot Controller contract kiểm tra decision screen, dry-run action plan và OK không execute file trong v1
 
 ---
 
@@ -540,6 +572,7 @@ WizTree Adapter:
 * **thay đổi** Đọc Recommendation Queue thật.
 * **thay đổi** Đọc Action Policy và kiểm tra coverage cho Step 3 deferred items.
 * **thay đổi** Đọc latest Candidate Review, Action Planner và Pre-feed Bundle report nếu có.
+* **thay đổi** Đọc latest Bot Controller report nếu có.
 * **thay đổi** Kiểm tra latest Full System Tester report.
 * **thay đổi** Validate schema report gần đây.
 * **thay đổi** Liệt kê docs/config/report source nên feed.

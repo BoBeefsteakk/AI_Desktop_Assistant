@@ -18,6 +18,7 @@ from tools.core.action_policy import (
 )
 from tools.core.behavior_tester import make_sandbox, cleanup_sandbox, write_text
 from tools.core.action_planner import build_action_plan
+from tools.core.bot_controller import build_bot_controller_result, execute_bot_decision
 from tools.core.candidate_review import build_candidate_review
 from tools.core.capability_registry import (
     get_capabilities,
@@ -166,6 +167,7 @@ def test_main_menu_coverage() -> dict[str, Any]:
         "Candidate Review",
         "Dry-run Action Planner",
         "Pre-feed Bundle",
+        "AI Bot Controller",
     ]
     missing = [label for label in expected if label not in main_text]
 
@@ -1108,6 +1110,41 @@ def test_pre_feed_bundle_contract() -> dict[str, Any]:
     }
 
 
+def test_bot_controller_contract() -> dict[str, Any]:
+    result = build_bot_controller_result(include_items=False)
+    summary = result["summary"]
+    decision_screen = result["decision_screen"]
+
+    assert_condition(result["schema"] == "bot_controller_v1", "Bot Controller should expose v1 schema.")
+    assert_condition(
+        result["safety_contract"]["executes_file_operations"] is False,
+        "Bot Controller v1 must not execute file operations.",
+    )
+    assert_condition(
+        {"ok", "select", "cancel", "details"}.issubset(decision_screen),
+        "Bot Controller should expose simple user decisions.",
+    )
+    assert_condition(
+        result["action_plan"]["safety_contract"]["dry_run_only"] is True,
+        "Bot Controller should use dry-run action plan.",
+    )
+    assert_condition(
+        summary["candidate_count"] == result["candidate_review"]["summary"]["total"],
+        "Bot Controller summary should match candidate review.",
+    )
+    ok_result = execute_bot_decision("ok", bot_result=result)
+    assert_condition(
+        ok_result["executed"] is False,
+        "Bot Controller OK decision should not execute in v1.",
+    )
+
+    return {
+        "summary": summary,
+        "decision_screen": decision_screen,
+        "ok_result": ok_result,
+    }
+
+
 def test_feed_readiness_contract() -> dict[str, Any]:
     result = build_feed_readiness_result()
     summary = result["summary"]
@@ -1247,6 +1284,7 @@ FULL_SYSTEM_TESTS: list[tuple[str, Callable[[], dict[str, Any]]]] = [
     ("Candidate Review Contract", test_candidate_review_contract),
     ("Dry-run Action Planner Contract", test_action_planner_contract),
     ("Pre-feed Bundle Contract", test_pre_feed_bundle_contract),
+    ("AI Bot Controller Contract", test_bot_controller_contract),
     ("Feed Readiness Contract", test_feed_readiness_contract),
     ("Scenario Tester Contract", test_scenario_tester_contract),
     ("Dependency Health", test_dependency_health),

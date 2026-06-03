@@ -57,6 +57,7 @@ INTENT_ALIASES: list[tuple[str, list[str]]] = [
     ("candidate_review", ["candidate review", "review candidate", "xem ung vien", "review file", "kiem tra candidate"]),
     ("action_planner", ["action plan", "dry run plan", "planner", "ke hoach hanh dong", "lap ke hoach"]),
     ("pre_feed_bundle", ["pre feed bundle", "pre-feed bundle", "feed bundle", "dong goi feed", "goi feed"]),
+    ("bot_controller", ["bot controller", "ai bot", "auto check", "check may", "kiem tra may", "tu dong check", "bot tong"]),
 ]
 
 
