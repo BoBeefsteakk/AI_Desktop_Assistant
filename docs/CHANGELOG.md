@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-06-03
+
+### Step 4 Follow-up Batch: Gate, Review, Planner, Bundle
+
+* **thay đổi** Triển khai đủ 4 bước tiếp theo sau Action Policy: Policy Enforcement Gate, Candidate Review Report, Dry-run Action Planner và Pre-feed Bundle.
+* **thay đổi** Guided Action Runner giờ đọc `policy_gate`: `ignore_forever`/`keep` bị chặn, còn `manual_only`, `needs_backup`, `move_later`, `delete_candidate` cần token mạnh như `OPEN_MANUAL`, `OPEN_BACKUP`, `OPEN_MOVE_LATER`, `OPEN_DELETE_CANDIDATE`.
+* **thay đổi** Thêm `tools/core/candidate_review.py`; report mới `D:\tool\reports\candidate_review_20260603_200623.json` có 26 candidate, 26/26 được policy phủ, auto execute 0.
+* **thay đổi** Thêm `tools/core/action_planner.py`; report mới `D:\tool\reports\action_planner_20260603_200623.json` có 26 item, can execute now 0, delete candidate 0.
+* **thay đổi** Thêm `tools/core/pre_feed_bundle.py`; bundle mới `D:\tool\data\feed_bundles\pre_feed_bundle_20260603_200750.json`, report `D:\tool\reports\pre_feed_bundle_20260603_200750.json`.
+* **thay đổi** Main CLI expose thêm `Candidate Review` mục 34, `Dry-run Action Planner` mục 35, `Pre-feed Bundle` mục 36.
+* **thay đổi** Tool Tester pass 36/36; Full System Tester pass 26/26 tại `D:\tool\reports\full_system_tester_20260603_200729.json`.
+* **thay đổi** Feed Readiness cuối mốc: `D:\tool\reports\feed_readiness_20260603_200751.json`, ready, 9 pass, 0 warn, 0 fail.
+* **thay đổi** Vẫn chưa bật auto cleanup; toàn bộ mốc này chỉ gate/report/plan/bundle, không xóa/move file thật.
+
 ## 2026-06-02
 
 ### Step 4 Action Policy / User Decision Layer

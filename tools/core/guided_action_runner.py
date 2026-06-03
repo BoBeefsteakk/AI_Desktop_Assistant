@@ -5,6 +5,7 @@ import inspect
 from pathlib import Path
 from typing import Any
 
+from tools.core.action_policy import build_policy_gate
 from tools.core.assistant_logger import log_action
 from tools.core.capability_registry import get_capability_by_id
 from tools.core.recommendation_center import (
@@ -73,6 +74,7 @@ def build_action_context(recommendation: dict[str, Any]) -> dict[str, Any]:
         "capability": None,
         "target_requires_confirmation": None,
         "runner_requires_confirmation": True,
+        "policy_gate": None,
     }
 
     if not tool_id:
@@ -88,6 +90,12 @@ def build_action_context(recommendation: dict[str, Any]) -> dict[str, Any]:
 
     context["capability"] = capability
     context["target_requires_confirmation"] = target_requires_confirmation(capability)
+    policy_gate = build_policy_gate(recommendation, capability=capability)
+    context["policy_gate"] = policy_gate
+    if not policy_gate["can_open_target"]:
+        context["status"] = policy_gate["status"]
+        context["issues"].append(policy_gate["reason"])
+        return context
 
     if capability["id"] == RUNNER_TOOL_NAME:
         context["status"] = "not_executable"
@@ -158,11 +166,14 @@ def action_context_to_line(context: dict[str, Any], index: int) -> str:
     tool_name = capability.get("name") or recommendation.get("suggested_tool_name") or "-"
     risk = capability.get("risk_level") or recommendation.get("suggested_tool_risk") or "-"
     state = recommendation.get("workflow_state") or "pending"
+    policy_gate = context.get("policy_gate") or {}
+    policy = policy_gate.get("decision") or recommendation.get("action_policy_decision") or "-"
     return (
         f"{index:>2}. [{str(recommendation.get('severity')).upper()}] "
         f"{recommendation.get('title')} | State: {state} | "
         f"Tool: {tool_name} ({risk}) | Status: {context['status']}\n"
         f"    {recommendation.get('detail')}\n"
+        f"    Policy: {policy}\n"
         f"    ID: {recommendation.get('fingerprint')}"
     )
 
@@ -194,6 +205,18 @@ def print_action_context(context: dict[str, Any]) -> None:
     if context["issues"]:
         print(f"Issues: {context['issues']}")
 
+    policy_gate = context.get("policy_gate")
+    if policy_gate:
+        print("\nAction policy gate:")
+        print(f"- Status: {policy_gate['status']}")
+        print(f"- Decision: {policy_gate.get('decision') or '-'}")
+        print(f"- Can open target: {policy_gate['can_open_target']}")
+        print(f"- Strong confirmation: {policy_gate['requires_strong_confirmation']}")
+        print(f"- Required token: {policy_gate.get('confirmation_token') or '-'}")
+        print(f"- Reason: {policy_gate['reason']}")
+        for warning in policy_gate.get("warnings", []):
+            print(f"- Warning: {warning}")
+
     if not capability:
         return
 
@@ -221,8 +244,10 @@ def confirm_guided_action(context: dict[str, Any]) -> bool:
         "\nRunner chi mo tool duoc de xuat. "
         "Neu tool do co thao tac nguy hiem, tool that van se hoi confirmation rieng."
     )
-    answer = input(f"Nhap {OPEN_TOKEN} de mo tool, phim khac de huy: ").strip()
-    return answer == OPEN_TOKEN
+    policy_gate = context.get("policy_gate") or {}
+    token = policy_gate.get("confirmation_token") or OPEN_TOKEN
+    answer = input(f"Nhap {token} de mo tool, phim khac de huy: ").strip()
+    return answer == token
 
 
 def write_guided_action_report(
@@ -244,9 +269,11 @@ def write_guided_action_report(
             "fingerprint": recommendation.get("fingerprint"),
             "target_tool_id": capability.get("id"),
             "target_tool_name": capability.get("name"),
+            "policy_decision": (context.get("policy_gate") or {}).get("decision"),
         },
         results={
             "context_status": context["status"],
+            "policy_gate": context.get("policy_gate"),
             "execution": execution_result,
             "recommendation": recommendation,
             "capability": capability,
@@ -262,6 +289,8 @@ def write_guided_action_report(
             "target_risk": capability.get("risk_level"),
             "target_mutates_files": bool(capability.get("mutates_files")),
             "target_needs_confirmation": bool(capability.get("needs_confirmation")),
+            "policy_gate_status": (context.get("policy_gate") or {}).get("status"),
+            "policy_decision": (context.get("policy_gate") or {}).get("decision"),
             "undo_available": False,
         },
         undo_available=False,

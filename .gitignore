@@ -10,6 +10,7 @@ data/file_index.json
 data/recommendation_queue.jsonl
 data/action_policy.jsonl
 data/external_apps_health_state.json
+data/feed_bundles/
 data/wiztree_exports/
 external/
 AI_Desktop_Assistant/

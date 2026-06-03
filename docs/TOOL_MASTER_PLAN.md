@@ -8,13 +8,13 @@
 
 **thay đổi** Kết quả hiện tại:
 
-* **thay đổi** Main CLI đang expose 33 tool.
-* **thay đổi** Capability Registry valid 33/33, không thiếu entry so với Tool Tester.
-* **thay đổi** Tool Tester pass 33/33.
+* **thay đổi** Main CLI đang expose 36 tool.
+* **thay đổi** Capability Registry valid 36/36, không thiếu entry so với Tool Tester.
+* **thay đổi** Tool Tester pass 36/36.
 * **thay đổi** Behavior Tester pass 18/18.
 * **thay đổi** Scenario Tester pass 6/6.
-* **thay đổi** Full System Tester pass 23/23.
-* **thay đổi** Capability summary: 20 safe, 7 medium, 6 dangerous; 11 tool có thể thay đổi file; 12 tool cần confirmation; 9 tool dùng external app.
+* **thay đổi** Full System Tester pass 26/26.
+* **thay đổi** Capability summary: 23 safe, 7 medium, 6 dangerous; 11 tool có thể thay đổi file; 12 tool cần confirmation; 9 tool dùng external app.
 
 ## Luồng Tool Tổng Chuẩn
 
@@ -29,11 +29,13 @@
 7. **thay đổi** System Advisor v2 chỉ tạo recommendation, không tự cleanup, không xóa, không move.
 8. **thay đổi** Recommendation Center gom recommendation thành queue read-only để user review.
 9. **thay đổi** Action Policy Manager gắn quyết định keep/move/delete/manual/ignore theo path/context/recommendation trước khi mở action thật.
-10. **thay đổi** Guided Action Runner mở tool được đề xuất từ recommendation sau khi user xác nhận `OPEN`.
-11. **thay đổi** Scenario Tester tái hiện case rủi ro bằng file giả trước khi đụng dữ liệu thật.
-12. **thay đổi** Feed Assistant Readiness đóng gói pre-feed checklist/report, nhưng chưa feed/train thật.
-13. **thay đổi** Nếu user chọn chạy tool thật, tool đó vẫn tự xử lý confirmation, risk classification, safe executor, manifest/undo và report/log.
-14. **thay đổi** Audit Center, Report Manager và Undo Manager lưu lại lịch sử, report, manifest để kiểm tra sau.
+10. **thay đổi** Policy Enforcement Gate kiểm tra policy trước khi Guided Action Runner mở target tool.
+11. **thay đổi** Candidate Review và Dry-run Action Planner phân loại candidate thành keep/manual/backup/move sau, nhưng không execute.
+12. **thay đổi** Guided Action Runner mở tool được đề xuất từ recommendation sau khi user nhập token phù hợp.
+13. **thay đổi** Scenario Tester tái hiện case rủi ro bằng file giả trước khi đụng dữ liệu thật.
+14. **thay đổi** Feed Assistant Readiness và Pre-feed Bundle đóng gói pre-feed checklist/context, nhưng chưa feed/train thật.
+15. **thay đổi** Nếu user chọn chạy tool thật, tool đó vẫn tự xử lý confirmation, risk classification, safe executor, manifest/undo và report/log.
+16. **thay đổi** Audit Center, Report Manager và Undo Manager lưu lại lịch sử, report, manifest để kiểm tra sau.
 
 ## Nguyên Tắc Không Được Phá
 
@@ -72,6 +74,10 @@
 * **thay đổi** Recommendation Center
 * **thay đổi** Guided Action Runner
 * **thay đổi** Action Policy Manager
+* **thay đổi** Policy Enforcement Gate
+* **thay đổi** Candidate Review
+* **thay đổi** Dry-run Action Planner
+* **thay đổi** Pre-feed Bundle
 
 **thay đổi** External app layer:
 
@@ -100,6 +106,8 @@
 **thay đổi** Gap 8: Scenario Tester đã hoàn thành để test fake-file trước khi xử lý case thật như Riot Games/archive/bộ cài.
 
 **thay đổi** Gap 9: Action Policy Manager đã hoàn thành baseline Step 4; Step 3 deferred items được phủ policy 26/26, uncovered 0.
+
+**thay đổi** Gap 10: Policy Enforcement Gate, Candidate Review, Dry-run Action Planner và Pre-feed Bundle đã hoàn thành; hiện chưa có auto cleanup.
 
 ## Kế Hoạch Chuẩn Từ Bây Giờ
 
@@ -205,7 +213,7 @@
 * **thay đổi** Readiness report kiểm tra config, registry, external apps/drift, queue, latest full test, report schema, audit snapshot và docs feed source.
 * **thay đổi** Latest readiness: ready, 9 pass, 0 warn, 0 fail.
 * **thay đổi** Không còn warning trong readiness snapshot mới nhất.
-* **thay đổi** Tool Tester pass 33/33, Behavior Tester pass 18/18, Scenario Tester pass 6/6, Full System Tester pass 23/23.
+* **thay đổi** Tool Tester pass 36/36, Behavior Tester pass 18/18, Scenario Tester pass 6/6, Full System Tester pass 26/26.
 
 **thay đổi** Chưa train/feed thật ở giai đoạn này.
 
@@ -277,9 +285,26 @@
 * **thay đổi** Video lớn là `move_later`, chỉ move khi user chọn destination/chính sách giữ.
 * **thay đổi** Recommendation Center hiện hiển thị policy decision cho từng item.
 * **thay đổi** Feed Readiness có check `action_policy`: ready, 9 pass, 0 warn, 0 fail.
-* **thay đổi** Full System Tester có `Action Policy Contract`: pass 23/23.
+* **thay đổi** Tại thời điểm Action Policy baseline, Full System Tester có `Action Policy Contract`: pass 23/23.
 
 **thay đổi** Ý nghĩa: tới đây assistant vẫn chưa tự cleanup, nhưng đã có lớp ghi nhớ quyết định để tránh hỏi lại/đề xuất sai với nhóm file user đã nói là cần giữ.
+
+## Step 4 Follow-up Batch: Gate, Review, Planner, Bundle
+
+**thay đổi** Đã hoàn thành cả 4 bước user yêu cầu làm liền.
+
+**thay đổi** Kết quả:
+
+* **thay đổi** Guided Action Runner có `policy_gate`; `ignore_forever`/`keep` bị chặn.
+* **thay đổi** Các quyết định cần người dùng như `manual_only`, `needs_backup`, `move_later`, `delete_candidate` cần token mạnh trước khi mở tool thật.
+* **thay đổi** Candidate Review report: `D:\tool\reports\candidate_review_20260603_200623.json`, 26 candidate, policy coverage 26/26, auto execute 0.
+* **thay đổi** Dry-run Action Planner report: `D:\tool\reports\action_planner_20260603_200623.json`, 26 item, can execute now 0, delete candidate 0.
+* **thay đổi** Pre-feed Bundle: `D:\tool\data\feed_bundles\pre_feed_bundle_20260603_200750.json`.
+* **thay đổi** Pre-feed Bundle report: `D:\tool\reports\pre_feed_bundle_20260603_200750.json`.
+* **thay đổi** Feed Readiness cuối mốc: `D:\tool\reports\feed_readiness_20260603_200751.json`, ready, 9 pass, 0 warn, 0 fail.
+* **thay đổi** Full System Tester cuối mốc: `D:\tool\reports\full_system_tester_20260603_200729.json`, pass 26/26.
+
+**thay đổi** Ý nghĩa: tool tổng đã có đường đi an toàn từ recommendation -> policy gate -> candidate review -> dry-run plan -> bundle chuẩn bị feed. Chưa có thao tác tự xóa/move.
 
 ## Deletion Safety / UX v2
 

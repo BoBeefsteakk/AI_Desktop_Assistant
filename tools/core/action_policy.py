@@ -37,6 +37,12 @@ DECISION_PRIORITY = {
     "keep": 4,
     "delete_candidate": 5,
 }
+POLICY_CONFIRMATION_TOKENS = {
+    "manual_only": "OPEN_MANUAL",
+    "needs_backup": "OPEN_BACKUP",
+    "move_later": "OPEN_MOVE_LATER",
+    "delete_candidate": "OPEN_DELETE_CANDIDATE",
+}
 
 
 def now_iso() -> str:
@@ -252,6 +258,117 @@ def get_policy_for_recommendation(
         )
     )
     return matches[0] if matches else None
+
+
+def get_attached_or_lookup_recommendation_policy(
+    recommendation: dict[str, Any],
+    *,
+    policy_file: str | Path | None = None,
+) -> dict[str, Any] | None:
+    attached_decision = recommendation.get("action_policy_decision")
+    if attached_decision:
+        return {
+            "fingerprint": recommendation.get("action_policy_id"),
+            "decision": normalize_decision(attached_decision),
+            "reason": recommendation.get("action_policy_reason") or "Policy attached to recommendation.",
+            "target_type": "recommendation",
+            "target": recommendation.get("id"),
+            "source": "attached_recommendation",
+            "active": True,
+        }
+    return get_policy_for_recommendation(recommendation, policy_file=policy_file)
+
+
+def build_policy_gate(
+    recommendation: dict[str, Any],
+    *,
+    capability: dict[str, Any] | None = None,
+    policy_file: str | Path | None = None,
+) -> dict[str, Any]:
+    policy = get_attached_or_lookup_recommendation_policy(
+        recommendation,
+        policy_file=policy_file,
+    )
+    if policy is None:
+        return {
+            "status": "no_policy",
+            "can_open_target": True,
+            "requires_strong_confirmation": False,
+            "confirmation_token": "OPEN",
+            "decision": None,
+            "reason": "No action policy matched this recommendation.",
+            "policy": None,
+            "warnings": [],
+        }
+
+    decision = normalize_decision(policy.get("decision"))
+    target_tool_id = capability.get("id") if capability else recommendation.get("suggested_tool_id")
+    target_mutates_files = bool(capability.get("mutates_files")) if capability else False
+
+    if decision == "ignore_forever":
+        return {
+            "status": "policy_blocked",
+            "can_open_target": False,
+            "requires_strong_confirmation": False,
+            "confirmation_token": None,
+            "decision": decision,
+            "reason": policy.get("reason") or "Action policy blocks this recommendation.",
+            "policy": policy,
+            "warnings": [
+                "This recommendation is ignored by policy and should not open cleanup tools.",
+            ],
+            "target_tool_id": target_tool_id,
+            "target_mutates_files": target_mutates_files,
+        }
+
+    if decision == "keep":
+        return {
+            "status": "policy_kept",
+            "can_open_target": False,
+            "requires_strong_confirmation": False,
+            "confirmation_token": None,
+            "decision": decision,
+            "reason": policy.get("reason") or "Action policy says to keep this item.",
+            "policy": policy,
+            "warnings": [
+                "This recommendation is marked keep; no action should be opened from the runner.",
+            ],
+            "target_tool_id": target_tool_id,
+            "target_mutates_files": target_mutates_files,
+        }
+
+    if decision in POLICY_CONFIRMATION_TOKENS:
+        warnings = {
+            "manual_only": "Manual-only policy: review exact files before any cleanup.",
+            "needs_backup": "Backup policy: confirm backup/keep decision before any destructive action.",
+            "move_later": "Move-later policy: choose destination before moving files.",
+            "delete_candidate": "Delete-candidate policy: requires exact file selection and final confirmation.",
+        }
+        return {
+            "status": "policy_confirmation_required",
+            "can_open_target": True,
+            "requires_strong_confirmation": True,
+            "confirmation_token": POLICY_CONFIRMATION_TOKENS[decision],
+            "decision": decision,
+            "reason": policy.get("reason") or warnings[decision],
+            "policy": policy,
+            "warnings": [warnings[decision]],
+            "target_tool_id": target_tool_id,
+            "target_mutates_files": target_mutates_files,
+        }
+
+    return {
+        "status": "policy_allowed",
+        "can_open_target": True,
+        "requires_strong_confirmation": False,
+        "confirmation_token": "OPEN",
+        "decision": decision,
+        "reason": policy.get("reason") or "Action policy allows opening the suggested tool.",
+        "policy": policy,
+        "warnings": [],
+        "target_tool_id": target_tool_id,
+        "target_mutates_files": target_mutates_files,
+    }
 
 
 def get_latest_report_by_tool(tool_name: str, *, limit: int = 500) -> dict[str, Any] | None:

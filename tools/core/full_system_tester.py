@@ -17,10 +17,13 @@ from tools.core.action_policy import (
     validate_action_policies,
 )
 from tools.core.behavior_tester import make_sandbox, cleanup_sandbox, write_text
+from tools.core.action_planner import build_action_plan
+from tools.core.candidate_review import build_candidate_review
 from tools.core.capability_registry import (
     get_capabilities,
     validate_capability_registry,
 )
+from tools.core.pre_feed_bundle import build_pre_feed_bundle
 from tools.core.report_manager import (
     REPORT_SCHEMA_VERSION,
     create_report,
@@ -160,6 +163,9 @@ def test_main_menu_coverage() -> dict[str, Any]:
         "Feed Assistant Readiness",
         "Scenario Tester",
         "Action Policy Manager",
+        "Candidate Review",
+        "Dry-run Action Planner",
+        "Pre-feed Bundle",
     ]
     missing = [label for label in expected if label not in main_text]
 
@@ -734,6 +740,13 @@ def test_guided_action_runner_contract() -> dict[str, Any]:
             "detail": "No suggested tool should be blocked.",
             "severity": "info",
         })
+        manual_policy_context = build_action_context({
+            "id": "large-archive-files",
+            "title": "Large archive files",
+            "detail": "Policy gate should require strong confirmation.",
+            "severity": "warning",
+            "suggested_tool_id": "large_file_finder",
+        })
 
         assert_condition(context is not None, "Guided Action Runner should collect seeded recommendation.")
         assert_condition(context["status"] == "ready", "Guided action context should be ready.")
@@ -749,6 +762,22 @@ def test_guided_action_runner_contract() -> dict[str, Any]:
             no_tool_context["status"] == "no_suggested_tool",
             "Guided Action Runner should block recommendations without suggested tool.",
         )
+        assert_condition(
+            manual_policy_context["status"] == "ready",
+            "Manual-only policy should still allow opening the target with stronger confirmation.",
+        )
+        assert_condition(
+            manual_policy_context["policy_gate"]["decision"] == "manual_only",
+            "Guided Action Runner should attach action policy gate metadata.",
+        )
+        assert_condition(
+            manual_policy_context["policy_gate"]["requires_strong_confirmation"] is True,
+            "Manual-only policy should require strong confirmation.",
+        )
+        assert_condition(
+            manual_policy_context["policy_gate"]["confirmation_token"] == "OPEN_MANUAL",
+            "Manual-only policy should require OPEN_MANUAL token.",
+        )
 
         dry_run = execute_guided_action(context, dry_run=True)
         assert_condition(dry_run["status"] == "dry_run", "Guided dry-run should not execute target tool.")
@@ -760,6 +789,7 @@ def test_guided_action_runner_contract() -> dict[str, Any]:
             "target_tool": context["capability"]["id"],
             "dry_run_report": dry_run["report"],
             "no_tool_status": no_tool_context["status"],
+            "manual_policy_gate": manual_policy_context["policy_gate"],
         }
 
     finally:
@@ -942,6 +972,142 @@ def test_action_policy_contract() -> dict[str, Any]:
         cleanup_sandbox(sandbox)
 
 
+def write_fake_step3_report(path: Path) -> None:
+    data = {
+        "schema_version": REPORT_SCHEMA_VERSION,
+        "tool": "step3_deferred_storage_review",
+        "action": "contract_fixture",
+        "risk_level": "safe",
+        "status": "success",
+        "summary": {
+            "archive_count": 1,
+            "video_count": 1,
+            "undo_available": False,
+        },
+        "input": {},
+        "results": {
+            "archive_review": {
+                "items": [
+                    {
+                        "path": r"D:\Downloads\app\Premiere_Setup.rar",
+                        "name": "Premiere_Setup.rar",
+                        "extension": ".rar",
+                        "size": 1024,
+                        "size_text": "1.00 KB",
+                        "exists": True,
+                        "risk": "review_required",
+                        "risk_category": "review_unknown",
+                        "context": "downloads_app_installer_bundle",
+                        "decision": "manual_review_only",
+                    },
+                ],
+            },
+            "video_review": {
+                "items": [
+                    {
+                        "path": r"D:\Steam\steamapps\workshop\content\431960\clip.mp4",
+                        "name": "clip.mp4",
+                        "extension": ".mp4",
+                        "size": 2048,
+                        "size_text": "2.00 KB",
+                        "exists": True,
+                        "risk": "review_required",
+                        "risk_category": "review_unknown",
+                        "context": "app_managed_steam_workshop",
+                        "decision": "manual_review_only",
+                    },
+                ],
+            },
+        },
+        "manifest": None,
+        "undo_available": False,
+        "recommendations": [],
+        "tags": ["contract_test"],
+    }
+    write_text(path, json.dumps(data, ensure_ascii=False))
+
+
+def test_candidate_review_contract() -> dict[str, Any]:
+    sandbox = make_sandbox()
+    try:
+        source_report = sandbox / "step3_contract_report.json"
+        write_fake_step3_report(source_report)
+        review = build_candidate_review(source_report_path=source_report)
+        actions = {item["candidate_action"] for item in review["items"]}
+
+        assert_condition(review["status"] == "success", "Candidate Review should load fake Step 3 report.")
+        assert_condition(review["summary"]["total"] == 2, "Candidate Review should include archive and video item.")
+        assert_condition(review["summary"]["covered_by_policy_count"] == 2, "Candidate Review should cover both items by policy.")
+        assert_condition("manual_review" in actions, "Downloads app archive should need manual review.")
+        assert_condition("keep_ignore" in actions, "Steam Workshop media should be blocked/ignored by policy.")
+        assert_condition(
+            review["summary"]["auto_execute_count"] == 0,
+            "Candidate Review must not mark items auto executable.",
+        )
+
+        return {
+            "summary": review["summary"],
+            "actions": sorted(actions),
+        }
+    finally:
+        cleanup_sandbox(sandbox)
+
+
+def test_action_planner_contract() -> dict[str, Any]:
+    sandbox = make_sandbox()
+    try:
+        source_report = sandbox / "step3_contract_report.json"
+        write_fake_step3_report(source_report)
+        plan = build_action_plan(source_report_path=source_report)
+        actions = {item["plan_action"] for item in plan["items"]}
+
+        assert_condition(plan["status"] == "success", "Action Planner should build from fake Step 3 report.")
+        assert_condition(plan["summary"]["total"] == 2, "Action Planner should include two items.")
+        assert_condition(plan["summary"]["can_execute_now_count"] == 0, "Action Planner dry-run must not execute now.")
+        assert_condition(
+            plan["safety_contract"]["dry_run_only"] is True,
+            "Action Planner should expose dry-run safety contract.",
+        )
+        assert_condition(
+            {"manual_review", "keep"}.issubset(actions),
+            "Action Planner should include manual review and keep actions.",
+        )
+
+        return {
+            "summary": plan["summary"],
+            "actions": sorted(actions),
+        }
+    finally:
+        cleanup_sandbox(sandbox)
+
+
+def test_pre_feed_bundle_contract() -> dict[str, Any]:
+    bundle = build_pre_feed_bundle(include_doc_content=False)
+
+    assert_condition(bundle["schema"] == "pre_feed_bundle_v1", "Pre-feed Bundle should expose v1 schema.")
+    assert_condition(bundle["safety_contract"]["read_only"] is True, "Pre-feed Bundle should be read-only.")
+    assert_condition(bundle["safety_contract"]["no_user_file_contents"] is True, "Pre-feed Bundle should avoid user file contents.")
+    assert_condition(
+        all("content" not in item for item in bundle["docs"]),
+        "Pre-feed Bundle contract test should omit doc content when requested.",
+    )
+    assert_condition(
+        bundle["capability_registry"]["validation"]["status"] == "valid",
+        "Pre-feed Bundle should include valid Capability Registry snapshot.",
+    )
+    assert_condition(
+        bundle["action_plan"]["summary"]["can_execute_now_count"] == 0,
+        "Pre-feed Bundle action plan should not enable execution.",
+    )
+
+    return {
+        "doc_count": len(bundle["docs"]),
+        "queue_summary": bundle["recommendation_queue"]["summary"],
+        "policy_count": bundle["action_policy"]["summary"]["total"],
+        "readiness": bundle["feed_readiness"]["summary"],
+    }
+
+
 def test_feed_readiness_contract() -> dict[str, Any]:
     result = build_feed_readiness_result()
     summary = result["summary"]
@@ -1078,6 +1244,9 @@ FULL_SYSTEM_TESTS: list[tuple[str, Callable[[], dict[str, Any]]]] = [
     ("Guided Action Runner Contract", test_guided_action_runner_contract),
     ("Natural Command v3 Queue Contract", test_natural_command_v3_queue_contract),
     ("Action Policy Contract", test_action_policy_contract),
+    ("Candidate Review Contract", test_candidate_review_contract),
+    ("Dry-run Action Planner Contract", test_action_planner_contract),
+    ("Pre-feed Bundle Contract", test_pre_feed_bundle_contract),
     ("Feed Readiness Contract", test_feed_readiness_contract),
     ("Scenario Tester Contract", test_scenario_tester_contract),
     ("Dependency Health", test_dependency_health),

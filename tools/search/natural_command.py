@@ -54,6 +54,9 @@ INTENT_ALIASES: list[tuple[str, list[str]]] = [
     ("feed_readiness", ["feed readiness", "feed assistant", "assistant readiness", "san sang feed", "kiem tra feed"]),
     ("scenario_tester", ["scenario test", "sandbox test", "test gia", "fake file test", "test file gia", "test tinh huong"]),
     ("action_policy", ["action policy", "policy", "chinh sach", "chinh sach xu ly", "quyet dinh file", "decision layer"]),
+    ("candidate_review", ["candidate review", "review candidate", "xem ung vien", "review file", "kiem tra candidate"]),
+    ("action_planner", ["action plan", "dry run plan", "planner", "ke hoach hanh dong", "lap ke hoach"]),
+    ("pre_feed_bundle", ["pre feed bundle", "pre-feed bundle", "feed bundle", "dong goi feed", "goi feed"]),
 ]
 
 

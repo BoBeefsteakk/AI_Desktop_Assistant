@@ -46,6 +46,10 @@ Active workspace hiện tại là `D:\tool`. Snapshot cũ đã được chuyển
 - **thay đổi** Recommendation Center
 - **thay đổi** Guided Action Runner: mở tool từ recommendation với cổng xác nhận risk, không bypass confirmation của tool thật
 - **thay đổi** Action Policy Manager: lưu quyết định keep/move/delete/manual/ignore theo path/context/recommendation trước khi automation đụng file thật
+- **thay đổi** Policy Enforcement Gate: Guided Action Runner chặn `ignore_forever` và bắt token mạnh cho `manual_only`/`needs_backup`/`move_later`/`delete_candidate`
+- **thay đổi** Candidate Review: review deferred archive/video với policy coverage trước khi lập plan
+- **thay đổi** Dry-run Action Planner: lập kế hoạch giữ/review/backup/move sau, không execute cleanup
+- **thay đổi** Pre-feed Bundle: đóng gói docs/report summary/policy/queue/readiness thành bundle local để chuẩn bị feed assistant
 - **thay đổi** Feed Assistant Readiness
 - **thay đổi** Scenario Tester: chạy fake-file sandbox cho Downloads, media, game data, archive, temp/junk và manifest restore
 
@@ -80,10 +84,10 @@ Storage Tools	Done
 Automation Tools	Done
 Search Tools	Done
 Core Utilities	Done
-Tool Tester	Passed 33/33
+Tool Tester	Passed 36/36
 Scenario Tester	Passed 6/6
 Behavior Tester	Passed 18/18
-Full System Tester	Passed 23/23
+Full System Tester	Passed 26/26
 WizTree Adapter	Done
 External Apps Integration	Done
 External App Drift Detection	Done
@@ -97,6 +101,10 @@ Scenario Tester	Done
 Recommendation Queue Review	Done
 Pending Storage Review	Done
 Action Policy Manager	Done
+Policy Enforcement Gate	Done
+Candidate Review	Done
+Dry-run Action Planner	Done
+Pre-feed Bundle	Done
 Refactor Tools Folder	Done
 Config System	Done
 Audit System	Basic Done

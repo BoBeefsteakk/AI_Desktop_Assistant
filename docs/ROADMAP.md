@@ -54,6 +54,10 @@ Hoàn thành
 * **thay đổi** Review Recommendation Queue thật và scan storage pending bằng read-only report
 * **thay đổi** Scenario Tester fake-file sandbox cho các case xóa/move dễ gây nhầm
 * **thay đổi** Action Policy Manager để ghi nhớ quyết định keep/move/delete/manual/ignore theo path/context/recommendation
+* **thay đổi** Policy Enforcement Gate trong Guided Action Runner
+* **thay đổi** Candidate Review Report cho deferred archive/video
+* **thay đổi** Dry-run Action Planner trước khi chạy thật
+* **thay đổi** Pre-feed Bundle để đóng gói context sạch trước feed assistant
 
 Cần rà soát tiếp:
 
@@ -137,7 +141,8 @@ Một lệnh test tổng hợp trước khi refactor lớn hoặc feed assistant
 * **thay đổi** Scenario Tester Contract test chạy fake-file sandbox
 * **thay đổi** Default queue excludes test-tagged reports
 * **thay đổi** Action Policy Contract test
-* Full System Tester hiện pass 23/23
+* **thay đổi** Candidate Review, Dry-run Action Planner và Pre-feed Bundle Contract test
+* Full System Tester hiện pass 26/26
 
 ---
 
@@ -150,7 +155,7 @@ Assistant có thể:
 * Phân tích file
 * Đề xuất dọn dẹp
 * **thay đổi** Ghi nhớ chính sách user trước khi đề xuất/xử lý
-* **thay đổi** Chưa tự động xử lý SAFE_DELETE ở mốc hiện tại; cần policy + confirm rõ trước khi mở rộng
+* **thay đổi** Chưa tự động xử lý SAFE_DELETE ở mốc hiện tại; cần policy gate + candidate review + dry-run plan + confirm rõ trước khi mở rộng
 
 ---
 

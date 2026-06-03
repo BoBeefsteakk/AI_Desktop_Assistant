@@ -55,6 +55,9 @@ Bao gồm:
 * **thay đổi** full_system_tester.py
 * **thay đổi** recommendation_center.py
 * **thay đổi** scenario_tester.py
+* **thay đổi** candidate_review.py
+* **thay đổi** action_planner.py
+* **thay đổi** pre_feed_bundle.py
 
 ---
 
@@ -297,6 +300,21 @@ Nguyên tắc:
 
 ---
 
+## Policy Enforcement Gate
+
+**thay đổi** Guided Action Runner đọc `policy_gate` trước khi mở target tool.
+
+Nguyên tắc:
+
+* **thay đổi** `ignore_forever` và `keep` chặn mở action tool từ recommendation.
+* **thay đổi** `manual_only` cần token `OPEN_MANUAL`.
+* **thay đổi** `needs_backup` cần token `OPEN_BACKUP`.
+* **thay đổi** `move_later` cần token `OPEN_MOVE_LATER`.
+* **thay đổi** `delete_candidate` cần token `OPEN_DELETE_CANDIDATE`.
+* **thay đổi** Dry-run vẫn không execute target tool.
+
+---
+
 ## Advisor Layer
 
 **thay đổi** System Advisor v2 là lớp phân tích read-only trước AI Decision Engine.
@@ -373,6 +391,48 @@ Nguyên tắc:
 * **thay đổi** Target tool vẫn giữ confirmation/safety/manifest/report riêng
 * **thay đổi** Recommendation không tự thành `handled`; user phải xác nhận sau
 
+---
+
+## Candidate Review / Action Planner Layer
+
+**thay đổi** Candidate Review và Dry-run Action Planner nằm giữa Action Policy và action thật.
+
+Candidate Review:
+
+* **thay đổi** Đọc Step 3 deferred storage report.
+* **thay đổi** Phủ Action Policy lên từng archive/video candidate.
+* **thay đổi** Xuất report read-only, không xóa/move file.
+
+Dry-run Action Planner:
+
+* **thay đổi** Chuyển candidate thành kế hoạch keep/manual_review/backup_first/move_later/delete_candidate.
+* **thay đổi** `can_execute_now` mặc định là false.
+* **thay đổi** Không bật auto delete/move; chỉ tạo plan để user review.
+
+---
+
+## Pre-feed Bundle Layer
+
+**thay đổi** Pre-feed Bundle đóng gói context sạch trước feed assistant.
+
+Nguồn bundle:
+
+* **thay đổi** Docs chính.
+* **thay đổi** Capability Registry summary/validation.
+* **thay đổi** Recommendation Queue.
+* **thay đổi** Action Policy health.
+* **thay đổi** Candidate Review summary.
+* **thay đổi** Dry-run Action Planner summary.
+* **thay đổi** Feed Readiness checks.
+* **thay đổi** Latest report summaries.
+
+Nguyên tắc:
+
+* **thay đổi** Không đưa raw backups.
+* **thay đổi** Không đưa raw logs.
+* **thay đổi** Không đọc nội dung file user.
+* **thay đổi** Bundle nằm trong `data/feed_bundles/` và không commit vào git.
+
 ## Undo Layer
 
 **thay đổi** Undo hiện dựa trên manifest sinh ra khi tool move file.
@@ -417,6 +477,7 @@ Các lớp kiểm tra:
 * **thay đổi** Default recommendation queue không lấy test-tagged reports
 * **thay đổi** Scenario Tester contract chạy fake-file sandbox và cleanup guard
 * **thay đổi** Action Policy Contract kiểm tra baseline policy, path/context matching và Step 3 coverage
+* **thay đổi** Candidate Review, Dry-run Action Planner và Pre-feed Bundle contract
 
 ---
 
@@ -478,6 +539,7 @@ WizTree Adapter:
 * **thay đổi** Đọc External Apps Health + drift baseline.
 * **thay đổi** Đọc Recommendation Queue thật.
 * **thay đổi** Đọc Action Policy và kiểm tra coverage cho Step 3 deferred items.
+* **thay đổi** Đọc latest Candidate Review, Action Planner và Pre-feed Bundle report nếu có.
 * **thay đổi** Kiểm tra latest Full System Tester report.
 * **thay đổi** Validate schema report gần đây.
 * **thay đổi** Liệt kê docs/config/report source nên feed.

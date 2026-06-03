@@ -39,6 +39,9 @@ TOOLS_TO_TEST = [
     {"name": "Feed Assistant Readiness", "module": "tools.core.feed_readiness", "function": "run_feed_readiness", "risk": "safe"},
     {"name": "Scenario Tester", "module": "tools.core.scenario_tester", "function": "run_scenario_tester", "risk": "safe"},
     {"name": "Action Policy Manager", "module": "tools.core.action_policy", "function": "run_action_policy_manager", "risk": "safe"},
+    {"name": "Candidate Review", "module": "tools.core.candidate_review", "function": "run_candidate_review", "risk": "safe"},
+    {"name": "Dry-run Action Planner", "module": "tools.core.action_planner", "function": "run_action_planner", "risk": "safe"},
+    {"name": "Pre-feed Bundle", "module": "tools.core.pre_feed_bundle", "function": "run_pre_feed_bundle", "risk": "safe"},
     {"name": "File Location Opener", "module": "tools.core.file_location_opener", "function": "open_file_location", "risk": "safe"},
 ]
 

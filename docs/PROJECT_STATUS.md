@@ -266,7 +266,28 @@ Kết quả:
 * **thay đổi** Step 3 coverage: 26/26 item deferred đã có policy phủ, uncovered 0.
 * **thay đổi** Action Policy report: `D:\tool\reports\action_policy_20260602_202932.json`.
 * **thay đổi** Feed Readiness mới nhất: ready, 9 pass, 0 warn, 0 fail.
-* **thay đổi** Tool Tester pass 33/33; Full System Tester pass 23/23.
+* **thay đổi** Tại thời điểm Action Policy baseline: Tool Tester pass 33/33; Full System Tester pass 23/23.
+
+---
+
+### Step 4 Follow-up Batch: Gate, Review, Planner, Bundle
+
+**thay đổi** Đã hoàn thành cả 4 bước tiếp theo sau Action Policy.
+
+Kết quả:
+
+* **thay đổi** Policy Enforcement Gate đã được móc vào Guided Action Runner.
+* **thay đổi** `ignore_forever` và `keep` bị chặn trước khi mở cleanup/action tool.
+* **thay đổi** `manual_only`, `needs_backup`, `move_later`, `delete_candidate` yêu cầu token mạnh tương ứng: `OPEN_MANUAL`, `OPEN_BACKUP`, `OPEN_MOVE_LATER`, `OPEN_DELETE_CANDIDATE`.
+* **thay đổi** Candidate Review report: `D:\tool\reports\candidate_review_20260603_200623.json`.
+* **thay đổi** Candidate Review thấy 26 item, 26/26 được policy phủ, auto execute 0.
+* **thay đổi** Dry-run Action Planner report: `D:\tool\reports\action_planner_20260603_200623.json`.
+* **thay đổi** Action Planner có 26 item, can execute now 0, delete candidate 0.
+* **thay đổi** Pre-feed Bundle: `D:\tool\data\feed_bundles\pre_feed_bundle_20260603_200750.json`.
+* **thay đổi** Pre-feed Bundle report: `D:\tool\reports\pre_feed_bundle_20260603_200750.json`.
+* **thay đổi** Feed Readiness cuối mốc: `D:\tool\reports\feed_readiness_20260603_200751.json`, ready, 9 pass, 0 warn, 0 fail.
+* **thay đổi** Tool Tester pass 36/36; Full System Tester pass 26/26.
+* **thay đổi** Vẫn chưa có auto cleanup; đây là mốc gate/report/plan/bundle.
 
 ---
 
@@ -320,7 +341,7 @@ Chức năng:
 
 Kết quả hiện tại:
 
-* **thay đổi** Capability count: 33
+* **thay đổi** Capability count: 36
 * Categories: automation, core, search, storage, system
 * Risk levels: safe, medium, dangerous
 
@@ -445,10 +466,10 @@ Kết quả mới nhất:
 * **thay đổi** Readiness status: ready.
 * **thay đổi** Checks: 9 pass, 0 warn, 0 fail.
 * **thay đổi** Không còn warning trong readiness snapshot mới nhất.
-* **thay đổi** Tool Tester pass 33/33.
+* **thay đổi** Tool Tester pass 36/36.
 * **thay đổi** Behavior Tester pass 18/18.
 * **thay đổi** Scenario Tester pass 6/6.
-* **thay đổi** Full System Tester pass 23/23.
+* **thay đổi** Full System Tester pass 26/26.
 
 ---
 
@@ -584,6 +605,9 @@ Process Monitor:
 * **thay đổi** Guided Action Runner
 * **thay đổi** Scenario Tester
 * **thay đổi** Action Policy Manager
+* **thay đổi** Candidate Review
+* **thay đổi** Dry-run Action Planner
+* **thay đổi** Pre-feed Bundle
 
 ---
 
@@ -663,10 +687,11 @@ Process Monitor:
 * **thay đổi** Kiểm tra Scenario Tester contract bằng sandbox fake-file và cleanup guard
 * **thay đổi** Kiểm tra default queue loại test-tagged reports
 * **thay đổi** Kiểm tra Action Policy Contract và Feed Readiness check `action_policy`
+* **thay đổi** Kiểm tra Candidate Review, Dry-run Action Planner và Pre-feed Bundle contract
 
 Kết quả hiện tại:
 
-Passed: 23
+Passed: 26
 Failed: 0
 
 ---
@@ -733,6 +758,10 @@ Lý do:
 * **thay đổi** Feed Assistant Readiness
 * **thay đổi** Scenario Tester fake-file sandbox
 * **thay đổi** Action Policy Manager
+* **thay đổi** Policy Enforcement Gate
+* **thay đổi** Candidate Review
+* **thay đổi** Dry-run Action Planner
+* **thay đổi** Pre-feed Bundle
 
 Cần làm tiếp để ổn định tool tổng:
 
