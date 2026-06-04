@@ -59,6 +59,7 @@ Bao gồm:
 * **thay đổi** action_planner.py
 * **thay đổi** pre_feed_bundle.py
 * **thay đổi** bot_controller.py
+* **thay đổi** execution_adapter.py
 
 ---
 
@@ -446,6 +447,33 @@ Nguyên tắc:
 
 ---
 
+## Execution Adapter Layer
+
+**thay đổi** Execution Adapter là lớp kiểm soát sau Bot Controller, dùng để đọc Selection Decision Report trước khi có bất kỳ action thật nào.
+
+Nguồn dữ liệu:
+
+* **thay đổi** Report `bot_controller` action `export_selection_decision`.
+* **thay đổi** Schema input bắt buộc: `bot_selection_decision_v2`.
+* **thay đổi** Capability Registry metadata cho tool `execution_adapter`.
+
+Output:
+
+* **thay đổi** Report `execution_adapter` với schema `execution_adapter_v1`.
+* **thay đổi** Summary record-only, blocked, invalid, missing path và trạng thái execution.
+* **thay đổi** Dry-run report và apply report đều ghi rõ `file_operations_executed=false` ở v1.
+
+Nguyên tắc:
+
+* **thay đổi** `dry_run` chỉ preview, không cần token.
+* **thay đổi** `apply` cần token `EXECUTE_SELECTION_V1`.
+* **thay đổi** `keep`, `manual_review`, `skip` chỉ được ghi nhận record-only.
+* **thay đổi** `needs_backup`, `move_later`, `delete_candidate` bị blocked ở bản v1.
+* **thay đổi** Chưa sinh manifest/undo mới vì chưa bật file operation thật.
+* **thay đổi** File Operation Adapter sau này phải nằm dưới lớp này và phải có sandbox test, destination, manifest restore, Safe Executor và final confirmation riêng.
+
+---
+
 ## Pre-feed Bundle Layer
 
 **thay đổi** Pre-feed Bundle đóng gói context sạch trước feed assistant.
@@ -514,6 +542,7 @@ Các lớp kiểm tra:
 * **thay đổi** Action Policy Contract kiểm tra baseline policy, path/context matching và Step 3 coverage
 * **thay đổi** Candidate Review, Dry-run Action Planner và Pre-feed Bundle contract
 * **thay đổi** AI Bot Controller contract kiểm tra decision screen, Selection UI v2, Selection Decision v2, locked item bị block và OK không execute file trong v2
+* **thay đổi** Execution Adapter contract kiểm tra dry-run/apply record-only, block `delete_candidate` và không xóa file sandbox
 
 ---
 
@@ -577,6 +606,7 @@ WizTree Adapter:
 * **thay đổi** Đọc Action Policy và kiểm tra coverage cho Step 3 deferred items.
 * **thay đổi** Đọc latest Candidate Review, Action Planner và Pre-feed Bundle report nếu có.
 * **thay đổi** Đọc latest Bot Controller report nếu có.
+* **thay đổi** Đọc latest Execution Adapter report nếu có.
 * **thay đổi** Kiểm tra latest Full System Tester report.
 * **thay đổi** Validate schema report gần đây.
 * **thay đổi** Liệt kê docs/config/report source nên feed.

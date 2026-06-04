@@ -29,6 +29,7 @@ from tools.core.bot_controller import run_bot_controller
 from tools.core.candidate_review import run_candidate_review
 from tools.core.capability_registry import run_capability_registry
 from tools.core.config_manager import run_config_manager
+from tools.core.execution_adapter import run_execution_adapter
 from tools.core.external_apps import run_external_apps_manager
 from tools.core.feed_readiness import run_feed_readiness
 from tools.core.full_system_tester import run_full_system_tester
@@ -87,6 +88,7 @@ def main():
 35. Dry-run Action Planner
 36. Pre-feed Bundle
 37. AI Bot Controller
+38. Execution Adapter
 
 0. Thoat
 
@@ -210,6 +212,9 @@ def main():
 
         elif choice == "37":
             run_bot_controller()
+
+        elif choice == "38":
+            run_execution_adapter()
 
         else:
             print("Lua chon khong hop le.")

@@ -52,6 +52,10 @@ from tools.core.external_apps import (
     build_external_apps_health_state,
     get_external_apps_status,
 )
+from tools.core.execution_adapter import (
+    FINAL_CONFIRM_TOKEN,
+    build_execution_adapter_result,
+)
 from tools.core.feed_readiness import build_feed_readiness_result
 from tools.core.risk_classifier import PROTECTED, REVIEW_REQUIRED, SAFE_DELETE, classify_file_risk
 from tools.core.scenario_tester import run_sandbox_scenarios
@@ -172,6 +176,7 @@ def test_main_menu_coverage() -> dict[str, Any]:
         "Dry-run Action Planner",
         "Pre-feed Bundle",
         "AI Bot Controller",
+        "Execution Adapter",
     ]
     missing = [label for label in expected if label not in main_text]
 
@@ -1200,6 +1205,138 @@ def test_bot_controller_contract() -> dict[str, Any]:
     }
 
 
+def write_fake_selection_decision_report(path: Path, target_file: Path) -> None:
+    data = {
+        "schema_version": REPORT_SCHEMA_VERSION,
+        "tool": "bot_controller",
+        "action": "export_selection_decision",
+        "risk_level": "safe",
+        "status": "success",
+        "summary": {
+            "selected_count": 2,
+            "blocked_count": 0,
+            "invalid_count": 0,
+            "undo_available": False,
+        },
+        "input": {},
+        "results": {
+            "schema": "bot_selection_decision_v2",
+            "status": "ready",
+            "summary": {
+                "input_decision_count": 2,
+                "selected_count": 2,
+                "skipped_count": 0,
+                "blocked_count": 0,
+                "invalid_count": 0,
+                "unselected_count": 0,
+                "by_decision": {
+                    "keep": 1,
+                    "delete_candidate": 1,
+                },
+                "execution_enabled": False,
+                "undo_available": False,
+            },
+            "selected": [
+                {
+                    "selection_id": "M001",
+                    "path": str(target_file),
+                    "name": target_file.name,
+                    "size_text": "1.00 KB",
+                    "selection_group": "needs_selection",
+                    "policy_decision": "manual_only",
+                    "plan_action": "manual_review",
+                    "decision": "keep",
+                    "execution_enabled": False,
+                },
+                {
+                    "selection_id": "M002",
+                    "path": str(target_file),
+                    "name": target_file.name,
+                    "size_text": "1.00 KB",
+                    "selection_group": "needs_selection",
+                    "policy_decision": "manual_only",
+                    "plan_action": "manual_review",
+                    "decision": "delete_candidate",
+                    "execution_enabled": False,
+                },
+            ],
+            "skipped": [],
+            "blocked": [],
+            "invalid": [],
+            "safety_contract": {
+                "decision_report_only": True,
+                "executes_file_operations": False,
+                "requires_execution_adapter": True,
+                "delete_candidate_is_not_delete": True,
+            },
+        },
+        "manifest": None,
+        "undo_available": False,
+        "recommendations": [],
+        "tags": ["contract_test"],
+    }
+    write_text(path, json.dumps(data, ensure_ascii=False))
+
+
+def test_execution_adapter_contract() -> dict[str, Any]:
+    sandbox = make_sandbox()
+    try:
+        target_file = sandbox / "execution_adapter" / "keep_me.tmp"
+        report_path = sandbox / "selection_decision_report.json"
+        write_text(target_file, "adapter contract")
+        write_fake_selection_decision_report(report_path, target_file)
+
+        dry_run = build_execution_adapter_result(source_report_path=report_path, mode="dry_run")
+        assert_condition(dry_run["schema"] == "execution_adapter_v1", "Execution Adapter should expose v1 schema.")
+        assert_condition(dry_run["status"] == "dry_run", "Execution Adapter dry-run should not require token.")
+        assert_condition(
+            dry_run["summary"]["file_operations_executed"] is False,
+            "Execution Adapter v1 must not execute file operations.",
+        )
+        assert_condition(
+            dry_run["summary"]["recordable_noop_count"] == 1,
+            "Execution Adapter should record keep/manual decisions as no-op capable.",
+        )
+        assert_condition(
+            dry_run["summary"]["blocked_count"] == 1,
+            "Execution Adapter should block delete_candidate in v1.",
+        )
+
+        no_token = build_execution_adapter_result(source_report_path=report_path, mode="apply")
+        assert_condition(
+            no_token["status"] == "requires_final_confirmation",
+            "Execution Adapter apply should require final token.",
+        )
+
+        applied = build_execution_adapter_result(
+            source_report_path=report_path,
+            mode="apply",
+            final_token=FINAL_CONFIRM_TOKEN,
+        )
+        assert_condition(
+            applied["status"] == "completed_with_blocks",
+            "Execution Adapter should apply record-only steps while keeping file operations blocked.",
+        )
+        assert_condition(
+            applied["summary"]["adapter_executed"] is True,
+            "Execution Adapter should mark adapter execution after valid final token.",
+        )
+        assert_condition(
+            applied["summary"]["file_operations_executed"] is False,
+            "Execution Adapter must still avoid file operations after token in v1.",
+        )
+        assert_condition(target_file.exists(), "Execution Adapter v1 must not delete the target file.")
+
+        return {
+            "dry_run_summary": dry_run["summary"],
+            "no_token_status": no_token["status"],
+            "applied_summary": applied["summary"],
+            "target_exists_after_apply": target_file.exists(),
+        }
+    finally:
+        cleanup_sandbox(sandbox)
+
+
 def test_feed_readiness_contract() -> dict[str, Any]:
     result = build_feed_readiness_result()
     summary = result["summary"]
@@ -1340,6 +1477,7 @@ FULL_SYSTEM_TESTS: list[tuple[str, Callable[[], dict[str, Any]]]] = [
     ("Dry-run Action Planner Contract", test_action_planner_contract),
     ("Pre-feed Bundle Contract", test_pre_feed_bundle_contract),
     ("AI Bot Controller Contract", test_bot_controller_contract),
+    ("Execution Adapter Contract", test_execution_adapter_contract),
     ("Feed Readiness Contract", test_feed_readiness_contract),
     ("Scenario Tester Contract", test_scenario_tester_contract),
     ("Dependency Health", test_dependency_health),

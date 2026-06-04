@@ -2,7 +2,7 @@
 
 ## Giai đoạn hiện tại
 
-**thay đổi** Giai đoạn 5 - AI Decision Engine / Bot Controller v2 theo chế độ scan/plan/selection-report, chưa execute file thật.
+**thay đổi** Giai đoạn 5 - AI Decision Engine / Execution Adapter v1 theo chế độ guarded record-only, chưa execute xóa/move/backup file thật.
 
 ---
 
@@ -310,8 +310,8 @@ Kết quả mới nhất:
 
 * **thay đổi** Bot report: `D:\tool\reports\bot_controller_20260603_210546.json`.
 * **thay đổi** Bot summary: 2 visible recommendation, 5 total recommendation, 0 safe-to-execute, 25 needs selection, 1 do-not-touch.
-* **thay đổi** Tool Tester pass 37/37.
-* **thay đổi** Full System Tester pass 27/27.
+* **thay đổi** Tool Tester pass 37/37 tại mốc Bot Controller v1/v2.
+* **thay đổi** Full System Tester pass 27/27 tại mốc Bot Controller v1/v2.
 * **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail.
 
 Ý nghĩa:
@@ -341,14 +341,45 @@ Kết quả mới nhất:
 * **thay đổi** Bot Controller report: `D:\tool\reports\bot_controller_20260603_212757.json`.
 * **thay đổi** Selection summary: 0 safe-to-execute, 25 selectable needs-selection, 1 locked/do-not-touch.
 * **thay đổi** Selection decision report mẫu: `D:\tool\reports\bot_controller_20260603_212800.json`, selected 1, invalid 0, blocked 0, execution false.
-* **thay đổi** Tool Tester pass 37/37.
-* **thay đổi** Full System Tester pass 27/27.
+* **thay đổi** Tool Tester pass 37/37 tại mốc Selection UI / Decision Report.
+* **thay đổi** Full System Tester pass 27/27 tại mốc Selection UI / Decision Report.
 * **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail.
 
 Ý nghĩa:
 
 * **thay đổi** User đã có thể ghi quyết định cụ thể cho từng item mà không đụng file thật.
 * **thay đổi** Đây là lớp cần có trước execution adapter; sau này adapter chỉ được đọc decision report hợp lệ, không tự suy diễn.
+
+---
+
+### Execution Adapter v1
+
+**thay đổi** Đã thêm lớp nối giữa Selection Decision Report và execution flow, nhưng bản v1 vẫn không chạy thao tác file thật.
+
+Chức năng:
+
+* **thay đổi** Thêm `tools/core/execution_adapter.py` với schema `execution_adapter_v1`.
+* **thay đổi** Đọc decision report schema `bot_selection_decision_v2` từ latest report hoặc path chỉ định.
+* **thay đổi** Validate schema, invalid decision, blocked item, missing path và safety contract trước khi apply.
+* **thay đổi** `dry_run` cho biết item nào chỉ record-only và item nào bị blocked.
+* **thay đổi** `apply` cần token cuối `EXECUTE_SELECTION_V1`.
+* **thay đổi** `keep`, `manual_review`, `skip` được ghi nhận dạng record-only.
+* **thay đổi** `needs_backup`, `move_later`, `delete_candidate` bị blocked ở v1 vì chưa có file-operation adapter kèm manifest/undo.
+* **thay đổi** `file_operations_executed=false`, `delete_enabled=false`, `move_enabled=false` trong mọi chế độ của v1.
+
+Kết quả mới nhất:
+
+* **thay đổi** Main CLI expose `Execution Adapter` ở mục 38.
+* **thay đổi** Dry-run report: `D:\tool\reports\execution_adapter_20260604_200951_1.json`.
+* **thay đổi** Apply record-only report: `D:\tool\reports\execution_adapter_20260604_200951.json`.
+* **thay đổi** Tool Tester pass 38/38.
+* **thay đổi** Full System Tester pass 28/28.
+* **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail.
+
+Ý nghĩa:
+
+* **thay đổi** Bot đã có đường đi từ scan/plan/selection sang bước apply có khóa an toàn.
+* **thay đổi** Chưa có tự động xóa/move thật; bước sau phải xây adapter riêng cho move/delete với sandbox, destination, manifest, restore và final confirmation mạnh hơn.
 
 ---
 
@@ -402,7 +433,7 @@ Chức năng:
 
 Kết quả hiện tại:
 
-* **thay đổi** Capability count: 37
+* **thay đổi** Capability count: 38
 * Categories: automation, core, search, storage, system
 * Risk levels: safe, medium, dangerous
 
@@ -527,10 +558,10 @@ Kết quả mới nhất:
 * **thay đổi** Readiness status: ready.
 * **thay đổi** Checks: 9 pass, 0 warn, 0 fail.
 * **thay đổi** Không còn warning trong readiness snapshot mới nhất.
-* **thay đổi** Tool Tester pass 37/37.
+* **thay đổi** Tool Tester pass 38/38.
 * **thay đổi** Behavior Tester pass 18/18.
 * **thay đổi** Scenario Tester pass 6/6.
-* **thay đổi** Full System Tester pass 27/27.
+* **thay đổi** Full System Tester pass 28/28.
 
 ---
 
@@ -826,14 +857,17 @@ Lý do:
 * **thay đổi** Candidate Review
 * **thay đổi** Dry-run Action Planner
 * **thay đổi** Pre-feed Bundle
+* **thay đổi** AI Bot Controller v2
+* **thay đổi** Selection UI / Decision Report v2
+* **thay đổi** Execution Adapter v1 record-only
 
 Cần làm tiếp để ổn định tool tổng:
 
-* **thay đổi** Ưu tiên 1: Nếu muốn giải phóng dung lượng thật, user cần chọn rõ file archive/bộ cài nào được xóa/move hoặc chọn cách xử lý `D:\Downloads\Riot Games`
-* **thay đổi** Ưu tiên 2: Xây Execution Adapter v1 chỉ đọc Selection Decision Report hợp lệ, có manifest/undo/final confirmation, chưa tự suy diễn từ raw scan
-* **thay đổi** Ưu tiên 3: Mở rộng Undo System cho các thao tác không có manifest nếu cần
+* **thay đổi** Ưu tiên 1: Xây File Operation Adapter cho `move_later` trước, dùng sandbox test, destination rõ ràng, manifest restore và final confirmation riêng.
+* **thay đổi** Ưu tiên 2: Sau khi move adapter ổn mới xét `delete_candidate`, bắt buộc qua Safe Executor, trash/backup policy, manifest/report và confirmation mạnh hơn.
+* **thay đổi** Ưu tiên 3: Tạo Desktop UI hoặc bot panel để user nhìn issue, chọn `ok / lựa chọn / hủy` mà không phải nhớ 38 menu.
 * **thay đổi** Mở rộng Natural Command v3 thành intent engine sau khi có thêm lịch sử/report để feed assistant
-* **thay đổi** Chuẩn hóa Recommendation Center thành queue có trạng thái handled/deferred nếu cần workflow dài hơn
+* **thay đổi** Chuẩn hóa feed assistant sau khi Execution/Report flow ổn, để assistant nhớ flow bằng context sạch thay vì train sớm
 * **thay đổi** Bổ sung thêm case vào Scenario Tester và Full System Tester khi phát hiện lỗi thực tế mới
 
 ---

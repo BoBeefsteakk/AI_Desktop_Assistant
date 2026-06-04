@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-06-04
+
+### Execution Adapter v1
+
+* **thay đổi** Thêm `tools/core/execution_adapter.py` làm lớp thực thi có kiểm soát sau Selection Decision Report.
+* **thay đổi** Execution Adapter dùng schema `execution_adapter_v1` và chỉ nhận decision report schema `bot_selection_decision_v2`.
+* **thay đổi** Bản v1 chỉ ghi nhận các quyết định record-only như `keep`, `manual_review`, `skip`; không xóa, không move, không backup file thật.
+* **thay đổi** Các decision `needs_backup`, `move_later`, `delete_candidate` bị giữ ở trạng thái blocked vì chưa có destination/manifest/undo và chưa bật file operation adapter.
+* **thay đổi** Chế độ apply cần token cuối `EXECUTE_SELECTION_V1`; dù có token, file operation vẫn `false` ở bản v1.
+* **thay đổi** Main CLI expose `Execution Adapter` ở mục 38; Capability Registry, Natural Command v3, Tool Tester, Feed Readiness và Full System Tester đã có entry/contract.
+* **thay đổi** Dry-run Execution Adapter report: `D:\tool\reports\execution_adapter_20260604_200951_1.json`.
+* **thay đổi** Apply record-only report: `D:\tool\reports\execution_adapter_20260604_200951.json`.
+* **thay đổi** Tool Tester pass 38/38 tại `D:\tool\reports\tool_tester_20260604_202149.json`.
+* **thay đổi** Full System Tester pass 28/28 tại `D:\tool\reports\full_system_tester_20260604_202227.json`.
+* **thay đổi** Feed Readiness pass 9/9 tại `D:\tool\reports\feed_readiness_20260604_202417.json`.
+
 ## 2026-06-03
 
 ### Selection UI / Decision Report v2

@@ -59,6 +59,7 @@ Hoàn thành
 * **thay đổi** Dry-run Action Planner trước khi chạy thật
 * **thay đổi** Pre-feed Bundle để đóng gói context sạch trước feed assistant
 * **thay đổi** AI Bot Controller v2: entrypoint bot tổng cho auto-check, decision screen OK/lựa chọn/hủy/details, Selection UI/Decision Report, hiện vẫn không execute file
+* **thay đổi** Execution Adapter v1: đọc Selection Decision Report, record-only quyết định an toàn, chặn xóa/move/backup thật
 
 Cần rà soát tiếp:
 
@@ -145,13 +146,14 @@ Một lệnh test tổng hợp trước khi refactor lớn hoặc feed assistant
 * **thay đổi** Candidate Review, Dry-run Action Planner và Pre-feed Bundle Contract test
 * **thay đổi** AI Bot Controller Contract test
 * **thay đổi** Selection UI / Decision Report Contract test: validate mã item, locked item và decision report không execute
-* Full System Tester hiện pass 27/27
+* **thay đổi** Execution Adapter Contract test: dry-run/apply record-only, block delete_candidate và không xóa file sandbox
+* **thay đổi** Full System Tester hiện pass 28/28
 
 ---
 
 ## Phase 5 - AI Decision Engine
 
-**thay đổi** Đã bắt đầu bằng AI Bot Controller v2 và Selection UI / Decision Report.
+**thay đổi** Đã có AI Bot Controller v2, Selection UI / Decision Report và Execution Adapter v1 record-only.
 
 Mục tiêu:
 
@@ -162,7 +164,8 @@ Assistant có thể:
 * **thay đổi** Ghi nhớ chính sách user trước khi đề xuất/xử lý
 * **thay đổi** Chưa tự động xử lý SAFE_DELETE ở mốc hiện tại; cần policy gate + candidate review + dry-run plan + confirm rõ trước khi mở rộng
 * **thay đổi** Bot Controller v2 đã gom queue/policy/candidate/plan/readiness thành một màn quyết định và export decision report, nhưng chưa execute file thật
-* **thay đổi** Bước tiếp theo của Phase 5 là Execution Adapter v1 có manifest/undo/final confirmation
+* **thay đổi** Execution Adapter v1 đã có final token và report, nhưng vẫn chưa bật manifest/undo mới vì chưa chạy file operation thật
+* **thay đổi** Bước tiếp theo của Phase 5 là File Operation Adapter cho `move_later` trước, có sandbox, destination, manifest restore và confirmation riêng
 
 ---
 
