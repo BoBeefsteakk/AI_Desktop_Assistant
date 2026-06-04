@@ -53,6 +53,7 @@ Active workspace hiện tại là `D:\tool`. Snapshot cũ đã được chuyển
 - **thay đổi** Feed Assistant Readiness
 - **thay đổi** AI Bot Controller v2: một entrypoint auto-check tổng, gom recommendation/policy/candidate/plan/readiness thành màn OK/lựa chọn/hủy, có Selection UI/Decision Report read-only và chưa execute file thật
 - **thay đổi** Execution Adapter v1: đọc Selection Decision Report hợp lệ, ghi nhận quyết định an toàn dạng record-only, chặn xóa/move/backup thật ở bản v1
+- **thay đổi** File Operation Adapter v1: chỉ xử lý `move_later` có destination rõ ràng, token `MOVE_SELECTION_V1`, `safe_move` và manifest restore; chưa bật delete
 - **thay đổi** Scenario Tester: chạy fake-file sandbox cho Downloads, media, game data, archive, temp/junk và manifest restore
 
 ## Project Structure
@@ -86,10 +87,10 @@ Storage Tools	Done
 Automation Tools	Done
 Search Tools	Done
 Core Utilities	Done
-Tool Tester	**thay đổi** Passed 38/38
+Tool Tester	**thay đổi** Passed 39/39
 Scenario Tester	Passed 6/6
 Behavior Tester	Passed 18/18
-Full System Tester	**thay đổi** Passed 28/28
+Full System Tester	**thay đổi** Passed 29/29
 WizTree Adapter	Done
 External Apps Integration	Done
 External App Drift Detection	Done
@@ -110,6 +111,7 @@ Pre-feed Bundle	Done
 AI Bot Controller	Done
 Selection UI / Decision Report	Done
 Execution Adapter	**thay đổi** Done
+File Operation Adapter	**thay đổi** Done
 Refactor Tools Folder	Done
 Config System	Done
 Audit System	Basic Done

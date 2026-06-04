@@ -2,6 +2,21 @@
 
 ## 2026-06-04
 
+### File Operation Adapter v1
+
+* **thay đổi** Thêm `tools/core/file_operation_adapter.py` làm lớp file-operation đầu tiên sau Execution Adapter.
+* **thay đổi** Bản v1 chỉ xử lý decision `move_later`; các decision khác trong cùng report bị đánh dấu `not_in_scope`, không thành action.
+* **thay đổi** Move thật chỉ chạy khi có destination folder đã tồn tại, không phải root ổ, source là file, source/destination không thuộc vùng `PROTECTED`, và user nhập token `MOVE_SELECTION_V1`.
+* **thay đổi** Adapter dùng `safe_move()` và tạo manifest `file_operation_adapter_move_*.json` để Undo Manager restore được.
+* **thay đổi** Delete vẫn bị tắt hoàn toàn; `delete_candidate` chưa được adapter này xử lý.
+* **thay đổi** Main CLI expose `File Operation Adapter` ở mục 39; Capability Registry, Natural Command v3, Tool Tester, Feed Readiness và Full System Tester đã có entry/contract.
+* **thay đổi** Dry-run sandbox report: `D:\tool\reports\file_operation_adapter_20260604_205528.json`.
+* **thay đổi** Apply sandbox report: `D:\tool\reports\file_operation_adapter_20260604_205528_1.json`.
+* **thay đổi** Sandbox manifest đã được restore thành công: `D:\tool\backups\file_operation_adapter_move_20260604_205528.json`.
+* **thay đổi** Tool Tester pass 39/39 tại `D:\tool\reports\tool_tester_20260604_210733.json`.
+* **thay đổi** Full System Tester pass 29/29 tại `D:\tool\reports\full_system_tester_20260604_210757.json`.
+* **thay đổi** Feed Readiness pass 9/9 tại `D:\tool\reports\feed_readiness_20260604_210818.json`.
+
 ### Execution Adapter v1
 
 * **thay đổi** Thêm `tools/core/execution_adapter.py` làm lớp thực thi có kiểm soát sau Selection Decision Report.

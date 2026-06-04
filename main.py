@@ -32,6 +32,7 @@ from tools.core.config_manager import run_config_manager
 from tools.core.execution_adapter import run_execution_adapter
 from tools.core.external_apps import run_external_apps_manager
 from tools.core.feed_readiness import run_feed_readiness
+from tools.core.file_operation_adapter import run_file_operation_adapter
 from tools.core.full_system_tester import run_full_system_tester
 from tools.core.guided_action_runner import run_guided_action_runner
 from tools.core.pre_feed_bundle import run_pre_feed_bundle
@@ -89,6 +90,7 @@ def main():
 36. Pre-feed Bundle
 37. AI Bot Controller
 38. Execution Adapter
+39. File Operation Adapter
 
 0. Thoat
 
@@ -215,6 +217,9 @@ def main():
 
         elif choice == "38":
             run_execution_adapter()
+
+        elif choice == "39":
+            run_file_operation_adapter()
 
         else:
             print("Lua chon khong hop le.")

@@ -2,7 +2,7 @@
 
 ## Giai đoạn hiện tại
 
-**thay đổi** Giai đoạn 5 - AI Decision Engine / Execution Adapter v1 theo chế độ guarded record-only, chưa execute xóa/move/backup file thật.
+**thay đổi** Giai đoạn 5 - AI Decision Engine / File Operation Adapter v1 cho `move_later`, chỉ move khi có destination rõ ràng, token cuối và manifest restore; delete vẫn chưa bật.
 
 ---
 
@@ -364,7 +364,7 @@ Chức năng:
 * **thay đổi** `dry_run` cho biết item nào chỉ record-only và item nào bị blocked.
 * **thay đổi** `apply` cần token cuối `EXECUTE_SELECTION_V1`.
 * **thay đổi** `keep`, `manual_review`, `skip` được ghi nhận dạng record-only.
-* **thay đổi** `needs_backup`, `move_later`, `delete_candidate` bị blocked ở v1 vì chưa có file-operation adapter kèm manifest/undo.
+* **thay đổi** `needs_backup`, `move_later`, `delete_candidate` bị blocked ở Execution Adapter v1; `move_later` đã có File Operation Adapter riêng ở bước sau.
 * **thay đổi** `file_operations_executed=false`, `delete_enabled=false`, `move_enabled=false` trong mọi chế độ của v1.
 
 Kết quả mới nhất:
@@ -372,14 +372,47 @@ Kết quả mới nhất:
 * **thay đổi** Main CLI expose `Execution Adapter` ở mục 38.
 * **thay đổi** Dry-run report: `D:\tool\reports\execution_adapter_20260604_200951_1.json`.
 * **thay đổi** Apply record-only report: `D:\tool\reports\execution_adapter_20260604_200951.json`.
-* **thay đổi** Tool Tester pass 38/38.
-* **thay đổi** Full System Tester pass 28/28.
+* **thay đổi** Tool Tester pass 38/38 tại mốc Execution Adapter.
+* **thay đổi** Full System Tester pass 28/28 tại mốc Execution Adapter.
 * **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail.
 
 Ý nghĩa:
 
 * **thay đổi** Bot đã có đường đi từ scan/plan/selection sang bước apply có khóa an toàn.
-* **thay đổi** Chưa có tự động xóa/move thật; bước sau phải xây adapter riêng cho move/delete với sandbox, destination, manifest, restore và final confirmation mạnh hơn.
+* **thay đổi** Execution Adapter vẫn không tự xóa/move; file operation thật phải đi qua adapter riêng.
+
+---
+
+### File Operation Adapter v1
+
+**thay đổi** Đã thêm lớp file-operation đầu tiên cho decision `move_later`.
+
+Chức năng:
+
+* **thay đổi** Thêm `tools/core/file_operation_adapter.py` với schema `file_operation_adapter_v1`.
+* **thay đổi** Chỉ đọc Selection Decision Report hợp lệ schema `bot_selection_decision_v2`.
+* **thay đổi** Chỉ xử lý item có decision `move_later`; các decision khác là `not_in_scope`.
+* **thay đổi** Destination folder phải tồn tại sẵn, là directory, không phải root ổ và không thuộc vùng `PROTECTED`.
+* **thay đổi** Source phải là file tồn tại và không thuộc vùng `PROTECTED`.
+* **thay đổi** `apply` cần token riêng `MOVE_SELECTION_V1`.
+* **thay đổi** Move dùng `safe_move()` và lưu manifest `file_operation_adapter_move_*.json`.
+* **thay đổi** Undo Manager restore được manifest sau move.
+* **thay đổi** Delete vẫn chưa bật trong adapter này.
+
+Kết quả mới nhất:
+
+* **thay đổi** Main CLI expose `File Operation Adapter` ở mục 39.
+* **thay đổi** Dry-run sandbox report: `D:\tool\reports\file_operation_adapter_20260604_205528.json`.
+* **thay đổi** Apply sandbox report: `D:\tool\reports\file_operation_adapter_20260604_205528_1.json`.
+* **thay đổi** Manifest sandbox đã restore: `D:\tool\backups\file_operation_adapter_move_20260604_205528.json`.
+* **thay đổi** Tool Tester pass 39/39.
+* **thay đổi** Full System Tester pass 29/29.
+* **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail.
+
+Ý nghĩa:
+
+* **thay đổi** Bot flow đã có bước move thật đầu tiên, nhưng chỉ cho file được user chọn rõ qua decision report và folder đích cụ thể.
+* **thay đổi** `delete_candidate` vẫn là ý định, chưa phải action.
 
 ---
 
@@ -433,7 +466,7 @@ Chức năng:
 
 Kết quả hiện tại:
 
-* **thay đổi** Capability count: 38
+* **thay đổi** Capability count: 39
 * Categories: automation, core, search, storage, system
 * Risk levels: safe, medium, dangerous
 
@@ -558,10 +591,10 @@ Kết quả mới nhất:
 * **thay đổi** Readiness status: ready.
 * **thay đổi** Checks: 9 pass, 0 warn, 0 fail.
 * **thay đổi** Không còn warning trong readiness snapshot mới nhất.
-* **thay đổi** Tool Tester pass 38/38.
+* **thay đổi** Tool Tester pass 39/39.
 * **thay đổi** Behavior Tester pass 18/18.
 * **thay đổi** Scenario Tester pass 6/6.
-* **thay đổi** Full System Tester pass 28/28.
+* **thay đổi** Full System Tester pass 29/29.
 
 ---
 
@@ -860,11 +893,12 @@ Lý do:
 * **thay đổi** AI Bot Controller v2
 * **thay đổi** Selection UI / Decision Report v2
 * **thay đổi** Execution Adapter v1 record-only
+* **thay đổi** File Operation Adapter v1 cho `move_later`
 
 Cần làm tiếp để ổn định tool tổng:
 
-* **thay đổi** Ưu tiên 1: Xây File Operation Adapter cho `move_later` trước, dùng sandbox test, destination rõ ràng, manifest restore và final confirmation riêng.
-* **thay đổi** Ưu tiên 2: Sau khi move adapter ổn mới xét `delete_candidate`, bắt buộc qua Safe Executor, trash/backup policy, manifest/report và confirmation mạnh hơn.
+* **thay đổi** Ưu tiên 1: Nối Bot/Selection UI với File Operation Adapter để user chọn destination trong luồng `ok / lựa chọn / hủy`, thay vì phải nhập path ở menu riêng.
+* **thay đổi** Ưu tiên 2: Sau khi move flow UI ổn mới xét `delete_candidate`, bắt buộc qua Safe Executor, trash/backup policy, manifest/report và confirmation mạnh hơn.
 * **thay đổi** Ưu tiên 3: Tạo Desktop UI hoặc bot panel để user nhìn issue, chọn `ok / lựa chọn / hủy` mà không phải nhớ 38 menu.
 * **thay đổi** Mở rộng Natural Command v3 thành intent engine sau khi có thêm lịch sử/report để feed assistant
 * **thay đổi** Chuẩn hóa feed assistant sau khi Execution/Report flow ổn, để assistant nhớ flow bằng context sạch thay vì train sớm

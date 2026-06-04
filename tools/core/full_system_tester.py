@@ -57,6 +57,10 @@ from tools.core.execution_adapter import (
     build_execution_adapter_result,
 )
 from tools.core.feed_readiness import build_feed_readiness_result
+from tools.core.file_operation_adapter import (
+    FINAL_MOVE_TOKEN,
+    build_file_operation_adapter_result,
+)
 from tools.core.risk_classifier import PROTECTED, REVIEW_REQUIRED, SAFE_DELETE, classify_file_risk
 from tools.core.scenario_tester import run_sandbox_scenarios
 from tools.core.safe_executor import safe_delete
@@ -177,6 +181,7 @@ def test_main_menu_coverage() -> dict[str, Any]:
         "Pre-feed Bundle",
         "AI Bot Controller",
         "Execution Adapter",
+        "File Operation Adapter",
     ]
     missing = [label for label in expected if label not in main_text]
 
@@ -1278,6 +1283,80 @@ def write_fake_selection_decision_report(path: Path, target_file: Path) -> None:
     write_text(path, json.dumps(data, ensure_ascii=False))
 
 
+def write_fake_move_selection_decision_report(path: Path, target_file: Path) -> None:
+    data = {
+        "schema_version": REPORT_SCHEMA_VERSION,
+        "tool": "bot_controller",
+        "action": "export_selection_decision",
+        "risk_level": "safe",
+        "status": "success",
+        "summary": {
+            "selected_count": 2,
+            "blocked_count": 0,
+            "invalid_count": 0,
+            "undo_available": False,
+        },
+        "input": {},
+        "results": {
+            "schema": "bot_selection_decision_v2",
+            "status": "ready",
+            "summary": {
+                "input_decision_count": 2,
+                "selected_count": 2,
+                "skipped_count": 0,
+                "blocked_count": 0,
+                "invalid_count": 0,
+                "unselected_count": 0,
+                "by_decision": {
+                    "move_later": 1,
+                    "keep": 1,
+                },
+                "execution_enabled": False,
+                "undo_available": False,
+            },
+            "selected": [
+                {
+                    "selection_id": "M001",
+                    "path": str(target_file),
+                    "name": target_file.name,
+                    "size_text": "1.00 KB",
+                    "selection_group": "needs_selection",
+                    "policy_decision": "move_later",
+                    "plan_action": "move_later",
+                    "decision": "move_later",
+                    "execution_enabled": False,
+                },
+                {
+                    "selection_id": "M002",
+                    "path": str(target_file),
+                    "name": target_file.name,
+                    "size_text": "1.00 KB",
+                    "selection_group": "needs_selection",
+                    "policy_decision": "manual_only",
+                    "plan_action": "manual_review",
+                    "decision": "keep",
+                    "execution_enabled": False,
+                },
+            ],
+            "skipped": [],
+            "blocked": [],
+            "invalid": [],
+            "safety_contract": {
+                "decision_report_only": True,
+                "executes_file_operations": False,
+                "requires_execution_adapter": True,
+                "requires_manifest_for_move": True,
+                "delete_candidate_is_not_delete": True,
+            },
+        },
+        "manifest": None,
+        "undo_available": False,
+        "recommendations": [],
+        "tags": ["contract_test"],
+    }
+    write_text(path, json.dumps(data, ensure_ascii=False))
+
+
 def test_execution_adapter_contract() -> dict[str, Any]:
     sandbox = make_sandbox()
     try:
@@ -1332,6 +1411,78 @@ def test_execution_adapter_contract() -> dict[str, Any]:
             "no_token_status": no_token["status"],
             "applied_summary": applied["summary"],
             "target_exists_after_apply": target_file.exists(),
+        }
+    finally:
+        cleanup_sandbox(sandbox)
+
+
+def test_file_operation_adapter_contract() -> dict[str, Any]:
+    sandbox = make_sandbox()
+    try:
+        source_file = sandbox / "file_operation_adapter" / "move_me.mp4"
+        destination_root = sandbox / "file_operation_destination"
+        report_path = sandbox / "move_selection_decision_report.json"
+        write_text(source_file, "adapter move contract")
+        destination_root.mkdir(parents=True, exist_ok=True)
+        write_fake_move_selection_decision_report(report_path, source_file)
+
+        dry_run = build_file_operation_adapter_result(
+            source_report_path=report_path,
+            destination_root=destination_root,
+            mode="dry_run",
+        )
+        assert_condition(dry_run["schema"] == "file_operation_adapter_v1", "File Operation Adapter should expose v1 schema.")
+        assert_condition(dry_run["status"] == "dry_run", "Move dry-run should be ready.")
+        assert_condition(dry_run["summary"]["move_requested_count"] == 1, "Move dry-run should find one move_later item.")
+        assert_condition(dry_run["summary"]["movable_count"] == 1, "Move dry-run should have one movable item.")
+        assert_condition(
+            dry_run["summary"]["file_operations_executed"] is False,
+            "Move dry-run must not execute file operations.",
+        )
+        assert_condition(source_file.exists(), "Dry-run must not move the source file.")
+
+        no_token = build_file_operation_adapter_result(
+            source_report_path=report_path,
+            destination_root=destination_root,
+            mode="apply",
+        )
+        assert_condition(
+            no_token["status"] == "requires_final_confirmation",
+            "Move apply should require final token.",
+        )
+        assert_condition(source_file.exists(), "Missing token must not move the source file.")
+
+        applied = build_file_operation_adapter_result(
+            source_report_path=report_path,
+            destination_root=destination_root,
+            mode="apply",
+            final_token=FINAL_MOVE_TOKEN,
+        )
+        manifest = applied.get("manifest")
+        moved_file = destination_root / source_file.name
+        assert_condition(applied["status"] == "completed", "Move apply should complete in sandbox.")
+        assert_condition(applied["summary"]["moved_count"] == 1, "Move apply should move one file.")
+        assert_condition(applied["summary"]["file_operations_executed"] is True, "Move apply should execute a file operation.")
+        assert_condition(bool(manifest), "Move apply should create a manifest.")
+        assert_condition(not source_file.exists(), "Source should be moved after apply.")
+        assert_condition(moved_file.exists(), "Destination file should exist after apply.")
+
+        preview = preview_manifest(manifest)
+        assert_condition(preview["restorable_count"] == 1, "Move manifest should be restorable.")
+        restored = restore_manifest(manifest)
+        assert_condition(restored["status"] == "success", "Move manifest restore should succeed.")
+        assert_condition(source_file.exists(), "Source file should exist again after restore.")
+
+        return {
+            "dry_run_summary": dry_run["summary"],
+            "no_token_status": no_token["status"],
+            "applied_summary": applied["summary"],
+            "manifest": manifest,
+            "restore": {
+                "status": restored["status"],
+                "restored_count": restored.get("restored_count"),
+            },
+            "source_exists_after_restore": source_file.exists(),
         }
     finally:
         cleanup_sandbox(sandbox)
@@ -1478,6 +1629,7 @@ FULL_SYSTEM_TESTS: list[tuple[str, Callable[[], dict[str, Any]]]] = [
     ("Pre-feed Bundle Contract", test_pre_feed_bundle_contract),
     ("AI Bot Controller Contract", test_bot_controller_contract),
     ("Execution Adapter Contract", test_execution_adapter_contract),
+    ("File Operation Adapter Contract", test_file_operation_adapter_contract),
     ("Feed Readiness Contract", test_feed_readiness_contract),
     ("Scenario Tester Contract", test_scenario_tester_contract),
     ("Dependency Health", test_dependency_health),

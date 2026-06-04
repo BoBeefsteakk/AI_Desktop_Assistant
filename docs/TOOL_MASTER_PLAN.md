@@ -8,13 +8,13 @@
 
 **thay đổi** Kết quả hiện tại:
 
-* **thay đổi** Main CLI đang expose 38 tool.
-* **thay đổi** Capability Registry valid 38/38, không thiếu entry so với Tool Tester.
-* **thay đổi** Tool Tester pass 38/38.
+* **thay đổi** Main CLI đang expose 39 tool.
+* **thay đổi** Capability Registry valid 39/39, không thiếu entry so với Tool Tester.
+* **thay đổi** Tool Tester pass 39/39.
 * **thay đổi** Behavior Tester pass 18/18.
 * **thay đổi** Scenario Tester pass 6/6.
-* **thay đổi** Full System Tester pass 28/28.
-* **thay đổi** Capability summary: 25 safe, 7 medium, 6 dangerous; 11 tool có thể thay đổi file; 13 tool cần confirmation; 9 tool dùng external app.
+* **thay đổi** Full System Tester pass 29/29.
+* **thay đổi** Capability summary: 25 safe, 8 medium, 6 dangerous; 12 tool có thể thay đổi file; 14 tool cần confirmation; 9 tool dùng external app.
 
 ## Luồng Tool Tổng Chuẩn
 
@@ -32,12 +32,13 @@
 10. **thay đổi** Policy Enforcement Gate kiểm tra policy trước khi Guided Action Runner mở target tool.
 11. **thay đổi** Candidate Review và Dry-run Action Planner phân loại candidate thành keep/manual/backup/move sau, nhưng không execute.
 12. **thay đổi** AI Bot Controller gom các lớp trên thành màn quyết định `ok`/`select`/`cancel`/`details`; v2 có Selection UI/Decision Report nhưng vẫn chưa execute file.
-13. **thay đổi** Execution Adapter v1 đọc Selection Decision Report hợp lệ, ghi nhận record-only decision và chặn toàn bộ xóa/move/backup thật.
-14. **thay đổi** Guided Action Runner mở tool được đề xuất từ recommendation sau khi user nhập token phù hợp.
-15. **thay đổi** Scenario Tester tái hiện case rủi ro bằng file giả trước khi đụng dữ liệu thật.
-16. **thay đổi** Feed Assistant Readiness và Pre-feed Bundle đóng gói pre-feed checklist/context, nhưng chưa feed/train thật.
-17. **thay đổi** Nếu user chọn chạy tool thật, tool đó vẫn tự xử lý confirmation, risk classification, safe executor, manifest/undo và report/log.
-18. **thay đổi** Audit Center, Report Manager và Undo Manager lưu lại lịch sử, report, manifest để kiểm tra sau.
+13. **thay đổi** Execution Adapter v1 đọc Selection Decision Report hợp lệ, ghi nhận record-only decision và chặn cleanup thật.
+14. **thay đổi** File Operation Adapter v1 chỉ xử lý `move_later` khi có destination rõ ràng, token `MOVE_SELECTION_V1`, `safe_move()` và manifest restore.
+15. **thay đổi** Guided Action Runner mở tool được đề xuất từ recommendation sau khi user nhập token phù hợp.
+16. **thay đổi** Scenario Tester tái hiện case rủi ro bằng file giả trước khi đụng dữ liệu thật.
+17. **thay đổi** Feed Assistant Readiness và Pre-feed Bundle đóng gói pre-feed checklist/context, nhưng chưa feed/train thật.
+18. **thay đổi** Nếu user chọn chạy tool thật, tool đó vẫn tự xử lý confirmation, risk classification, safe executor, manifest/undo và report/log.
+19. **thay đổi** Audit Center, Report Manager và Undo Manager lưu lại lịch sử, report, manifest để kiểm tra sau.
 
 ## Nguyên Tắc Không Được Phá
 
@@ -83,6 +84,7 @@
 * **thay đổi** AI Bot Controller v2
 * **thay đổi** Selection UI / Decision Report
 * **thay đổi** Execution Adapter v1 record-only
+* **thay đổi** File Operation Adapter v1 cho `move_later`
 
 **thay đổi** External app layer:
 
@@ -116,7 +118,9 @@
 
 **thay đổi** Gap 11: AI Bot Controller v2 và Selection UI / Decision Report đã hoàn thành ở mức scan/plan/selection-report.
 
-**thay đổi** Gap 12: Execution Adapter v1 đã hoàn thành ở mức record-only; move/delete/backup thật vẫn chưa bật và cần File Operation Adapter có manifest/undo, destination rõ ràng, final confirmation và sandbox test riêng.
+**thay đổi** Gap 12: File Operation Adapter v1 đã hoàn thành cho `move_later`; move thật chỉ chạy với destination đã tồn tại, token `MOVE_SELECTION_V1`, `safe_move()` và manifest restore.
+
+**thay đổi** Gap 13: `delete_candidate` và `needs_backup` vẫn chưa được execute; cần adapter riêng sau khi UI/destination/restore flow ổn định.
 
 ## Kế Hoạch Chuẩn Từ Bây Giờ
 
@@ -414,7 +418,7 @@
 
 * **thay đổi** `dry_run` không cần token và không mutate file.
 * **thay đổi** `apply` chỉ record các decision no-op như `keep`, `manual_review`, `skip`.
-* **thay đổi** `needs_backup`, `move_later`, `delete_candidate` bị blocked ở v1.
+* **thay đổi** `needs_backup`, `move_later`, `delete_candidate` bị blocked ở Execution Adapter v1; `move_later` được chuyển sang File Operation Adapter riêng.
 * **thay đổi** `file_operations_executed=false`, `delete_enabled=false`, `move_enabled=false`.
 * **thay đổi** Chưa có manifest/undo mới vì chưa có thao tác file thật.
 
@@ -422,9 +426,40 @@
 
 * **thay đổi** Dry-run report: `D:\tool\reports\execution_adapter_20260604_200951_1.json`.
 * **thay đổi** Apply record-only report: `D:\tool\reports\execution_adapter_20260604_200951.json`.
-* **thay đổi** Tool Tester pass 38/38; Full System Tester pass 28/28; Feed Readiness pass 9/9.
+* **thay đổi** Tool Tester pass 38/38; Full System Tester pass 28/28; Feed Readiness pass 9/9 tại mốc Execution Adapter.
 
-**thay đổi** Bước kế tiếp: File Operation Adapter cho move/delete thật, bắt đầu từ `move_later` trong sandbox, có destination, manifest restore và confirmation riêng.
+**thay đổi** Bước kế tiếp của mốc Execution Adapter đã hoàn thành cho `move_later` qua File Operation Adapter v1.
+
+## File Operation Adapter v1
+
+**thay đổi** File Operation Adapter v1 là lớp đầu tiên được phép chạy move thật, nhưng chỉ cho decision `move_later`.
+
+**thay đổi** Schema và entrypoint:
+
+* **thay đổi** Module: `tools/core/file_operation_adapter.py`.
+* **thay đổi** Schema: `file_operation_adapter_v1`.
+* **thay đổi** Input hợp lệ: report `bot_selection_decision_v2`.
+* **thay đổi** Main CLI: mục 39 `File Operation Adapter`.
+* **thay đổi** Final move token: `MOVE_SELECTION_V1`.
+
+**thay đổi** Guardrail:
+
+* **thay đổi** Chỉ xử lý `move_later`; decision khác là `not_in_scope`.
+* **thay đổi** Destination phải là folder đã tồn tại, không phải root ổ, không thuộc vùng `PROTECTED`.
+* **thay đổi** Source phải là file tồn tại, không thuộc vùng `PROTECTED`.
+* **thay đổi** Không cho move vào chính folder nguồn.
+* **thay đổi** Move dùng `safe_move()` và tạo manifest `file_operation_adapter_move_*.json`.
+* **thay đổi** Undo Manager restore được manifest.
+* **thay đổi** Delete vẫn disabled.
+
+**thay đổi** Kết quả hiện tại:
+
+* **thay đổi** Dry-run sandbox report: `D:\tool\reports\file_operation_adapter_20260604_205528.json`.
+* **thay đổi** Apply sandbox report: `D:\tool\reports\file_operation_adapter_20260604_205528_1.json`.
+* **thay đổi** Manifest sandbox đã restore: `D:\tool\backups\file_operation_adapter_move_20260604_205528.json`.
+* **thay đổi** Tool Tester pass 39/39; Full System Tester pass 29/29; Feed Readiness pass 9/9.
+
+**thay đổi** Bước kế tiếp: nối UI/Bot selection với destination picker để user chọn nơi chuyển file dễ hơn, sau đó mới xét adapter cho `delete_candidate`.
 
 ## Deletion Safety / UX v2
 

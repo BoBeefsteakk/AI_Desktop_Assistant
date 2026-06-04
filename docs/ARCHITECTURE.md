@@ -60,6 +60,7 @@ Bao gồm:
 * **thay đổi** pre_feed_bundle.py
 * **thay đổi** bot_controller.py
 * **thay đổi** execution_adapter.py
+* **thay đổi** file_operation_adapter.py
 
 ---
 
@@ -468,9 +469,36 @@ Nguyên tắc:
 * **thay đổi** `dry_run` chỉ preview, không cần token.
 * **thay đổi** `apply` cần token `EXECUTE_SELECTION_V1`.
 * **thay đổi** `keep`, `manual_review`, `skip` chỉ được ghi nhận record-only.
-* **thay đổi** `needs_backup`, `move_later`, `delete_candidate` bị blocked ở bản v1.
-* **thay đổi** Chưa sinh manifest/undo mới vì chưa bật file operation thật.
-* **thay đổi** File Operation Adapter sau này phải nằm dưới lớp này và phải có sandbox test, destination, manifest restore, Safe Executor và final confirmation riêng.
+* **thay đổi** `needs_backup`, `move_later`, `delete_candidate` bị blocked ở Execution Adapter v1.
+* **thay đổi** Execution Adapter không sinh manifest/undo mới vì không trực tiếp chạy file operation.
+* **thay đổi** `move_later` phải đi qua File Operation Adapter v1 bên dưới.
+
+---
+
+## File Operation Adapter Layer
+
+**thay đổi** File Operation Adapter là lớp file-operation đầu tiên, nằm dưới Execution Adapter và chỉ xử lý `move_later`.
+
+Nguồn dữ liệu:
+
+* **thay đổi** Report `bot_controller` action `export_selection_decision`.
+* **thay đổi** Schema input bắt buộc: `bot_selection_decision_v2`.
+* **thay đổi** Destination folder do user/UI chỉ định rõ.
+
+Output:
+
+* **thay đổi** Report `file_operation_adapter` với schema `file_operation_adapter_v1`.
+* **thay đổi** Manifest `file_operation_adapter_move_*.json` trong `backups/` khi apply move thành công.
+* **thay đổi** Summary moved/blocked/error/not-in-scope để user biết item nào thật sự được move.
+
+Nguyên tắc:
+
+* **thay đổi** Chỉ decision `move_later` được xử lý.
+* **thay đổi** Destination phải tồn tại sẵn, là directory, không phải root ổ và không thuộc vùng `PROTECTED`.
+* **thay đổi** Source phải là file tồn tại và không thuộc vùng `PROTECTED`.
+* **thay đổi** Apply cần token `MOVE_SELECTION_V1`.
+* **thay đổi** Move dùng `safe_move()`; restore dùng Undo Manager/manifest.
+* **thay đổi** `delete_candidate` và `needs_backup` chưa được execute ở layer này.
 
 ---
 
@@ -543,6 +571,7 @@ Các lớp kiểm tra:
 * **thay đổi** Candidate Review, Dry-run Action Planner và Pre-feed Bundle contract
 * **thay đổi** AI Bot Controller contract kiểm tra decision screen, Selection UI v2, Selection Decision v2, locked item bị block và OK không execute file trong v2
 * **thay đổi** Execution Adapter contract kiểm tra dry-run/apply record-only, block `delete_candidate` và không xóa file sandbox
+* **thay đổi** File Operation Adapter contract kiểm tra move file giả trong sandbox, tạo manifest và restore bằng Undo Manager
 
 ---
 
@@ -607,6 +636,7 @@ WizTree Adapter:
 * **thay đổi** Đọc latest Candidate Review, Action Planner và Pre-feed Bundle report nếu có.
 * **thay đổi** Đọc latest Bot Controller report nếu có.
 * **thay đổi** Đọc latest Execution Adapter report nếu có.
+* **thay đổi** Đọc latest File Operation Adapter report nếu có.
 * **thay đổi** Kiểm tra latest Full System Tester report.
 * **thay đổi** Validate schema report gần đây.
 * **thay đổi** Liệt kê docs/config/report source nên feed.
