@@ -1,6 +1,26 @@
 # Changelog
 
+## 2026-06-05
+
+### Bot Move-later Flow verification
+
+* **thay đổi** Bot Move-later Flow v1 đã được verify lại sau khi nối Bot Controller với File Operation Adapter.
+* **thay đổi** Contract report sinh từ Full System Tester giờ được tag `contract_test` và `full_system` để Recommendation Center không đưa warning guardrail vào queue thật.
+* **thay đổi** Recommendation Center nhận diện thêm marker test trong `note`, `context` và linked `source_report`, nên các report contract cũ của Bot/File Operation Adapter cũng không còn làm Feed Readiness bị warn giả.
+* **thay đổi** Tool Tester pass 39/39 tại `D:\tool\reports\tool_tester_20260605_204040.json`.
+* **thay đổi** Full System Tester pass 30/30 tại `D:\tool\reports\full_system_tester_20260605_204115.json`.
+* **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail tại `D:\tool\reports\feed_readiness_20260605_204138.json`.
+
 ## 2026-06-04
+
+### Bot Move-later Flow v1
+
+* **thay đổi** Nối Bot Controller với File Operation Adapter qua flow `move_later_selection_flow`.
+* **thay đổi** Menu Bot Controller có thêm lựa chọn `Move selected move_later with destination`.
+* **thay đổi** Flow mới in Selection UI, nhận decision như `M001=move_later`, hỏi destination folder, export decision report, chạy File Operation Adapter dry-run, rồi mới apply nếu có token `MOVE_SELECTION_V1`.
+* **thay đổi** Bot flow tạo report tổng schema `bot_move_later_flow_v1` để trace decision report, operation report, manifest và trạng thái restore.
+* **thay đổi** `OK` vẫn không tự move; move thật chỉ đi qua nhánh move_later riêng.
+* **thay đổi** `delete_candidate` vẫn chưa bật.
 
 ### File Operation Adapter v1
 
@@ -14,7 +34,7 @@
 * **thay đổi** Apply sandbox report: `D:\tool\reports\file_operation_adapter_20260604_205528_1.json`.
 * **thay đổi** Sandbox manifest đã được restore thành công: `D:\tool\backups\file_operation_adapter_move_20260604_205528.json`.
 * **thay đổi** Tool Tester pass 39/39 tại `D:\tool\reports\tool_tester_20260604_210733.json`.
-* **thay đổi** Full System Tester pass 29/29 tại `D:\tool\reports\full_system_tester_20260604_210757.json`.
+* **thay đổi** Full System Tester pass 29/29 tại mốc File Operation Adapter: `D:\tool\reports\full_system_tester_20260604_210757.json`.
 * **thay đổi** Feed Readiness pass 9/9 tại `D:\tool\reports\feed_readiness_20260604_210818.json`.
 
 ### Execution Adapter v1

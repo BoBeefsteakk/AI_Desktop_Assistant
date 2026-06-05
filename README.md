@@ -52,6 +52,8 @@ Active workspace hiện tại là `D:\tool`. Snapshot cũ đã được chuyển
 - **thay đổi** Pre-feed Bundle: đóng gói docs/report summary/policy/queue/readiness thành bundle local để chuẩn bị feed assistant
 - **thay đổi** Feed Assistant Readiness
 - **thay đổi** AI Bot Controller v2: một entrypoint auto-check tổng, gom recommendation/policy/candidate/plan/readiness thành màn OK/lựa chọn/hủy, có Selection UI/Decision Report read-only và chưa execute file thật
+- **thay đổi** Bot Move-later Flow v1: trong Bot Controller, chọn item `move_later`, nhập destination, dry-run rồi apply bằng token `MOVE_SELECTION_V1`
+- **thay đổi** Recommendation Center test-report hygiene: contract/full-system report không làm bẩn queue thật hoặc Feed Readiness
 - **thay đổi** Execution Adapter v1: đọc Selection Decision Report hợp lệ, ghi nhận quyết định an toàn dạng record-only, chặn xóa/move/backup thật ở bản v1
 - **thay đổi** File Operation Adapter v1: chỉ xử lý `move_later` có destination rõ ràng, token `MOVE_SELECTION_V1`, `safe_move` và manifest restore; chưa bật delete
 - **thay đổi** Scenario Tester: chạy fake-file sandbox cho Downloads, media, game data, archive, temp/junk và manifest restore
@@ -90,7 +92,7 @@ Core Utilities	Done
 Tool Tester	**thay đổi** Passed 39/39
 Scenario Tester	Passed 6/6
 Behavior Tester	Passed 18/18
-Full System Tester	**thay đổi** Passed 29/29
+Full System Tester	**thay đổi** Passed 30/30
 WizTree Adapter	Done
 External Apps Integration	Done
 External App Drift Detection	Done
@@ -110,6 +112,7 @@ Dry-run Action Planner	Done
 Pre-feed Bundle	Done
 AI Bot Controller	Done
 Selection UI / Decision Report	Done
+Bot Move-later Flow	**thay đổi** Done
 Execution Adapter	**thay đổi** Done
 File Operation Adapter	**thay đổi** Done
 Refactor Tools Folder	Done

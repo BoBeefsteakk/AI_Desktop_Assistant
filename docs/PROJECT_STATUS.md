@@ -2,7 +2,7 @@
 
 ## Giai đoạn hiện tại
 
-**thay đổi** Giai đoạn 5 - AI Decision Engine / File Operation Adapter v1 cho `move_later`, chỉ move khi có destination rõ ràng, token cuối và manifest restore; delete vẫn chưa bật.
+**thay đổi** Giai đoạn 5 - AI Decision Engine / Bot Move-later Flow v1, cho phép chọn `move_later` ngay trong Bot Controller, dry-run trước rồi apply bằng token `MOVE_SELECTION_V1`; delete vẫn chưa bật.
 
 ---
 
@@ -383,6 +383,35 @@ Kết quả mới nhất:
 
 ---
 
+### Bot Move-later Flow v1
+
+**thay đổi** Đã nối Bot Controller với File Operation Adapter để user không phải tự nhảy qua menu 39 khi xử lý `move_later`.
+
+Chức năng:
+
+* **thay đổi** Bot Controller menu có thêm `Move selected move_later with destination`.
+* **thay đổi** Bot summary hiển thị `move_later_selectable_count`.
+* **thay đổi** Flow in Selection UI, nhận decision dạng `M001=move_later`, hỏi destination folder, tạo Selection Decision Report.
+* **thay đổi** Bot gọi File Operation Adapter dry-run trước, chỉ apply khi user nhập token `MOVE_SELECTION_V1`.
+* **thay đổi** Bot flow report dùng schema `bot_move_later_flow_v1`, ghi decision report, operation report, manifest và trạng thái file operation.
+* **thay đổi** `OK` vẫn không tự move; nhánh move thật là nhánh riêng.
+* **thay đổi** `delete_candidate` vẫn chưa bật.
+
+Ý nghĩa:
+
+* **thay đổi** User có thể đi theo luồng gần với app/bot hơn: bot scan -> user chọn item -> chọn folder đích -> dry-run -> token apply.
+* **thay đổi** Đây vẫn là CLI flow, chưa phải Desktop UI có folder picker đồ họa.
+
+Kết quả mới nhất:
+
+* **thay đổi** Bot Move-later Flow Contract tạo report dry-run, thiếu token và apply có manifest restore bằng file giả trong sandbox.
+* **thay đổi** Contract report được tag `contract_test`/`full_system`; Recommendation Center cũng lọc marker test từ `note`, `context` và linked `source_report`.
+* **thay đổi** Tool Tester pass 39/39 tại `D:\tool\reports\tool_tester_20260605_204040.json`.
+* **thay đổi** Full System Tester pass 30/30 tại `D:\tool\reports\full_system_tester_20260605_204115.json`.
+* **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail tại `D:\tool\reports\feed_readiness_20260605_204138.json`.
+
+---
+
 ### File Operation Adapter v1
 
 **thay đổi** Đã thêm lớp file-operation đầu tiên cho decision `move_later`.
@@ -406,7 +435,7 @@ Kết quả mới nhất:
 * **thay đổi** Apply sandbox report: `D:\tool\reports\file_operation_adapter_20260604_205528_1.json`.
 * **thay đổi** Manifest sandbox đã restore: `D:\tool\backups\file_operation_adapter_move_20260604_205528.json`.
 * **thay đổi** Tool Tester pass 39/39.
-* **thay đổi** Full System Tester pass 29/29.
+* **thay đổi** Full System Tester pass 29/29 tại mốc File Operation Adapter.
 * **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail.
 
 Ý nghĩa:
@@ -594,7 +623,7 @@ Kết quả mới nhất:
 * **thay đổi** Tool Tester pass 39/39.
 * **thay đổi** Behavior Tester pass 18/18.
 * **thay đổi** Scenario Tester pass 6/6.
-* **thay đổi** Full System Tester pass 29/29.
+* **thay đổi** Full System Tester pass 30/30 tại mốc Bot Move-later Flow v1.
 
 ---
 
@@ -894,10 +923,11 @@ Lý do:
 * **thay đổi** Selection UI / Decision Report v2
 * **thay đổi** Execution Adapter v1 record-only
 * **thay đổi** File Operation Adapter v1 cho `move_later`
+* **thay đổi** Bot Move-later Flow v1
 
 Cần làm tiếp để ổn định tool tổng:
 
-* **thay đổi** Ưu tiên 1: Nối Bot/Selection UI với File Operation Adapter để user chọn destination trong luồng `ok / lựa chọn / hủy`, thay vì phải nhập path ở menu riêng.
+* **thay đổi** Ưu tiên 1: Tạo Desktop UI hoặc bot panel có folder picker để thay việc nhập destination path thủ công trong CLI.
 * **thay đổi** Ưu tiên 2: Sau khi move flow UI ổn mới xét `delete_candidate`, bắt buộc qua Safe Executor, trash/backup policy, manifest/report và confirmation mạnh hơn.
 * **thay đổi** Ưu tiên 3: Tạo Desktop UI hoặc bot panel để user nhìn issue, chọn `ok / lựa chọn / hủy` mà không phải nhớ 38 menu.
 * **thay đổi** Mở rộng Natural Command v3 thành intent engine sau khi có thêm lịch sử/report để feed assistant

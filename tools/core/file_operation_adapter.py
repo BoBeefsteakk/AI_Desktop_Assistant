@@ -21,6 +21,15 @@ FINAL_MOVE_TOKEN = "MOVE_SELECTION_V1"
 SUPPORTED_MOVE_DECISION = "move_later"
 
 
+def merge_report_tags(base_tags: list[str], extra_tags: list[str] | None = None) -> list[str]:
+    tags: list[str] = []
+    for tag in [*base_tags, *(extra_tags or [])]:
+        text = str(tag).strip()
+        if text and text not in tags:
+            tags.append(text)
+    return tags
+
+
 def is_same_path(left: Path, right: Path) -> bool:
     return resolve_path(left) == resolve_path(right)
 
@@ -479,6 +488,7 @@ def export_file_operation_adapter_report(
     destination_root: str | Path | None = None,
     mode: str = "dry_run",
     final_token: str | None = None,
+    extra_tags: list[str] | None = None,
 ) -> dict[str, Any]:
     result = build_file_operation_adapter_result(
         source_report_path=source_report_path,
@@ -515,7 +525,10 @@ def export_file_operation_adapter_report(
         summary=result["summary"],
         manifest=result.get("manifest"),
         undo_available=result.get("undo_available", False),
-        tags=["file_operation_adapter", "move_later", "manifest_restore", "guarded_execution"],
+        tags=merge_report_tags(
+            ["file_operation_adapter", "move_later", "manifest_restore", "guarded_execution"],
+            extra_tags,
+        ),
     )
     log_action(
         FILE_OPERATION_ADAPTER_TOOL,

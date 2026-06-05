@@ -20,8 +20,10 @@ from tools.core.behavior_tester import make_sandbox, cleanup_sandbox, write_text
 from tools.core.action_planner import build_action_plan
 from tools.core.bot_controller import (
     build_bot_controller_result,
+    build_selection_session_from_groups,
     build_selection_decision,
     execute_bot_decision,
+    export_move_later_selection_flow_report,
 )
 from tools.core.candidate_review import build_candidate_review
 from tools.core.capability_registry import (
@@ -1136,7 +1138,7 @@ def test_bot_controller_contract() -> dict[str, Any]:
         "Bot Controller v2 must not execute file operations.",
     )
     assert_condition(
-        {"ok", "select", "cancel", "details"}.issubset(decision_screen),
+        {"ok", "select", "move_later", "cancel", "details"}.issubset(decision_screen),
         "Bot Controller should expose simple user decisions.",
     )
     assert_condition(
@@ -1168,6 +1170,15 @@ def test_bot_controller_contract() -> dict[str, Any]:
     assert_condition(
         select_result["selection_ui"]["schema"] == "bot_selection_ui_v2",
         "Select decision should return selection UI.",
+    )
+    move_later_result = execute_bot_decision("move_later", bot_result=result)
+    assert_condition(
+        move_later_result["executed"] is False,
+        "Move-later bot decision should require selection and destination first.",
+    )
+    assert_condition(
+        move_later_result["selection_ui"]["schema"] == "bot_selection_ui_v2",
+        "Move-later decision should return selection UI.",
     )
 
     selection_items = selection_ui["groups"]["needs_selection"]
@@ -1207,6 +1218,7 @@ def test_bot_controller_contract() -> dict[str, Any]:
         "decision_screen": decision_screen,
         "selection_summary": selection_ui["summary"],
         "ok_result": ok_result,
+        "move_later_result_status": move_later_result["status"],
     }
 
 
@@ -1488,6 +1500,104 @@ def test_file_operation_adapter_contract() -> dict[str, Any]:
         cleanup_sandbox(sandbox)
 
 
+def test_bot_move_later_flow_contract() -> dict[str, Any]:
+    sandbox = make_sandbox()
+    try:
+        source_file = sandbox / "bot_move_later_flow" / "selected_video.mp4"
+        destination_root = sandbox / "bot_move_later_destination"
+        write_text(source_file, "bot move later flow")
+        destination_root.mkdir(parents=True, exist_ok=True)
+
+        groups = {
+            "safe_to_execute": [],
+            "needs_selection": [
+                {
+                    "path": str(source_file),
+                    "name": source_file.name,
+                    "size": source_file.stat().st_size,
+                    "size_text": "1.00 KB",
+                    "candidate_group": "large_video",
+                    "context": "contract_test",
+                    "policy_decision": "move_later",
+                    "plan_action": "move_later",
+                    "plan_status": "requires_user_input",
+                    "reason": "Fake item for bot move-later flow.",
+                    "can_execute_now": False,
+                    "requires_user_input": True,
+                }
+            ],
+            "do_not_touch": [],
+            "review_only": [],
+        }
+        session = build_selection_session_from_groups(groups, include_items=True)
+        selection_id = session["groups"]["needs_selection"][0]["selection_id"]
+        contract_report_tags = ["contract_test", "full_system"]
+
+        dry_run = export_move_later_selection_flow_report(
+            {selection_id: "move_later"},
+            destination_root=destination_root,
+            mode="dry_run",
+            session=session,
+            note="full_system_bot_move_later_contract",
+            extra_tags=contract_report_tags,
+        )
+        dry_flow = dry_run["flow"]
+        assert_condition(dry_flow["schema"] == "bot_move_later_flow_v1", "Bot move-later flow should expose v1 schema.")
+        assert_condition(dry_flow["status"] == "dry_run", "Bot move-later dry-run should be ready.")
+        assert_condition(
+            dry_flow["summary"]["movable_count"] == 1,
+            "Bot move-later dry-run should find one movable item.",
+        )
+        assert_condition(source_file.exists(), "Bot move-later dry-run must not move the source file.")
+
+        no_token = export_move_later_selection_flow_report(
+            {selection_id: "move_later"},
+            destination_root=destination_root,
+            mode="apply",
+            session=session,
+            note="full_system_bot_move_later_contract_no_token",
+            extra_tags=contract_report_tags,
+        )
+        assert_condition(
+            no_token["flow"]["status"] == "requires_final_confirmation",
+            "Bot move-later apply should require final token.",
+        )
+        assert_condition(source_file.exists(), "Bot move-later missing token must not move source file.")
+
+        applied = export_move_later_selection_flow_report(
+            {selection_id: "move_later"},
+            destination_root=destination_root,
+            mode="apply",
+            final_token=FINAL_MOVE_TOKEN,
+            session=session,
+            note="full_system_bot_move_later_contract_apply",
+            extra_tags=contract_report_tags,
+        )
+        applied_flow = applied["flow"]
+        manifest = applied_flow["summary"]["manifest"]
+        moved_file = destination_root / source_file.name
+        assert_condition(applied_flow["status"] == "completed", "Bot move-later apply should complete in sandbox.")
+        assert_condition(applied_flow["summary"]["moved_count"] == 1, "Bot move-later should move one file.")
+        assert_condition(applied_flow["summary"]["file_operations_executed"] is True, "Bot move-later should execute move after token.")
+        assert_condition(bool(manifest), "Bot move-later apply should expose a manifest.")
+        assert_condition(moved_file.exists(), "Moved file should exist in destination.")
+
+        restored = restore_manifest(manifest)
+        assert_condition(restored["status"] == "success", "Bot move-later manifest restore should succeed.")
+        assert_condition(source_file.exists(), "Source file should exist again after bot flow restore.")
+
+        return {
+            "dry_summary": dry_flow["summary"],
+            "no_token_status": no_token["flow"]["status"],
+            "applied_summary": applied_flow["summary"],
+            "manifest": manifest,
+            "restore_status": restored["status"],
+            "source_exists_after_restore": source_file.exists(),
+        }
+    finally:
+        cleanup_sandbox(sandbox)
+
+
 def test_feed_readiness_contract() -> dict[str, Any]:
     result = build_feed_readiness_result()
     summary = result["summary"]
@@ -1630,6 +1740,7 @@ FULL_SYSTEM_TESTS: list[tuple[str, Callable[[], dict[str, Any]]]] = [
     ("AI Bot Controller Contract", test_bot_controller_contract),
     ("Execution Adapter Contract", test_execution_adapter_contract),
     ("File Operation Adapter Contract", test_file_operation_adapter_contract),
+    ("Bot Move-later Flow Contract", test_bot_move_later_flow_contract),
     ("Feed Readiness Contract", test_feed_readiness_contract),
     ("Scenario Tester Contract", test_scenario_tester_contract),
     ("Dependency Health", test_dependency_health),

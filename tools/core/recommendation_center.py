@@ -28,6 +28,10 @@ TEST_REPORT_TAGS = {
     "natural_command_v3",
     "recommendation_workflow",
 }
+TEST_REPORT_MARKERS = {
+    "contract_test",
+    "full_system_bot_move_later_contract",
+}
 TEST_REPORT_TOOLS = {
     "behavior_tester",
     "tool_tester",
@@ -62,6 +66,51 @@ def safe_read_report(report_path: str | Path) -> dict[str, Any] | None:
     return data if isinstance(data, dict) else None
 
 
+def contains_test_report_marker(value: Any, *, depth: int = 0) -> bool:
+    if depth > 8:
+        return False
+
+    if isinstance(value, str):
+        text = value.strip().lower()
+        return any(marker in text for marker in TEST_REPORT_MARKERS)
+
+    if isinstance(value, dict):
+        return any(
+            contains_test_report_marker(item, depth=depth + 1)
+            for item in value.values()
+        )
+
+    if isinstance(value, list):
+        return any(
+            contains_test_report_marker(item, depth=depth + 1)
+            for item in value
+        )
+
+    return False
+
+
+def linked_source_report_has_test_marker(report_data: dict[str, Any]) -> bool:
+    source_report_paths = []
+    input_data = report_data.get("input")
+    results = report_data.get("results")
+
+    if isinstance(input_data, dict) and input_data.get("source_report_path"):
+        source_report_paths.append(input_data["source_report_path"])
+
+    if isinstance(results, dict) and results.get("source_report"):
+        source_report_paths.append(results["source_report"])
+
+    for source_report_path in source_report_paths:
+        source_report_text = str(source_report_path or "").strip()
+        if not source_report_text:
+            continue
+        source_data = safe_read_report(source_report_text)
+        if source_data and contains_test_report_marker(source_data):
+            return True
+
+    return False
+
+
 def is_test_report_record(report_record: dict[str, Any]) -> bool:
     if str(report_record.get("tool") or "") in TEST_REPORT_TOOLS:
         return True
@@ -76,6 +125,16 @@ def is_test_report_record(report_record: dict[str, Any]) -> bool:
         if str(item).strip()
     }
     if tags.intersection(TEST_REPORT_TAGS):
+        return True
+
+    if contains_test_report_marker({
+        "input": report_data.get("input"),
+        "results": report_data.get("results"),
+        "summary": report_data.get("summary"),
+    }):
+        return True
+
+    if linked_source_report_has_test_marker(report_data):
         return True
 
     action = str(report_data.get("action") or report_record.get("action") or "").lower()

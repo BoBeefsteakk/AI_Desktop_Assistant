@@ -9,6 +9,11 @@ from tools.core.action_policy import build_action_policy_health
 from tools.core.assistant_logger import log_action
 from tools.core.candidate_review import build_candidate_review
 from tools.core.feed_readiness import build_feed_readiness_result
+from tools.core.file_operation_adapter import (
+    FINAL_MOVE_TOKEN,
+    export_file_operation_adapter_report,
+    print_operation_summary,
+)
 from tools.core.guided_action_runner import build_action_contexts
 from tools.core.recommendation_center import (
     DEFAULT_VISIBLE_STATES,
@@ -19,10 +24,11 @@ from tools.core.report_manager import create_report, read_recent_report_index
 
 
 BOT_CONTROLLER_TOOL = "bot_controller"
-BOT_DECISIONS = {"ok", "select", "cancel", "details"}
+BOT_DECISIONS = {"ok", "select", "move_later", "cancel", "details"}
 BOT_CONTROLLER_SCHEMA = "bot_controller_v2"
 BOT_SELECTION_UI_SCHEMA = "bot_selection_ui_v2"
 BOT_SELECTION_DECISION_SCHEMA = "bot_selection_decision_v2"
+BOT_MOVE_LATER_FLOW_SCHEMA = "bot_move_later_flow_v1"
 SELECTION_DECISIONS = {
     "keep",
     "manual_review",
@@ -39,7 +45,17 @@ LATEST_REPORT_TOOLS = {
     "action_planner",
     "feed_readiness",
     "full_system_tester",
+    "file_operation_adapter",
 }
+
+
+def merge_report_tags(base_tags: list[str], extra_tags: list[str] | None = None) -> list[str]:
+    tags: list[str] = []
+    for tag in [*base_tags, *(extra_tags or [])]:
+        text = str(tag).strip()
+        if text and text not in tags:
+            tags.append(text)
+    return tags
 
 
 def safe_read_report(path: str | Path) -> dict[str, Any] | None:
@@ -121,6 +137,26 @@ def summarize_grouped_plan(groups: dict[str, list[dict[str, Any]]]) -> dict[str,
         "do_not_touch_count": len(groups["do_not_touch"]),
         "review_only_count": len(groups["review_only"]),
     }
+
+
+def count_items_allowing_decision(session: dict[str, Any], decision: str) -> int:
+    count = 0
+    for item in iter_selection_items(session):
+        if decision in item.get("allowed_decisions", []):
+            count += 1
+    return count
+
+
+def count_grouped_items_allowing_decision(
+    groups: dict[str, list[dict[str, Any]]],
+    decision: str,
+) -> int:
+    count = 0
+    for group_name, items in groups.items():
+        for item in items:
+            if decision in get_allowed_selection_decisions(item, group_name):
+                count += 1
+    return count
 
 
 def get_allowed_selection_decisions(item: dict[str, Any], group_name: str) -> list[str]:
@@ -386,9 +422,11 @@ def build_selection_decision(
 def export_selection_decision_report(
     decisions: dict[str, str],
     *,
+    session: dict[str, Any] | None = None,
     note: str | None = None,
+    extra_tags: list[str] | None = None,
 ) -> dict[str, Any]:
-    decision_report = build_selection_decision(decisions, note=note)
+    decision_report = build_selection_decision(decisions, session=session, note=note)
     status = "success" if decision_report["status"] != "needs_fix" else "warning"
     report = create_report(
         tool_name=BOT_CONTROLLER_TOOL,
@@ -407,7 +445,10 @@ def export_selection_decision_report(
         ],
         summary=decision_report["summary"],
         undo_available=False,
-        tags=["bot_controller", "selection", "decision_report", "read_only"],
+        tags=merge_report_tags(
+            ["bot_controller", "selection", "decision_report", "read_only"],
+            extra_tags,
+        ),
     )
     log_action(
         BOT_CONTROLLER_TOOL,
@@ -425,6 +466,144 @@ def export_selection_decision_report(
         "status": status,
         "report": str(report),
         "decision": decision_report,
+    }
+
+
+def summarize_move_later_flow(
+    decision_export: dict[str, Any],
+    operation_export: dict[str, Any] | None,
+) -> dict[str, Any]:
+    decision = decision_export.get("decision", {})
+    decision_summary = decision.get("summary", {}) if isinstance(decision, dict) else {}
+    operation = operation_export.get("operation", {}) if isinstance(operation_export, dict) else {}
+    operation_summary = operation.get("summary", {}) if isinstance(operation, dict) else {}
+
+    return {
+        "decision_report": decision_export.get("report"),
+        "operation_report": operation_export.get("report") if operation_export else None,
+        "selection_status": decision.get("status"),
+        "selected_count": decision_summary.get("selected_count", 0),
+        "blocked_count": decision_summary.get("blocked_count", 0),
+        "invalid_count": decision_summary.get("invalid_count", 0),
+        "move_requested_count": operation_summary.get("move_requested_count", 0),
+        "movable_count": operation_summary.get("movable_count", 0),
+        "moved_count": operation_summary.get("moved_count", 0),
+        "operation_blocked_count": operation_summary.get("blocked_count", 0),
+        "operation_error_count": operation_summary.get("error_count", 0),
+        "file_operations_executed": operation_summary.get("file_operations_executed", False),
+        "manifest": operation.get("manifest") or operation_summary.get("manifest"),
+        "undo_available": bool(operation.get("undo_available") or operation_summary.get("undo_available")),
+    }
+
+
+def export_move_later_selection_flow_report(
+    decisions: dict[str, str],
+    *,
+    destination_root: str | Path,
+    mode: str = "dry_run",
+    final_token: str | None = None,
+    session: dict[str, Any] | None = None,
+    note: str | None = None,
+    extra_tags: list[str] | None = None,
+) -> dict[str, Any]:
+    decision_export = export_selection_decision_report(
+        decisions,
+        session=session,
+        note=note,
+        extra_tags=extra_tags,
+    )
+    decision = decision_export["decision"]
+    operation_export: dict[str, Any] | None = None
+
+    if decision["status"] == "ready":
+        operation_export = export_file_operation_adapter_report(
+            source_report_path=decision_export["report"],
+            destination_root=destination_root,
+            mode=mode,
+            final_token=final_token,
+            extra_tags=extra_tags,
+        )
+
+    summary = summarize_move_later_flow(decision_export, operation_export)
+    if decision["status"] != "ready":
+        flow_status = "decision_report_not_ready"
+    elif operation_export:
+        flow_status = operation_export["operation"]["status"]
+    else:
+        flow_status = "operation_not_started"
+
+    report_status = "success"
+    if flow_status in {"decision_report_not_ready", "destination_invalid", "requires_final_confirmation"}:
+        report_status = "warning"
+    elif flow_status in {"completed_with_errors", "invalid_decision_report", "missing_source_report"}:
+        report_status = "error"
+
+    result = {
+        "schema": BOT_MOVE_LATER_FLOW_SCHEMA,
+        "status": flow_status,
+        "mode": str(mode or "dry_run").strip().lower(),
+        "destination_root": str(destination_root),
+        "decision_report": decision_export,
+        "operation_report": operation_export,
+        "summary": summary,
+        "safety_contract": {
+            "requires_selection_decision": True,
+            "requires_destination_root": True,
+            "requires_final_move_token": True,
+            "final_move_token": FINAL_MOVE_TOKEN,
+            "file_operations_limited_to_move_later": True,
+            "delete_enabled": False,
+            "uses_file_operation_adapter": True,
+            "undo_strategy": "manifest_restore",
+        },
+    }
+
+    report = create_report(
+        tool_name=BOT_CONTROLLER_TOOL,
+        action="move_later_selection_flow",
+        status=report_status,
+        risk_level="medium",
+        input_data={
+            "decision_count": len(decisions or {}),
+            "destination_root": str(destination_root),
+            "mode": mode,
+            "final_token_provided": bool(final_token),
+            "note": note,
+        },
+        results=result,
+        recommendations=[
+            "This flow only moves items explicitly selected as move_later.",
+            "Review the File Operation Adapter report before trusting any move result.",
+            "Use Undo Manager with the manifest if moved files need to be restored.",
+            "delete_candidate remains disabled.",
+        ],
+        summary=summary,
+        manifest=summary.get("manifest"),
+        undo_available=summary.get("undo_available", False),
+        tags=merge_report_tags(
+            ["bot_controller", "move_later_flow", "file_operation_adapter", "selection_ui_v2"],
+            extra_tags,
+        ),
+    )
+    log_action(
+        BOT_CONTROLLER_TOOL,
+        "export_move_later_selection_flow_report",
+        report_status,
+        {
+            "report": str(report),
+            "flow_status": flow_status,
+            "decision_report": decision_export.get("report"),
+            "operation_report": operation_export.get("report") if operation_export else None,
+            "manifest": summary.get("manifest"),
+            "file_operations_executed": summary["file_operations_executed"],
+        },
+    )
+    print(f"Bot flow report: {report}")
+
+    return {
+        "status": report_status,
+        "report": str(report),
+        "flow": result,
     }
 
 
@@ -467,6 +646,7 @@ def build_bot_controller_result(
         grouped_plan,
         include_items=include_items,
     )
+    move_later_selectable_count = count_grouped_items_allowing_decision(grouped_plan, "move_later")
     readiness = build_feed_readiness_result()
     action_policy = build_action_policy_health()
     latest_reports = {
@@ -488,6 +668,11 @@ def build_bot_controller_result(
             "label": "Lua chon - review files manually",
             "enabled": group_summary["needs_selection_count"] > 0,
             "effect": "Open/review candidate list before any action.",
+        },
+        "move_later": {
+            "label": "Move selected move_later items",
+            "enabled": move_later_selectable_count > 0,
+            "effect": "Create a selection decision report, require a destination, then use File Operation Adapter.",
         },
         "cancel": {
             "label": "Huy - do nothing",
@@ -517,6 +702,7 @@ def build_bot_controller_result(
             "safe_to_execute_count": group_summary["safe_to_execute_count"],
             "needs_selection_count": group_summary["needs_selection_count"],
             "do_not_touch_count": group_summary["do_not_touch_count"],
+            "move_later_selectable_count": move_later_selectable_count,
             "candidate_count": candidate_review["summary"]["total"],
             "policy_count": action_policy["summary"]["total"],
             "readiness_status": readiness["summary"]["readiness_status"],
@@ -567,6 +753,8 @@ def build_bot_controller_result(
             "selection_ui_schema": BOT_SELECTION_UI_SCHEMA,
             "selection_decision_schema": BOT_SELECTION_DECISION_SCHEMA,
             "selection_report_only": True,
+            "move_later_uses_file_operation_adapter": True,
+            "delete_candidate_enabled": False,
             "never_touch_policy_decisions": ["ignore_forever", "keep"],
         },
     }
@@ -620,6 +808,17 @@ def execute_bot_decision(
             "decision": decision,
             "selection_ui": selection_session,
             "message": "Selection UI is ready; export a decision report before any future execution.",
+        }
+
+    if decision == "move_later":
+        selection_session = build_selection_session(bot_result=result, include_items=True)
+        return {
+            "status": "move_later_selection_required",
+            "executed": False,
+            "decision": decision,
+            "selection_ui": selection_session,
+            "final_move_token": FINAL_MOVE_TOKEN,
+            "message": "Select move_later items and destination, then File Operation Adapter will dry-run before apply.",
         }
 
     if decision == "ok":
@@ -692,6 +891,7 @@ def print_bot_summary(result: dict[str, Any]) -> None:
     print(f"Recommendations: {summary['visible_recommendation_count']} visible / {summary['all_recommendation_count']} total")
     print(f"Safe to execute: {summary['safe_to_execute_count']}")
     print(f"Need selection: {summary['needs_selection_count']}")
+    print(f"Move-later selectable: {summary['move_later_selectable_count']}")
     print(f"Do not touch: {summary['do_not_touch_count']}")
     print(f"Candidates: {summary['candidate_count']}")
     print(f"Readiness: {summary['readiness_status']}")
@@ -754,7 +954,8 @@ def run_bot_controller() -> None:
 3. OK - run safe-only decision
 4. Preview selection UI v2
 5. Export selection decision report
-6. Huy - cancel decision
+6. Move selected move_later with destination
+7. Huy - cancel decision
 0. Thoat
 """)
         choice = input("Chon: ").strip()
@@ -779,9 +980,50 @@ def run_bot_controller() -> None:
             raw_text = input("Nhap decision (vd M001=keep, M002=move_later), bo trong neu chua chon: ").strip()
             decisions = parse_selection_input(raw_text)
             note = input("Ghi chu report (bo trong neu khong co): ").strip() or None
-            export_selection_decision_report(decisions, note=note)
+            export_selection_decision_report(decisions, session=session, note=note)
 
         elif choice == "6":
+            session = build_selection_session(include_items=True)
+            print_selection_session(session)
+            raw_text = input("Nhap item can move (vd M001=move_later): ").strip()
+            decisions = parse_selection_input(raw_text)
+            destination = input("Nhap folder dich da ton tai: ").strip().strip('"')
+            note = input("Ghi chu report (bo trong neu khong co): ").strip() or None
+
+            dry_run = export_move_later_selection_flow_report(
+                decisions,
+                destination_root=destination,
+                mode="dry_run",
+                session=session,
+                note=note,
+            )
+            operation_report = dry_run["flow"].get("operation_report")
+            if operation_report:
+                print_operation_summary(operation_report["operation"])
+
+            if dry_run["flow"]["summary"].get("movable_count", 0) <= 0:
+                print("Khong co item nao san sang move.")
+                continue
+
+            print(f"Final move token required: {FINAL_MOVE_TOKEN}")
+            token = input("Nhap final move token de apply, bo trong de huy: ").strip()
+            if not token:
+                print("Da huy apply move.")
+                continue
+
+            applied = export_move_later_selection_flow_report(
+                decisions,
+                destination_root=destination,
+                mode="apply",
+                final_token=token,
+                session=session,
+                note=note,
+            )
+            applied_operation = applied["flow"].get("operation_report")
+            if applied_operation:
+                print_operation_summary(applied_operation["operation"])
+
+        elif choice == "7":
             decision = execute_bot_decision("cancel")
             print(decision)
 

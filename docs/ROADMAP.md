@@ -61,6 +61,8 @@ Hoàn thành
 * **thay đổi** AI Bot Controller v2: entrypoint bot tổng cho auto-check, decision screen OK/lựa chọn/hủy/details, Selection UI/Decision Report, hiện vẫn không execute file
 * **thay đổi** Execution Adapter v1: đọc Selection Decision Report, record-only quyết định an toàn, chặn xóa/move/backup thật
 * **thay đổi** File Operation Adapter v1: move `move_later` với destination rõ ràng, token `MOVE_SELECTION_V1`, `safe_move` và manifest restore
+* **thay đổi** Bot Move-later Flow v1: chọn item và destination ngay trong Bot Controller, dry-run rồi apply bằng token
+* **thay đổi** Recommendation Center test-report hygiene: lọc contract/full-system report bằng tag, marker và linked source report để queue thật không bị warning giả
 
 Cần rà soát tiếp:
 
@@ -149,13 +151,14 @@ Một lệnh test tổng hợp trước khi refactor lớn hoặc feed assistant
 * **thay đổi** Selection UI / Decision Report Contract test: validate mã item, locked item và decision report không execute
 * **thay đổi** Execution Adapter Contract test: dry-run/apply record-only, block delete_candidate và không xóa file sandbox
 * **thay đổi** File Operation Adapter Contract test: move file giả trong sandbox, tạo manifest và restore bằng Undo Manager
-* **thay đổi** Full System Tester hiện pass 29/29
+* **thay đổi** Bot Move-later Flow Contract test: bot tạo decision report, gọi adapter, move file giả và restore manifest
+* **thay đổi** Full System Tester hiện pass 30/30
 
 ---
 
 ## Phase 5 - AI Decision Engine
 
-**thay đổi** Đã có AI Bot Controller v2, Selection UI / Decision Report, Execution Adapter v1 record-only và File Operation Adapter v1 cho `move_later`.
+**thay đổi** Đã có AI Bot Controller v2, Selection UI / Decision Report, Execution Adapter v1 record-only, File Operation Adapter v1 và Bot Move-later Flow v1.
 
 Mục tiêu:
 
@@ -168,7 +171,8 @@ Assistant có thể:
 * **thay đổi** Bot Controller v2 đã gom queue/policy/candidate/plan/readiness thành một màn quyết định và export decision report, nhưng chưa execute file thật
 * **thay đổi** Execution Adapter v1 đã có final token và report, nhưng vẫn chưa bật manifest/undo mới vì chưa chạy file operation thật
 * **thay đổi** File Operation Adapter v1 đã move được `move_later` trong sandbox với manifest restore
-* **thay đổi** Bước tiếp theo của Phase 5 là nối UI/Bot selection với destination picker; `delete_candidate` vẫn chưa bật
+* **thay đổi** Bot Controller đã gọi được File Operation Adapter qua flow riêng, có destination và dry-run trước apply
+* **thay đổi** Bước tiếp theo của Phase 5 là Desktop UI/bot panel có folder picker; `delete_candidate` vẫn chưa bật
 
 ---
 

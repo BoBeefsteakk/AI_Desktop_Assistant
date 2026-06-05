@@ -431,9 +431,10 @@ Output:
 
 * **thay đổi** Report `bot_controller` với schema `bot_controller_v2`.
 * **thay đổi** Summary tổng: recommendation, candidate, policy, readiness, safe-to-execute, needs-selection, do-not-touch.
-* **thay đổi** Decision screen gồm `ok`, `select`, `cancel`, `details`.
+* **thay đổi** Decision screen gồm `ok`, `select`, `move_later`, `cancel`, `details`.
 * **thay đổi** Selection UI schema `bot_selection_ui_v2`.
 * **thay đổi** Selection Decision schema `bot_selection_decision_v2`.
+* **thay đổi** Bot Move-later Flow schema `bot_move_later_flow_v1`.
 
 Nguyên tắc:
 
@@ -441,6 +442,7 @@ Nguyên tắc:
 * **thay đổi** `executes_file_operations=false`.
 * **thay đổi** `ok` không chạy gì nếu không có item `can_execute_now`.
 * **thay đổi** `select` trả Selection UI có mã item và allowed decisions.
+* **thay đổi** `move_later` yêu cầu user chọn item, destination, dry-run và token `MOVE_SELECTION_V1` trước khi gọi File Operation Adapter.
 * **thay đổi** Selection Decision chỉ ghi ý định; `delete_candidate` không phải lệnh xóa.
 * **thay đổi** Nhóm `do_not_touch` bị locked và chỉ được `keep`.
 * **thay đổi** Không đụng policy `ignore_forever` hoặc `keep`.
@@ -572,6 +574,7 @@ Các lớp kiểm tra:
 * **thay đổi** AI Bot Controller contract kiểm tra decision screen, Selection UI v2, Selection Decision v2, locked item bị block và OK không execute file trong v2
 * **thay đổi** Execution Adapter contract kiểm tra dry-run/apply record-only, block `delete_candidate` và không xóa file sandbox
 * **thay đổi** File Operation Adapter contract kiểm tra move file giả trong sandbox, tạo manifest và restore bằng Undo Manager
+* **thay đổi** Bot Move-later Flow contract kiểm tra bot tạo decision report, gọi adapter, move file giả và restore manifest
 
 ---
 
@@ -620,6 +623,7 @@ WizTree Adapter:
 * **thay đổi** Health v2 so sánh baseline với trạng thái hiện tại để phát hiện `path_changed`, `availability_changed`, `version_changed`, `binary_changed`.
 * **thay đổi** Drift chỉ tạo report/recommendation read-only; không tự sửa config, không tải app, không chạy installer.
 * **thay đổi** Recommendation Center đọc buffer report lớn hơn rồi mới lọc test reports, tránh test report che mất Advisor/External Apps report thật.
+* **thay đổi** Recommendation Center lọc test report bằng tag `contract_test`/`full_system`, marker trong `note`/`context`, và linked `source_report` để warning guardrail từ Full System Tester không vào queue thật.
 
 ---
 

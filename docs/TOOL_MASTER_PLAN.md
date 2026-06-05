@@ -4,16 +4,17 @@
 
 ## Trạng Thái Đã Verify
 
-**thay đổi** Ngày rà lại: 2026-06-04.
+**thay đổi** Ngày rà lại: 2026-06-05.
 
 **thay đổi** Kết quả hiện tại:
 
 * **thay đổi** Main CLI đang expose 39 tool.
 * **thay đổi** Capability Registry valid 39/39, không thiếu entry so với Tool Tester.
-* **thay đổi** Tool Tester pass 39/39.
+* **thay đổi** Tool Tester pass 39/39 tại `D:\tool\reports\tool_tester_20260605_204040.json`.
 * **thay đổi** Behavior Tester pass 18/18.
 * **thay đổi** Scenario Tester pass 6/6.
-* **thay đổi** Full System Tester pass 29/29.
+* **thay đổi** Full System Tester pass 30/30 tại `D:\tool\reports\full_system_tester_20260605_204115.json`.
+* **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail tại `D:\tool\reports\feed_readiness_20260605_204138.json`.
 * **thay đổi** Capability summary: 25 safe, 8 medium, 6 dangerous; 12 tool có thể thay đổi file; 14 tool cần confirmation; 9 tool dùng external app.
 
 ## Luồng Tool Tổng Chuẩn
@@ -31,14 +32,15 @@
 9. **thay đổi** Action Policy Manager gắn quyết định keep/move/delete/manual/ignore theo path/context/recommendation trước khi mở action thật.
 10. **thay đổi** Policy Enforcement Gate kiểm tra policy trước khi Guided Action Runner mở target tool.
 11. **thay đổi** Candidate Review và Dry-run Action Planner phân loại candidate thành keep/manual/backup/move sau, nhưng không execute.
-12. **thay đổi** AI Bot Controller gom các lớp trên thành màn quyết định `ok`/`select`/`cancel`/`details`; v2 có Selection UI/Decision Report nhưng vẫn chưa execute file.
+12. **thay đổi** AI Bot Controller gom các lớp trên thành màn quyết định `ok`/`select`/`move_later`/`cancel`/`details`.
 13. **thay đổi** Execution Adapter v1 đọc Selection Decision Report hợp lệ, ghi nhận record-only decision và chặn cleanup thật.
 14. **thay đổi** File Operation Adapter v1 chỉ xử lý `move_later` khi có destination rõ ràng, token `MOVE_SELECTION_V1`, `safe_move()` và manifest restore.
-15. **thay đổi** Guided Action Runner mở tool được đề xuất từ recommendation sau khi user nhập token phù hợp.
-16. **thay đổi** Scenario Tester tái hiện case rủi ro bằng file giả trước khi đụng dữ liệu thật.
-17. **thay đổi** Feed Assistant Readiness và Pre-feed Bundle đóng gói pre-feed checklist/context, nhưng chưa feed/train thật.
-18. **thay đổi** Nếu user chọn chạy tool thật, tool đó vẫn tự xử lý confirmation, risk classification, safe executor, manifest/undo và report/log.
-19. **thay đổi** Audit Center, Report Manager và Undo Manager lưu lại lịch sử, report, manifest để kiểm tra sau.
+15. **thay đổi** Bot Move-later Flow v1 nối Selection UI với File Operation Adapter: chọn item, nhập destination, dry-run, token apply, manifest restore.
+16. **thay đổi** Guided Action Runner mở tool được đề xuất từ recommendation sau khi user nhập token phù hợp.
+17. **thay đổi** Scenario Tester tái hiện case rủi ro bằng file giả trước khi đụng dữ liệu thật.
+18. **thay đổi** Feed Assistant Readiness và Pre-feed Bundle đóng gói pre-feed checklist/context, nhưng chưa feed/train thật.
+19. **thay đổi** Nếu user chọn chạy tool thật, tool đó vẫn tự xử lý confirmation, risk classification, safe executor, manifest/undo và report/log.
+20. **thay đổi** Audit Center, Report Manager và Undo Manager lưu lại lịch sử, report, manifest để kiểm tra sau.
 
 ## Nguyên Tắc Không Được Phá
 
@@ -85,6 +87,7 @@
 * **thay đổi** Selection UI / Decision Report
 * **thay đổi** Execution Adapter v1 record-only
 * **thay đổi** File Operation Adapter v1 cho `move_later`
+* **thay đổi** Bot Move-later Flow v1
 
 **thay đổi** External app layer:
 
@@ -120,7 +123,9 @@
 
 **thay đổi** Gap 12: File Operation Adapter v1 đã hoàn thành cho `move_later`; move thật chỉ chạy với destination đã tồn tại, token `MOVE_SELECTION_V1`, `safe_move()` và manifest restore.
 
-**thay đổi** Gap 13: `delete_candidate` và `needs_backup` vẫn chưa được execute; cần adapter riêng sau khi UI/destination/restore flow ổn định.
+**thay đổi** Gap 13: Bot Move-later Flow v1 đã nối Selection UI với File Operation Adapter bằng CLI destination prompt; Desktop UI/folder picker vẫn chưa có.
+
+**thay đổi** Gap 14: `delete_candidate` và `needs_backup` vẫn chưa được execute; cần adapter riêng sau khi UI/destination/restore flow ổn định.
 
 ## Kế Hoạch Chuẩn Từ Bây Giờ
 
@@ -452,14 +457,44 @@
 * **thay đổi** Undo Manager restore được manifest.
 * **thay đổi** Delete vẫn disabled.
 
-**thay đổi** Kết quả hiện tại:
+**thay đổi** Kết quả tại mốc File Operation Adapter:
 
 * **thay đổi** Dry-run sandbox report: `D:\tool\reports\file_operation_adapter_20260604_205528.json`.
 * **thay đổi** Apply sandbox report: `D:\tool\reports\file_operation_adapter_20260604_205528_1.json`.
 * **thay đổi** Manifest sandbox đã restore: `D:\tool\backups\file_operation_adapter_move_20260604_205528.json`.
-* **thay đổi** Tool Tester pass 39/39; Full System Tester pass 29/29; Feed Readiness pass 9/9.
+* **thay đổi** Tool Tester pass 39/39; Full System Tester pass 29/29; Feed Readiness pass 9/9 tại mốc File Operation Adapter.
 
 **thay đổi** Bước kế tiếp: nối UI/Bot selection với destination picker để user chọn nơi chuyển file dễ hơn, sau đó mới xét adapter cho `delete_candidate`.
+
+## Bot Move-later Flow v1
+
+**thay đổi** Bot Move-later Flow v1 nối Bot Controller với File Operation Adapter trong cùng một luồng CLI.
+
+**thay đổi** Flow:
+
+1. **thay đổi** User mở Bot Controller mục 37.
+2. **thay đổi** User chọn `Move selected move_later with destination`.
+3. **thay đổi** Bot in Selection UI và user nhập decision như `M001=move_later`.
+4. **thay đổi** User nhập destination folder đã tồn tại.
+5. **thay đổi** Bot export Selection Decision Report.
+6. **thay đổi** Bot gọi File Operation Adapter dry-run và in preview.
+7. **thay đổi** Nếu user nhập token `MOVE_SELECTION_V1`, bot gọi apply.
+8. **thay đổi** Bot tạo flow report `bot_move_later_flow_v1` và manifest có thể restore bằng Undo Manager nếu có move thật.
+
+**thay đổi** Guardrail:
+
+* **thay đổi** `OK` vẫn không tự move.
+* **thay đổi** Destination vẫn bị File Operation Adapter validate.
+* **thay đổi** `delete_candidate` không được xử lý trong flow này.
+* **thay đổi** Nếu decision report bị invalid/blocked, flow dừng trước file operation.
+
+**thay đổi** Kết quả verify:
+
+* **thay đổi** Full System Tester có contract riêng cho Bot Move-later Flow: dry-run không move, apply thiếu token bị chặn, apply có `MOVE_SELECTION_V1` move file giả và restore manifest thành công.
+* **thay đổi** Report contract được tag `contract_test`/`full_system`, đồng thời Recommendation Center lọc được marker test cũ để Feed Readiness không còn warning giả.
+* **thay đổi** Report verify mới nhất: `D:\tool\reports\full_system_tester_20260605_204115.json`.
+
+**thay đổi** Bước kế tiếp: Desktop UI hoặc bot panel có folder picker để thay việc nhập path thủ công.
 
 ## Deletion Safety / UX v2
 
