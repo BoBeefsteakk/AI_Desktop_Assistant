@@ -659,6 +659,22 @@ CAPABILITIES: list[dict[str, Any]] = [
         "tags": ["core", "explorer", "helper"],
         "summary": "Open Windows Explorer at a selected file location.",
     },
+    {
+        "id": "obsidian_exporter",
+        "name": "Obsidian Exporter",
+        "category": "core",
+        "module": "tools.core.obsidian_exporter",
+        "function": "run_obsidian_exporter",
+        "risk_level": "safe",
+        "mutates_files": True,
+        "needs_confirmation": False,
+        "undo_strategy": "manual",
+        "creates_report": True,
+        "logs_action": True,
+        "external_apps": [],
+        "tags": ["core", "obsidian", "markdown", "canvas", "review_layer"],
+        "summary": "Export report, policy, queue and capability snapshots into a managed Obsidian vault for review.",
+    },
 ]
 
 

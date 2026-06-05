@@ -2,7 +2,7 @@
 
 ## Giai đoạn hiện tại
 
-**thay đổi** Giai đoạn 5 - AI Decision Engine / Bot Move-later Flow v1, cho phép chọn `move_later` ngay trong Bot Controller, dry-run trước rồi apply bằng token `MOVE_SELECTION_V1`; delete vẫn chưa bật.
+**thay đổi** Giai đoạn 5 - AI Decision Engine / Obsidian Exporter v1, tạo bản đồ review-only cho registry, queue, policy, report và safety contract; delete vẫn chưa bật.
 
 ---
 
@@ -402,13 +402,42 @@ Chức năng:
 * **thay đổi** User có thể đi theo luồng gần với app/bot hơn: bot scan -> user chọn item -> chọn folder đích -> dry-run -> token apply.
 * **thay đổi** Đây vẫn là CLI flow, chưa phải Desktop UI có folder picker đồ họa.
 
-Kết quả mới nhất:
+Kết quả tại mốc Bot Move-later Flow v1:
 
 * **thay đổi** Bot Move-later Flow Contract tạo report dry-run, thiếu token và apply có manifest restore bằng file giả trong sandbox.
 * **thay đổi** Contract report được tag `contract_test`/`full_system`; Recommendation Center cũng lọc marker test từ `note`, `context` và linked `source_report`.
 * **thay đổi** Tool Tester pass 39/39 tại `D:\tool\reports\tool_tester_20260605_204040.json`.
 * **thay đổi** Full System Tester pass 30/30 tại `D:\tool\reports\full_system_tester_20260605_204115.json`.
 * **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail tại `D:\tool\reports\feed_readiness_20260605_204138.json`.
+
+---
+
+### Obsidian Exporter v1
+
+**thay đổi** Đã thêm lớp xuất bản đồ review-only cho Obsidian để nhìn tổng thể tool, report, queue, policy và safety contract.
+
+Chức năng:
+
+* **thay đổi** Thêm `tools/core/obsidian_exporter.py` với schema `obsidian_export_v1`.
+* **thay đổi** Main CLI expose `Obsidian Exporter` ở mục 40.
+* **thay đổi** Natural Command route được `obsidian`, `export obsidian`, `database file`, `sơ đồ database file`.
+* **thay đổi** Export vault mặc định tại `D:\tool\obsidian_vault`.
+* **thay đổi** Vault tạo `00_Index.md`, system overview, Mermaid flow, Obsidian Canvas, capability map, recommendation queue, action policies, latest reports và safety contract.
+* **thay đổi** Vault output được ignore khỏi git bằng `obsidian_vault/`.
+* **thay đổi** Tool này chỉ ghi file trong vault; không scan sâu từng file, không xóa, không move, không approve action.
+
+Kết quả mới nhất:
+
+* **thay đổi** Export thật đã tạo 9 file tại `D:\tool\obsidian_vault`.
+* **thay đổi** Obsidian Exporter report: `D:\tool\reports\obsidian_exporter_20260605_210611.json`.
+* **thay đổi** Tool Tester pass 40/40 tại `D:\tool\reports\tool_tester_20260605_210518.json`.
+* **thay đổi** Full System Tester pass 31/31 tại `D:\tool\reports\full_system_tester_20260605_210551.json`.
+* **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail tại `D:\tool\reports\feed_readiness_20260605_210633.json`.
+
+Ý nghĩa:
+
+* **thay đổi** Obsidian trở thành bản đồ tư duy của assistant, giúp xem lại vì sao tool đề xuất giữ, move, backup hay review thủ công.
+* **thay đổi** Đây chưa phải Desktop UI thao tác file; mọi thao tác thật vẫn phải đi qua Bot Controller/File Operation Adapter/Safe Executor.
 
 ---
 
@@ -434,7 +463,7 @@ Kết quả mới nhất:
 * **thay đổi** Dry-run sandbox report: `D:\tool\reports\file_operation_adapter_20260604_205528.json`.
 * **thay đổi** Apply sandbox report: `D:\tool\reports\file_operation_adapter_20260604_205528_1.json`.
 * **thay đổi** Manifest sandbox đã restore: `D:\tool\backups\file_operation_adapter_move_20260604_205528.json`.
-* **thay đổi** Tool Tester pass 39/39.
+* **thay đổi** Tool Tester pass 40/40.
 * **thay đổi** Full System Tester pass 29/29 tại mốc File Operation Adapter.
 * **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail.
 
@@ -620,10 +649,10 @@ Kết quả mới nhất:
 * **thay đổi** Readiness status: ready.
 * **thay đổi** Checks: 9 pass, 0 warn, 0 fail.
 * **thay đổi** Không còn warning trong readiness snapshot mới nhất.
-* **thay đổi** Tool Tester pass 39/39.
+* **thay đổi** Tool Tester pass 40/40.
 * **thay đổi** Behavior Tester pass 18/18.
 * **thay đổi** Scenario Tester pass 6/6.
-* **thay đổi** Full System Tester pass 30/30 tại mốc Bot Move-later Flow v1.
+* **thay đổi** Full System Tester pass 31/31 tại mốc Obsidian Exporter v1.
 
 ---
 

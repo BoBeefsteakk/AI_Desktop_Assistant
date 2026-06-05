@@ -8,14 +8,14 @@
 
 **thay đổi** Kết quả hiện tại:
 
-* **thay đổi** Main CLI đang expose 39 tool.
-* **thay đổi** Capability Registry valid 39/39, không thiếu entry so với Tool Tester.
-* **thay đổi** Tool Tester pass 39/39 tại `D:\tool\reports\tool_tester_20260605_204040.json`.
+* **thay đổi** Main CLI đang expose 40 tool.
+* **thay đổi** Capability Registry valid 40/40, không thiếu entry so với Tool Tester.
+* **thay đổi** Tool Tester pass 40/40 tại `D:\tool\reports\tool_tester_20260605_210518.json`.
 * **thay đổi** Behavior Tester pass 18/18.
 * **thay đổi** Scenario Tester pass 6/6.
-* **thay đổi** Full System Tester pass 30/30 tại `D:\tool\reports\full_system_tester_20260605_204115.json`.
-* **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail tại `D:\tool\reports\feed_readiness_20260605_204138.json`.
-* **thay đổi** Capability summary: 25 safe, 8 medium, 6 dangerous; 12 tool có thể thay đổi file; 14 tool cần confirmation; 9 tool dùng external app.
+* **thay đổi** Full System Tester pass 31/31 tại `D:\tool\reports\full_system_tester_20260605_210551.json`.
+* **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail tại `D:\tool\reports\feed_readiness_20260605_210633.json`.
+* **thay đổi** Capability summary: 26 safe, 8 medium, 6 dangerous; 13 tool có thể thay đổi file; 14 tool cần confirmation; 9 tool dùng external app.
 
 ## Luồng Tool Tổng Chuẩn
 
@@ -39,8 +39,9 @@
 16. **thay đổi** Guided Action Runner mở tool được đề xuất từ recommendation sau khi user nhập token phù hợp.
 17. **thay đổi** Scenario Tester tái hiện case rủi ro bằng file giả trước khi đụng dữ liệu thật.
 18. **thay đổi** Feed Assistant Readiness và Pre-feed Bundle đóng gói pre-feed checklist/context, nhưng chưa feed/train thật.
-19. **thay đổi** Nếu user chọn chạy tool thật, tool đó vẫn tự xử lý confirmation, risk classification, safe executor, manifest/undo và report/log.
-20. **thay đổi** Audit Center, Report Manager và Undo Manager lưu lại lịch sử, report, manifest để kiểm tra sau.
+19. **thay đổi** Obsidian Exporter v1 xuất vault Markdown/Canvas từ registry, queue, policy, report và readiness để user xem bản đồ hệ thống.
+20. **thay đổi** Nếu user chọn chạy tool thật, tool đó vẫn tự xử lý confirmation, risk classification, safe executor, manifest/undo và report/log.
+21. **thay đổi** Audit Center, Report Manager và Undo Manager lưu lại lịch sử, report, manifest để kiểm tra sau.
 
 ## Nguyên Tắc Không Được Phá
 
@@ -88,6 +89,7 @@
 * **thay đổi** Execution Adapter v1 record-only
 * **thay đổi** File Operation Adapter v1 cho `move_later`
 * **thay đổi** Bot Move-later Flow v1
+* **thay đổi** Obsidian Exporter v1
 
 **thay đổi** External app layer:
 
@@ -495,6 +497,34 @@
 * **thay đổi** Report verify mới nhất: `D:\tool\reports\full_system_tester_20260605_204115.json`.
 
 **thay đổi** Bước kế tiếp: Desktop UI hoặc bot panel có folder picker để thay việc nhập path thủ công.
+
+## Obsidian Exporter v1
+
+**thay đổi** Obsidian Exporter v1 tạo vault review-only tại `D:\tool\obsidian_vault`.
+
+**thay đổi** Nội dung export:
+
+* **thay đổi** `00_Index.md`: index tổng cho vault.
+* **thay đổi** `10_System_Map/System Overview.md`: trạng thái readiness, capability, queue, external apps và report mới nhất.
+* **thay đổi** `10_System_Map/System Flow.md`: sơ đồ Mermaid của luồng Advisor -> Queue -> Policy -> Bot -> Adapter -> Undo.
+* **thay đổi** `10_System_Map/System Flow.canvas`: canvas graph mở trực tiếp bằng Obsidian Canvas.
+* **thay đổi** `20_Tools/Capability Map.md`: bảng capability/risk/confirm/external apps.
+* **thay đổi** `30_File_Database/Recommendation Queue.md`: queue gợi ý hiện tại.
+* **thay đổi** `30_File_Database/Action Policies.md`: policy keep/manual/backup/move/delete/ignore.
+* **thay đổi** `40_Reports/Latest Reports.md`: report gần nhất kèm link file local.
+* **thay đổi** `50_Decisions/Safety Contract.md`: các rule không tự xóa/move.
+
+**thay đổi** Guardrail:
+
+* **thay đổi** Obsidian Exporter chỉ đọc source data hiện có và ghi file trong vault.
+* **thay đổi** Không scan sâu từng file, không xóa, không move, không approve action.
+* **thay đổi** Vault được ignore khỏi git bằng `obsidian_vault/`.
+
+**thay đổi** Kết quả verify:
+
+* **thay đổi** Export thật đã tạo 9 file tại `D:\tool\obsidian_vault`.
+* **thay đổi** Obsidian Exporter report: `D:\tool\reports\obsidian_exporter_20260605_210611.json`.
+* **thay đổi** Full System Tester có contract riêng cho Obsidian Exporter và pass tại `D:\tool\reports\full_system_tester_20260605_210551.json`.
 
 ## Deletion Safety / UX v2
 

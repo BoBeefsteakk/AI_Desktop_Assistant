@@ -35,6 +35,7 @@ from tools.core.feed_readiness import run_feed_readiness
 from tools.core.file_operation_adapter import run_file_operation_adapter
 from tools.core.full_system_tester import run_full_system_tester
 from tools.core.guided_action_runner import run_guided_action_runner
+from tools.core.obsidian_exporter import run_obsidian_exporter
 from tools.core.pre_feed_bundle import run_pre_feed_bundle
 from tools.core.recommendation_center import run_recommendation_center
 from tools.core.scenario_tester import run_scenario_tester
@@ -91,6 +92,7 @@ def main():
 37. AI Bot Controller
 38. Execution Adapter
 39. File Operation Adapter
+40. Obsidian Exporter
 
 0. Thoat
 
@@ -220,6 +222,9 @@ def main():
 
         elif choice == "39":
             run_file_operation_adapter()
+
+        elif choice == "40":
+            run_obsidian_exporter()
 
         else:
             print("Lua chon khong hop le.")

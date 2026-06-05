@@ -46,6 +46,7 @@ TOOLS_TO_TEST = [
     {"name": "Execution Adapter", "module": "tools.core.execution_adapter", "function": "run_execution_adapter", "risk": "safe"},
     {"name": "File Operation Adapter", "module": "tools.core.file_operation_adapter", "function": "run_file_operation_adapter", "risk": "medium"},
     {"name": "File Location Opener", "module": "tools.core.file_location_opener", "function": "open_file_location", "risk": "safe"},
+    {"name": "Obsidian Exporter", "module": "tools.core.obsidian_exporter", "function": "run_obsidian_exporter", "risk": "safe"},
 ]
 
 

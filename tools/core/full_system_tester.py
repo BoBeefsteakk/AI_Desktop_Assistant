@@ -63,6 +63,10 @@ from tools.core.file_operation_adapter import (
     FINAL_MOVE_TOKEN,
     build_file_operation_adapter_result,
 )
+from tools.core.obsidian_exporter import (
+    OBSIDIAN_EXPORT_SCHEMA,
+    build_obsidian_export_result,
+)
 from tools.core.risk_classifier import PROTECTED, REVIEW_REQUIRED, SAFE_DELETE, classify_file_risk
 from tools.core.scenario_tester import run_sandbox_scenarios
 from tools.core.safe_executor import safe_delete
@@ -184,6 +188,7 @@ def test_main_menu_coverage() -> dict[str, Any]:
         "AI Bot Controller",
         "Execution Adapter",
         "File Operation Adapter",
+        "Obsidian Exporter",
     ]
     missing = [label for label in expected if label not in main_text]
 
@@ -1598,6 +1603,52 @@ def test_bot_move_later_flow_contract() -> dict[str, Any]:
         cleanup_sandbox(sandbox)
 
 
+def test_obsidian_exporter_contract() -> dict[str, Any]:
+    sandbox = make_sandbox()
+    try:
+        vault = sandbox / "obsidian_vault"
+        result = build_obsidian_export_result(
+            vault_root=vault,
+            max_items=20,
+            write_files=True,
+        )
+        expected_files = [
+            vault / "00_Index.md",
+            vault / "10_System_Map" / "System Flow.md",
+            vault / "10_System_Map" / "System Flow.canvas",
+            vault / "20_Tools" / "Capability Map.md",
+            vault / "30_File_Database" / "Recommendation Queue.md",
+            vault / "50_Decisions" / "Safety Contract.md",
+        ]
+
+        assert_condition(result["schema"] == OBSIDIAN_EXPORT_SCHEMA, "Obsidian exporter should expose v1 schema.")
+        assert_condition(result["status"] == "success", "Obsidian exporter should complete successfully.")
+        assert_condition(result["summary"]["note_count"] >= len(expected_files), "Obsidian exporter should build core notes.")
+        for path in expected_files:
+            assert_condition(path.exists(), f"Expected Obsidian note missing: {path}")
+
+        index_text = (vault / "00_Index.md").read_text(encoding="utf-8")
+        flow_text = (vault / "10_System_Map" / "System Flow.md").read_text(encoding="utf-8")
+        assert_condition("AI Desktop Assistant Map" in index_text, "Obsidian index should contain title.")
+        assert_condition("flowchart TD" in flow_text, "Obsidian flow note should contain Mermaid graph.")
+        assert_condition(
+            result["safety_contract"]["executes_file_operations"] is False,
+            "Obsidian exporter must not execute file operations.",
+        )
+        assert_condition(
+            result["safety_contract"]["writes_only_vault_files"] is True,
+            "Obsidian exporter should only write vault files.",
+        )
+
+        return {
+            "vault": str(vault),
+            "summary": result["summary"],
+            "files": [str(path) for path in expected_files],
+        }
+    finally:
+        cleanup_sandbox(sandbox)
+
+
 def test_feed_readiness_contract() -> dict[str, Any]:
     result = build_feed_readiness_result()
     summary = result["summary"]
@@ -1741,6 +1792,7 @@ FULL_SYSTEM_TESTS: list[tuple[str, Callable[[], dict[str, Any]]]] = [
     ("Execution Adapter Contract", test_execution_adapter_contract),
     ("File Operation Adapter Contract", test_file_operation_adapter_contract),
     ("Bot Move-later Flow Contract", test_bot_move_later_flow_contract),
+    ("Obsidian Exporter Contract", test_obsidian_exporter_contract),
     ("Feed Readiness Contract", test_feed_readiness_contract),
     ("Scenario Tester Contract", test_scenario_tester_contract),
     ("Dependency Health", test_dependency_health),

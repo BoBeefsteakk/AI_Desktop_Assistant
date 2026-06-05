@@ -575,6 +575,7 @@ Các lớp kiểm tra:
 * **thay đổi** Execution Adapter contract kiểm tra dry-run/apply record-only, block `delete_candidate` và không xóa file sandbox
 * **thay đổi** File Operation Adapter contract kiểm tra move file giả trong sandbox, tạo manifest và restore bằng Undo Manager
 * **thay đổi** Bot Move-later Flow contract kiểm tra bot tạo decision report, gọi adapter, move file giả và restore manifest
+* **thay đổi** Obsidian Exporter contract kiểm tra vault sandbox, index, Mermaid flow, Canvas và safety contract
 
 ---
 
@@ -646,6 +647,32 @@ WizTree Adapter:
 * **thay đổi** Liệt kê docs/config/report source nên feed.
 
 **thay đổi** Feed Readiness không tự feed dữ liệu, không train, không chạy cleanup và không sửa file người dùng.
+
+---
+
+## Obsidian Review Layer
+
+**thay đổi** `tools/core/obsidian_exporter.py` nằm sau Feed Readiness/Report Manager như một lớp nhìn tổng thể.
+
+Input:
+
+* **thay đổi** Capability Registry.
+* **thay đổi** Recommendation Queue.
+* **thay đổi** Action Policy.
+* **thay đổi** External Apps Health.
+* **thay đổi** Feed Readiness.
+* **thay đổi** Recent report index.
+
+Output:
+
+* **thay đổi** Vault Markdown/Canvas tại `D:\tool\obsidian_vault`.
+* **thay đổi** Report `obsidian_exporter` schema `obsidian_export_v1`.
+
+Nguyên tắc:
+
+* **thay đổi** Chỉ ghi file trong vault, không scan sâu từng file.
+* **thay đổi** Không xóa, không move, không approve action.
+* **thay đổi** Mọi thao tác thật vẫn đi qua Bot Controller, File Operation Adapter, Safe Executor, manifest và Undo Manager.
 
 ---
 

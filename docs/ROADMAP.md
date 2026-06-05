@@ -63,6 +63,7 @@ Hoàn thành
 * **thay đổi** File Operation Adapter v1: move `move_later` với destination rõ ràng, token `MOVE_SELECTION_V1`, `safe_move` và manifest restore
 * **thay đổi** Bot Move-later Flow v1: chọn item và destination ngay trong Bot Controller, dry-run rồi apply bằng token
 * **thay đổi** Recommendation Center test-report hygiene: lọc contract/full-system report bằng tag, marker và linked source report để queue thật không bị warning giả
+* **thay đổi** Obsidian Exporter v1: xuất vault Markdown/Canvas review-only tại `D:\tool\obsidian_vault`
 
 Cần rà soát tiếp:
 
@@ -152,13 +153,14 @@ Một lệnh test tổng hợp trước khi refactor lớn hoặc feed assistant
 * **thay đổi** Execution Adapter Contract test: dry-run/apply record-only, block delete_candidate và không xóa file sandbox
 * **thay đổi** File Operation Adapter Contract test: move file giả trong sandbox, tạo manifest và restore bằng Undo Manager
 * **thay đổi** Bot Move-later Flow Contract test: bot tạo decision report, gọi adapter, move file giả và restore manifest
-* **thay đổi** Full System Tester hiện pass 30/30
+* **thay đổi** Obsidian Exporter Contract test: tạo vault trong sandbox, kiểm tra index, Mermaid flow, Canvas và safety contract
+* **thay đổi** Full System Tester hiện pass 31/31
 
 ---
 
 ## Phase 5 - AI Decision Engine
 
-**thay đổi** Đã có AI Bot Controller v2, Selection UI / Decision Report, Execution Adapter v1 record-only, File Operation Adapter v1 và Bot Move-later Flow v1.
+**thay đổi** Đã có AI Bot Controller v2, Selection UI / Decision Report, Execution Adapter v1 record-only, File Operation Adapter v1, Bot Move-later Flow v1 và Obsidian Exporter v1.
 
 Mục tiêu:
 

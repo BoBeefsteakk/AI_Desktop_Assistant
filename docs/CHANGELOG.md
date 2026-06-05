@@ -2,6 +2,18 @@
 
 ## 2026-06-05
 
+### Obsidian Exporter v1
+
+* **thay đổi** Thêm `tools/core/obsidian_exporter.py` để xuất vault Markdown/Canvas từ dữ liệu report, capability, recommendation queue, action policy, external apps và feed readiness.
+* **thay đổi** Main CLI expose `Obsidian Exporter` ở mục 40; Natural Command route được các lệnh `obsidian`, `export obsidian`, `database file`, `sơ đồ database file`.
+* **thay đổi** Vault mặc định là `D:\tool\obsidian_vault`; vault được thêm vào `.gitignore` để không commit output sinh ra.
+* **thay đổi** Export thật đã tạo 9 file gồm index, system overview, Mermaid flow, Obsidian Canvas, capability map, recommendation queue, action policies, latest reports và safety contract.
+* **thay đổi** Obsidian Exporter là review layer: không scan sâu từng file, không xóa, không move, không approve action.
+* **thay đổi** Tool Tester pass 40/40 tại `D:\tool\reports\tool_tester_20260605_210518.json`.
+* **thay đổi** Full System Tester pass 31/31 tại `D:\tool\reports\full_system_tester_20260605_210551.json`.
+* **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail tại `D:\tool\reports\feed_readiness_20260605_210633.json`.
+* **thay đổi** Obsidian export report: `D:\tool\reports\obsidian_exporter_20260605_210611.json`.
+
 ### Bot Move-later Flow verification
 
 * **thay đổi** Bot Move-later Flow v1 đã được verify lại sau khi nối Bot Controller với File Operation Adapter.

@@ -60,6 +60,7 @@ INTENT_ALIASES: list[tuple[str, list[str]]] = [
     ("bot_controller", ["bot controller", "ai bot", "auto check", "check may", "kiem tra may", "tu dong check", "bot tong"]),
     ("execution_adapter", ["execution adapter", "thuc thi", "cong thuc thi", "apply decision", "chay decision", "execute selection"]),
     ("file_operation_adapter", ["file operation adapter", "move decision", "move later", "chuyen file", "chuyen selection", "chuyen quyet dinh"]),
+    ("obsidian_exporter", ["obsidian", "obsidian exporter", "export obsidian", "vault", "database file", "so do database file", "ban do file"]),
 ]
 
 
