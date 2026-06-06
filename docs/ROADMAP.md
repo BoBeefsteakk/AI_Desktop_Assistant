@@ -63,7 +63,7 @@ Hoàn thành
 * **thay đổi** File Operation Adapter v1: move `move_later` với destination rõ ràng, token `MOVE_SELECTION_V1`, `safe_move` và manifest restore
 * **thay đổi** Bot Move-later Flow v1: chọn item và destination ngay trong Bot Controller, dry-run rồi apply bằng token
 * **thay đổi** Recommendation Center test-report hygiene: lọc contract/full-system report bằng tag, marker và linked source report để queue thật không bị warning giả
-* **thay đổi** Obsidian Exporter v1: xuất vault Markdown/Canvas review-only tại `D:\tool\obsidian_vault`
+* **thay đổi** Obsidian Exporter v1 Graph Mode: xuất vault Markdown/Canvas và graph nodes review-only tại `D:\tool\obsidian_vault`
 
 Cần rà soát tiếp:
 

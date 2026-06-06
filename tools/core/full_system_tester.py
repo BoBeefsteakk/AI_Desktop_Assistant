@@ -95,6 +95,8 @@ DANGEROUS_PATTERNS = {
 
 STATIC_AUDIT_ALLOWLIST = {
     ("tools/core/safe_executor.py", "send2trash"),
+    ("tools/core/safe_executor.py", ".unlink("),
+    ("tools/core/safe_executor.py", ".rmdir("),
     ("tools/core/safety_utils.py", "shutil.move"),
     ("tools/core/behavior_tester.py", "shutil.rmtree"),
     ("tools/core/scenario_tester.py", "shutil.rmtree"),
@@ -1619,18 +1621,22 @@ def test_obsidian_exporter_contract() -> dict[str, Any]:
             vault / "20_Tools" / "Capability Map.md",
             vault / "30_File_Database" / "Recommendation Queue.md",
             vault / "50_Decisions" / "Safety Contract.md",
+            vault / "60_Graph_Nodes" / "Graph Hub.md",
         ]
 
         assert_condition(result["schema"] == OBSIDIAN_EXPORT_SCHEMA, "Obsidian exporter should expose v1 schema.")
         assert_condition(result["status"] == "success", "Obsidian exporter should complete successfully.")
         assert_condition(result["summary"]["note_count"] >= len(expected_files), "Obsidian exporter should build core notes.")
+        assert_condition(result["summary"]["graph_node_count"] >= 20, "Obsidian exporter should create graph node notes.")
         for path in expected_files:
             assert_condition(path.exists(), f"Expected Obsidian note missing: {path}")
 
         index_text = (vault / "00_Index.md").read_text(encoding="utf-8")
         flow_text = (vault / "10_System_Map" / "System Flow.md").read_text(encoding="utf-8")
+        hub_text = (vault / "60_Graph_Nodes" / "Graph Hub.md").read_text(encoding="utf-8")
         assert_condition("AI Desktop Assistant Map" in index_text, "Obsidian index should contain title.")
         assert_condition("flowchart TD" in flow_text, "Obsidian flow note should contain Mermaid graph.")
+        assert_condition("[[60_Graph_Nodes/Tools/" in hub_text, "Graph hub should link tool nodes.")
         assert_condition(
             result["safety_contract"]["executes_file_operations"] is False,
             "Obsidian exporter must not execute file operations.",
@@ -1638,6 +1644,10 @@ def test_obsidian_exporter_contract() -> dict[str, Any]:
         assert_condition(
             result["safety_contract"]["writes_only_vault_files"] is True,
             "Obsidian exporter should only write vault files.",
+        )
+        assert_condition(
+            result["safety_contract"]["prunes_generated_graph_nodes"] is True,
+            "Obsidian exporter should only prune generated graph nodes.",
         )
 
         return {

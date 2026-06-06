@@ -162,6 +162,8 @@ Mọi thao tác xóa phải đi qua:
 
 safe_delete()
 
+**thay đổi** File generated do tool quản lý có thể đi qua `delete_managed_generated_file()` / `remove_empty_managed_dirs()` với điều kiện bị giới hạn trong managed root và có marker kiểm tra.
+
 Không được xóa trực tiếp bằng:
 
 * unlink()
@@ -643,6 +645,7 @@ WizTree Adapter:
 * **thay đổi** Đọc latest Execution Adapter report nếu có.
 * **thay đổi** Đọc latest File Operation Adapter report nếu có.
 * **thay đổi** Kiểm tra latest Full System Tester report.
+* **thay đổi** Bỏ qua đúng failure tự tham chiếu `Feed Readiness Contract`, nhưng vẫn chặn nếu latest Full System có failure khác.
 * **thay đổi** Validate schema report gần đây.
 * **thay đổi** Liệt kê docs/config/report source nên feed.
 
@@ -666,11 +669,14 @@ Input:
 Output:
 
 * **thay đổi** Vault Markdown/Canvas tại `D:\tool\obsidian_vault`.
+* **thay đổi** Graph Mode note nodes tại `D:\tool\obsidian_vault\60_Graph_Nodes`.
 * **thay đổi** Report `obsidian_exporter` schema `obsidian_export_v1`.
 
 Nguyên tắc:
 
 * **thay đổi** Chỉ ghi file trong vault, không scan sâu từng file.
+* **thay đổi** Chỉ prune graph node generated cũ trong `60_Graph_Nodes` qua helper an toàn; không xóa/move file thật của user.
+* **thay đổi** Obsidian Graph lấy mạng liên kết từ wiki-link giữa các graph node, không lấy từ bảng Markdown.
 * **thay đổi** Không xóa, không move, không approve action.
 * **thay đổi** Mọi thao tác thật vẫn đi qua Bot Controller, File Operation Adapter, Safe Executor, manifest và Undo Manager.
 

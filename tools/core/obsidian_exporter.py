@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import re
+import hashlib
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -20,11 +22,26 @@ from tools.core.recommendation_center import (
     summarize_recommendation_queue,
 )
 from tools.core.report_manager import create_report, read_recent_report_index
+from tools.core.safe_executor import delete_managed_generated_file, remove_empty_managed_dirs
 
 
 OBSIDIAN_EXPORTER_TOOL = "obsidian_exporter"
 OBSIDIAN_EXPORT_SCHEMA = "obsidian_export_v1"
 DEFAULT_VAULT_DIR = BASE_DIR / "obsidian_vault"
+GRAPH_NODE_DIR = "60_Graph_Nodes"
+WINDOWS_PATH_RE = re.compile(r"^[A-Za-z]:\\")
+INVALID_FILENAME_CHARS = r'<>:"/\|?*'
+GENERATED_GRAPH_TYPE_MARKERS = {
+    "type: tool",
+    "type: external_app",
+    "type: report",
+    "type: policy",
+    "type: recommendation",
+    "type: decision",
+    "type: file_node",
+    "type: folder_node",
+    "type: graph_hub",
+}
 
 
 def now_text() -> str:
@@ -58,6 +75,10 @@ def make_obsidian_link(path: str) -> str:
     return f"[[{path}]]"
 
 
+def make_obsidian_alias_link(path: str, alias: str | None = None) -> str:
+    return f"[[{path}|{alias or Path(path).name}]]"
+
+
 def make_file_link(path: str | Path | None) -> str:
     if not path:
         return ""
@@ -78,6 +99,105 @@ def merge_report_tags(base_tags: list[str], extra_tags: list[str] | None = None)
         if text and text not in tags:
             tags.append(text)
     return tags
+
+
+def short_hash(value: Any) -> str:
+    return hashlib.sha256(str(value).encode("utf-8")).hexdigest()[:10]
+
+
+def safe_filename(value: Any, *, fallback: str = "node", max_length: int = 90) -> str:
+    text = str(value or "").strip() or fallback
+    for char in INVALID_FILENAME_CHARS:
+        text = text.replace(char, "_")
+    text = re.sub(r"\s+", " ", text).strip(" .")
+    if not text:
+        text = fallback
+    return text[:max_length]
+
+
+def yaml_quote(value: Any) -> str:
+    return "'" + str(value if value is not None else "").replace("'", "''") + "'"
+
+
+def graph_note_path(kind: str, key: Any, label: str | None = None) -> str:
+    name = safe_filename(label or key, fallback=kind)
+    return f"{GRAPH_NODE_DIR}/{kind}/{name} - {short_hash(key)}"
+
+
+def looks_like_windows_path(value: Any) -> bool:
+    text = str(value or "").strip()
+    if not WINDOWS_PATH_RE.match(text):
+        return False
+    return len(text) >= 4 and any(separator in text for separator in ("\\", "/"))
+
+
+def iter_nested_strings(value: Any, *, depth: int = 0) -> list[str]:
+    if depth > 8:
+        return []
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, dict):
+        strings: list[str] = []
+        for item in value.values():
+            strings.extend(iter_nested_strings(item, depth=depth + 1))
+        return strings
+    if isinstance(value, list):
+        strings = []
+        for item in value:
+            strings.extend(iter_nested_strings(item, depth=depth + 1))
+        return strings
+    return []
+
+
+def collect_path_values(value: Any, *, limit: int = 160) -> list[str]:
+    paths: list[str] = []
+    seen = set()
+    for text in iter_nested_strings(value):
+        cleaned = text.strip()
+        if not looks_like_windows_path(cleaned) or cleaned in seen:
+            continue
+        seen.add(cleaned)
+        paths.append(cleaned)
+        if len(paths) >= limit:
+            break
+    return paths
+
+
+def get_tool_node_path(tool_id: str) -> str:
+    return graph_note_path("Tools", tool_id, tool_id)
+
+
+def get_external_app_node_path(app_name: str) -> str:
+    return graph_note_path("External Apps", app_name, app_name)
+
+
+def get_decision_node_path(decision: str) -> str:
+    return graph_note_path("Decisions", decision, f"decision {decision}")
+
+
+def get_report_node_path(record: dict[str, Any]) -> str:
+    key = record.get("report_path") or f"{record.get('tool')}-{record.get('created_at')}"
+    label = f"{record.get('tool', 'report')} {record.get('created_at', '')}"
+    return graph_note_path("Reports", key, label)
+
+
+def get_recommendation_node_path(item: dict[str, Any]) -> str:
+    key = item.get("fingerprint") or item.get("id") or item.get("detail")
+    label = item.get("id") or item.get("title") or "recommendation"
+    return graph_note_path("Recommendations", key, label)
+
+
+def get_policy_node_path(item: dict[str, Any]) -> str:
+    key = item.get("fingerprint") or f"{item.get('target_type')}:{item.get('target')}"
+    label = f"{item.get('decision', 'policy')} {item.get('target_type', '')}"
+    return graph_note_path("Policies", key, label)
+
+
+def get_path_node_path(path_value: str) -> str:
+    path = Path(path_value)
+    kind = "Folders" if not path.suffix else "Files"
+    label = path.name or path_value.replace("\\", "_")
+    return graph_note_path(kind, path_value, label)
 
 
 def latest_reports_by_tool(limit: int = 300) -> dict[str, dict[str, Any]]:
@@ -123,6 +243,8 @@ Generated: `{generated_at}`
 
 - {make_obsidian_link("10_System_Map/System Overview")}
 - {make_obsidian_link("10_System_Map/System Flow")}
+- {make_obsidian_link("10_System_Map/Graph View Guide")}
+- {make_obsidian_link("60_Graph_Nodes/Graph Hub")}
 - {make_obsidian_link("20_Tools/Capability Map")}
 - {make_obsidian_link("30_File_Database/Recommendation Queue")}
 - {make_obsidian_link("30_File_Database/Action Policies")}
@@ -341,6 +463,36 @@ generated_at: {snapshot["generated_at"]}
 """
 
 
+def build_graph_view_guide_note(snapshot: dict[str, Any]) -> str:
+    return f"""---
+type: graph_view_guide
+schema: {OBSIDIAN_EXPORT_SCHEMA}
+generated_at: {snapshot["generated_at"]}
+tags:
+  - graph_guide
+---
+
+# Graph View Guide
+
+Use this when you want the visual graph view, not the table notes.
+
+1. Open {make_obsidian_link("60_Graph_Nodes/Graph Hub")}.
+2. Open Obsidian Graph view or Local Graph.
+3. Turn on arrows if you want relationship direction.
+4. Group nodes with these filters:
+   - `path:60_Graph_Nodes/Tools`
+   - `path:60_Graph_Nodes/External Apps`
+   - `path:60_Graph_Nodes/Reports`
+   - `path:60_Graph_Nodes/Policies`
+   - `path:60_Graph_Nodes/Files`
+   - `path:60_Graph_Nodes/Folders`
+   - `path:60_Graph_Nodes/Decisions`
+5. If the global graph is too dense, use Local Graph from `Graph Hub`.
+
+Important: these nodes are review-only. Real actions still go through Bot Controller and adapters.
+"""
+
+
 def build_canvas(snapshot: dict[str, Any]) -> str:
     nodes = [
         {"id": "advisor", "type": "text", "text": "System Advisor", "x": 0, "y": 0, "width": 240, "height": 80},
@@ -361,6 +513,341 @@ def build_canvas(snapshot: dict[str, Any]) -> str:
         {"id": "e7", "fromNode": "bot", "fromSide": "bottom", "toNode": "obsidian", "toSide": "right"},
     ]
     return json.dumps({"nodes": nodes, "edges": edges}, ensure_ascii=False, indent=2)
+
+
+def safe_read_report_data(report_path: str | Path | None) -> dict[str, Any] | None:
+    if not report_path:
+        return None
+    path = Path(report_path)
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def should_include_path_node(path_value: str) -> bool:
+    text = str(path_value or "").strip()
+    if not looks_like_windows_path(text):
+        return False
+
+    lower = text.lower()
+    ignored_prefixes = [
+        str(BASE_DIR / "reports").lower(),
+        str(BASE_DIR / "backups").lower(),
+        str(BASE_DIR / "obsidian_vault").lower(),
+        str(BASE_DIR / "__pycache__").lower(),
+        r"d:\_ai_desktop_assistant_scenario_tests".lower(),
+    ]
+    return not any(lower.startswith(prefix) for prefix in ignored_prefixes)
+
+
+def build_path_graph_index(snapshot: dict[str, Any], max_items: int = 80) -> dict[str, dict[str, Any]]:
+    nodes: dict[str, dict[str, Any]] = {}
+
+    def add_path(path_value: str, source_link: str, source_label: str) -> None:
+        if not should_include_path_node(path_value):
+            return
+        record = nodes.setdefault(path_value, {
+            "path": path_value,
+            "sources": [],
+        })
+        source = {
+            "link": source_link,
+            "label": source_label,
+        }
+        if source not in record["sources"]:
+            record["sources"].append(source)
+
+    for policy in snapshot["policies"]:
+        target = str(policy.get("target") or "")
+        if str(policy.get("target_type") or "").startswith("path"):
+            add_path(target, get_policy_node_path(policy), "policy")
+
+    for app in snapshot["external_apps"].get("apps", []):
+        app_path = str(app.get("path") or "")
+        add_path(app_path, get_external_app_node_path(str(app.get("name") or "")), "external_app")
+
+    for report in snapshot["recent_reports"][:max_items]:
+        report_data = safe_read_report_data(report.get("report_path"))
+        if not report_data:
+            continue
+        report_link = get_report_node_path(report)
+        for path_value in collect_path_values(report_data, limit=30):
+            add_path(path_value, report_link, str(report.get("tool") or "report"))
+            if len(nodes) >= max_items * 2:
+                return nodes
+
+    return nodes
+
+
+def build_graph_hub_note(snapshot: dict[str, Any], graph_notes: dict[str, str]) -> str:
+    links = [
+        make_obsidian_link("00_Index"),
+        make_obsidian_link("20_Tools/Capability Map"),
+        make_obsidian_link("30_File_Database/Action Policies"),
+        make_obsidian_link("40_Reports/Latest Reports"),
+        make_obsidian_link("50_Decisions/Safety Contract"),
+    ]
+    for relative_path in sorted(graph_notes)[:120]:
+        note_path = relative_path[:-3] if relative_path.endswith(".md") else relative_path
+        links.append(make_obsidian_link(note_path))
+
+    return f"""---
+type: graph_hub
+schema: {OBSIDIAN_EXPORT_SCHEMA}
+generated_at: {snapshot["generated_at"]}
+tags:
+  - graph_hub
+---
+
+# Graph Hub
+
+This note intentionally links graph nodes together so Obsidian Graph has a real network to render.
+
+## Entry Links
+
+{chr(10).join(f"- {link}" for link in links)}
+"""
+
+
+def build_tool_node(item: dict[str, Any], snapshot: dict[str, Any]) -> str:
+    tool_id = item["id"]
+    external_links = [
+        make_obsidian_alias_link(get_external_app_node_path(app), app)
+        for app in item.get("external_apps", [])
+    ]
+    latest_report = snapshot["latest_reports"].get(tool_id)
+    report_link = (
+        make_obsidian_alias_link(get_report_node_path(latest_report), "latest report")
+        if latest_report else "-"
+    )
+    return f"""---
+type: tool
+tool_id: {tool_id}
+category: {item["category"]}
+risk: {item["risk_level"]}
+mutates_files: {str(bool(item["mutates_files"])).lower()}
+needs_confirmation: {str(bool(item["needs_confirmation"])).lower()}
+tags:
+  - tool
+  - risk_{item["risk_level"]}
+  - category_{item["category"]}
+---
+
+# {item["name"]}
+
+Summary: {item["summary"]}
+
+## Links
+
+- Capability Map: {make_obsidian_link("20_Tools/Capability Map")}
+- Safety Contract: {make_obsidian_link("50_Decisions/Safety Contract")}
+- Latest report: {report_link}
+
+## External Apps
+
+{chr(10).join(f"- {link}" for link in external_links) if external_links else "_No external apps._"}
+"""
+
+
+def build_external_app_node(app: dict[str, Any], snapshot: dict[str, Any]) -> str:
+    app_name = str(app.get("name") or "unknown_app")
+    dependent_links = [
+        make_obsidian_alias_link(get_tool_node_path(tool_id), tool_id)
+        for tool_id in app.get("dependent_tools", [])
+    ]
+    path_link = ""
+    app_path = str(app.get("path") or "")
+    if should_include_path_node(app_path):
+        path_link = make_obsidian_alias_link(get_path_node_path(app_path), Path(app_path).name)
+    return f"""---
+type: external_app
+app_id: {app_name}
+available: {str(bool(app.get("available"))).lower()}
+tags:
+  - external_app
+  - app_state_{app.get("state", "unknown")}
+---
+
+# {app_name}
+
+Path: `{app.get("path") or ""}`
+
+Path node: {path_link or "-"}
+
+Impact: {app.get("impact") or ""}
+
+## Dependent Tools
+
+{chr(10).join(f"- {link}" for link in dependent_links) if dependent_links else "_No direct dependent tools._"}
+"""
+
+
+def build_report_node(record: dict[str, Any], snapshot: dict[str, Any]) -> str:
+    tool_name = str(record.get("tool") or "unknown_tool")
+    tool = next((item for item in snapshot["capabilities"] if item["id"] == tool_name), None)
+    tool_link = (
+        make_obsidian_alias_link(get_tool_node_path(tool_name), tool_name)
+        if tool else tool_name
+    )
+    report_path = str(record.get("report_path") or "")
+    return f"""---
+type: report
+tool: {tool_name}
+status: {record.get("status")}
+risk: {record.get("risk_level")}
+tags:
+  - report
+  - report_status_{record.get("status")}
+---
+
+# {tool_name} report
+
+- Tool: {tool_link}
+- Action: `{record.get("action")}`
+- Created: `{record.get("created_at")}`
+- Status: `{record.get("status")}`
+- Local file: {make_file_link(report_path)}
+"""
+
+
+def build_policy_node(policy: dict[str, Any], snapshot: dict[str, Any]) -> str:
+    decision = str(policy.get("decision") or "manual_only")
+    target = str(policy.get("target") or "")
+    path_link = ""
+    if str(policy.get("target_type") or "").startswith("path") and should_include_path_node(target):
+        path_link = make_obsidian_alias_link(get_path_node_path(target), Path(target).name or target)
+    return f"""---
+type: policy
+decision: {decision}
+target_type: {policy.get("target_type")}
+tags:
+  - policy
+  - decision_{decision}
+---
+
+# Policy {decision}
+
+- Decision: {make_obsidian_alias_link(get_decision_node_path(decision), decision)}
+- Target type: `{policy.get("target_type")}`
+- Target: `{target}`
+- Target node: {path_link or "-"}
+- Reason: {policy.get("reason") or ""}
+- Source: `{policy.get("source") or ""}`
+"""
+
+
+def build_recommendation_node(item: dict[str, Any], snapshot: dict[str, Any]) -> str:
+    tool_id = str(item.get("suggested_tool_id") or "")
+    tool_link = (
+        make_obsidian_alias_link(get_tool_node_path(tool_id), tool_id)
+        if tool_id else "-"
+    )
+    policy_decision = str(item.get("action_policy_decision") or "")
+    policy_link = (
+        make_obsidian_alias_link(get_decision_node_path(policy_decision), policy_decision)
+        if policy_decision else "-"
+    )
+    return f"""---
+type: recommendation
+state: {item.get("workflow_state")}
+severity: {item.get("severity")}
+tags:
+  - recommendation
+  - recommendation_state_{item.get("workflow_state")}
+---
+
+# {item.get("id") or item.get("title") or "Recommendation"}
+
+- Suggested tool: {tool_link}
+- Policy decision: {policy_link}
+- Report: `{item.get("report_path") or ""}`
+
+{item.get("detail") or ""}
+"""
+
+
+def build_decision_node(decision: str, snapshot: dict[str, Any]) -> str:
+    return f"""---
+type: decision
+decision: {decision}
+tags:
+  - decision
+  - decision_{decision}
+---
+
+# Decision: {decision}
+
+Linked safety contract: {make_obsidian_link("50_Decisions/Safety Contract")}
+
+This node groups policies and recommendation items that mention `{decision}`.
+"""
+
+
+def build_path_node(path_record: dict[str, Any], snapshot: dict[str, Any]) -> str:
+    path_value = path_record["path"]
+    path = Path(path_value)
+    kind = "folder" if not path.suffix else "file"
+    source_links = [
+        make_obsidian_alias_link(source["link"], source["label"])
+        for source in path_record.get("sources", [])
+    ]
+    parent_link = ""
+    parent = str(path.parent)
+    if parent != path_value and should_include_path_node(parent):
+        parent_link = make_obsidian_alias_link(get_path_node_path(parent), Path(parent).name or parent)
+
+    return f"""---
+type: {kind}_node
+path: {yaml_quote(path_value)}
+tags:
+  - file_database
+  - {kind}_node
+---
+
+# {path.name or path_value}
+
+Path: `{path_value}`
+
+Parent: {parent_link or "-"}
+
+## Sources
+
+{chr(10).join(f"- {link}" for link in source_links) if source_links else "_No source links._"}
+"""
+
+
+def build_graph_notes(snapshot: dict[str, Any], max_items: int = 80) -> dict[str, str]:
+    notes: dict[str, str] = {}
+
+    for capability in snapshot["capabilities"]:
+        notes[f"{get_tool_node_path(capability['id'])}.md"] = build_tool_node(capability, snapshot)
+
+    for app in snapshot["external_apps"].get("apps", []):
+        app_name = str(app.get("name") or "unknown_app")
+        notes[f"{get_external_app_node_path(app_name)}.md"] = build_external_app_node(app, snapshot)
+
+    for decision in ["keep", "manual_only", "needs_backup", "move_later", "delete_candidate", "ignore_forever", "skip"]:
+        notes[f"{get_decision_node_path(decision)}.md"] = build_decision_node(decision, snapshot)
+
+    for record in snapshot["recent_reports"][:max_items]:
+        notes[f"{get_report_node_path(record)}.md"] = build_report_node(record, snapshot)
+
+    for policy in snapshot["policies"][:max_items]:
+        notes[f"{get_policy_node_path(policy)}.md"] = build_policy_node(policy, snapshot)
+
+    for item in snapshot["recommendation_queue"][:max_items]:
+        notes[f"{get_recommendation_node_path(item)}.md"] = build_recommendation_node(item, snapshot)
+
+    path_index = build_path_graph_index(snapshot, max_items=max_items)
+    for path_value, record in path_index.items():
+        notes[f"{get_path_node_path(path_value)}.md"] = build_path_node(record, snapshot)
+
+    notes[f"{GRAPH_NODE_DIR}/Graph Hub.md"] = build_graph_hub_note(snapshot, notes)
+    return notes
 
 
 def build_export_snapshot(max_items: int = 80) -> dict[str, Any]:
@@ -400,16 +887,21 @@ def build_snapshot_summary(snapshot: dict[str, Any]) -> dict[str, Any]:
 
 
 def build_notes(snapshot: dict[str, Any], max_items: int = 80) -> dict[str, str]:
-    return {
+    base_notes = {
         "00_Index.md": build_index_note(snapshot),
         "10_System_Map/System Overview.md": build_system_overview_note(snapshot),
         "10_System_Map/System Flow.md": build_system_flow_note(snapshot),
+        "10_System_Map/Graph View Guide.md": build_graph_view_guide_note(snapshot),
         "10_System_Map/System Flow.canvas": build_canvas(snapshot),
         "20_Tools/Capability Map.md": build_capability_note(snapshot),
         "30_File_Database/Recommendation Queue.md": build_recommendation_note(snapshot, max_items=max_items),
         "30_File_Database/Action Policies.md": build_action_policy_note(snapshot, max_items=max_items),
         "40_Reports/Latest Reports.md": build_latest_reports_note(snapshot, max_items=max_items),
         "50_Decisions/Safety Contract.md": build_safety_contract_note(snapshot),
+    }
+    return {
+        **base_notes,
+        **build_graph_notes(snapshot, max_items=max_items),
     }
 
 
@@ -438,6 +930,47 @@ def write_note(vault_root: Path, relative_path: str, content: str) -> dict[str, 
     }
 
 
+def is_generated_obsidian_note(path: Path) -> bool:
+    try:
+        head = path.read_text(encoding="utf-8")[:500].lower()
+    except OSError:
+        return False
+    return (
+        f"schema: {OBSIDIAN_EXPORT_SCHEMA}".lower() in head
+        or any(marker in head for marker in GENERATED_GRAPH_TYPE_MARKERS)
+    )
+
+
+def prune_stale_graph_notes(vault_root: Path, target_relative_paths: set[str]) -> list[dict[str, Any]]:
+    graph_root = vault_root / GRAPH_NODE_DIR
+    if not graph_root.exists():
+        return []
+
+    target_paths = {
+        vault_root / relative_path
+        for relative_path in target_relative_paths
+        if relative_path.startswith(f"{GRAPH_NODE_DIR}/")
+    }
+    removed = []
+
+    for path in graph_root.rglob("*.md"):
+        if path in target_paths:
+            continue
+        if not is_generated_obsidian_note(path):
+            continue
+
+        delete_result = delete_managed_generated_file(
+            path,
+            allowed_root=graph_root,
+            marker_check=is_generated_obsidian_note,
+        )
+        if delete_result["status"] in {"deleted", "error"}:
+            removed.append(delete_result)
+
+    remove_empty_managed_dirs(graph_root)
+    return removed
+
+
 def build_obsidian_export_result(
     *,
     vault_root: str | Path | None = None,
@@ -450,8 +983,10 @@ def build_obsidian_export_result(
     notes = build_notes(snapshot, max_items=max_items)
 
     written_files = []
+    pruned_files = []
     if write_files:
         vault.mkdir(parents=True, exist_ok=True)
+        pruned_files = prune_stale_graph_notes(vault, set(notes))
         for relative_path, content in notes.items():
             written_files.append(write_note(vault, relative_path, content))
 
@@ -464,7 +999,9 @@ def build_obsidian_export_result(
         "vault_root": str(vault),
         "schema": OBSIDIAN_EXPORT_SCHEMA,
         "note_count": len(notes),
+        "graph_node_count": sum(1 for path in notes if path.startswith(f"{GRAPH_NODE_DIR}/")),
         "written_count": len(written_files),
+        "pruned_count": sum(1 for item in pruned_files if item["status"] == "deleted"),
         "created_count": statuses.get("created", 0),
         "updated_count": statuses.get("updated", 0),
         "unchanged_count": statuses.get("unchanged", 0),
@@ -481,9 +1018,11 @@ def build_obsidian_export_result(
         "vault_root": str(vault),
         "summary": summary,
         "files": written_files,
+        "pruned_files": pruned_files,
         "safety_contract": {
             "read_only_source_data": True,
             "writes_only_vault_files": True,
+            "prunes_generated_graph_nodes": True,
             "executes_file_operations": False,
             "deletes_files": False,
             "moves_user_files": False,
@@ -544,6 +1083,8 @@ def print_export_summary(result: dict[str, Any]) -> None:
     print("\n========== OBSIDIAN EXPORTER ==========")
     print(f"Vault: {summary['vault_root']}")
     print(f"Notes: {summary['note_count']}")
+    print(f"Graph nodes: {summary['graph_node_count']}")
+    print(f"Pruned stale graph nodes: {summary['pruned_count']}")
     print(f"Created: {summary['created_count']}")
     print(f"Updated: {summary['updated_count']}")
     print(f"Unchanged: {summary['unchanged_count']}")

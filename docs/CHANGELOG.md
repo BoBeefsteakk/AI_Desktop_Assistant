@@ -7,12 +7,17 @@
 * **thay đổi** Thêm `tools/core/obsidian_exporter.py` để xuất vault Markdown/Canvas từ dữ liệu report, capability, recommendation queue, action policy, external apps và feed readiness.
 * **thay đổi** Main CLI expose `Obsidian Exporter` ở mục 40; Natural Command route được các lệnh `obsidian`, `export obsidian`, `database file`, `sơ đồ database file`.
 * **thay đổi** Vault mặc định là `D:\tool\obsidian_vault`; vault được thêm vào `.gitignore` để không commit output sinh ra.
-* **thay đổi** Export thật đã tạo 9 file gồm index, system overview, Mermaid flow, Obsidian Canvas, capability map, recommendation queue, action policies, latest reports và safety contract.
+* **thay đổi** Export thật tạo 9 trang nền gồm index, system overview, Mermaid flow, Obsidian Canvas, capability map, recommendation queue, action policies, latest reports và safety contract.
+* **thay đổi** Nâng Obsidian Exporter sang Graph Mode: sinh note node riêng cho tools, external apps, reports, policies, decisions và file/folder paths để Obsidian Graph có mạng node thật.
+* **thay đổi** Export Graph Mode mới đã tạo 283 note, trong đó 273 graph node dưới `D:\tool\obsidian_vault\60_Graph_Nodes`; exporter đã prune 159 graph node generated cũ.
+* **thay đổi** Graph node pruning đi qua `safe_executor.delete_managed_generated_file()` và `remove_empty_managed_dirs()`, chỉ áp dụng trong managed generated root để giữ Static Safety Audit sạch.
+* **thay đổi** Feed Readiness bỏ qua đúng failure tự tham chiếu `Feed Readiness Contract` từ latest Full System report, nhưng vẫn fail nếu có blocking failure khác.
+* **thay đổi** Thêm `10_System_Map/Graph View Guide.md` hướng dẫn mở `Graph Hub`, Local Graph và group node theo `path:60_Graph_Nodes/...`.
 * **thay đổi** Obsidian Exporter là review layer: không scan sâu từng file, không xóa, không move, không approve action.
-* **thay đổi** Tool Tester pass 40/40 tại `D:\tool\reports\tool_tester_20260605_210518.json`.
-* **thay đổi** Full System Tester pass 31/31 tại `D:\tool\reports\full_system_tester_20260605_210551.json`.
-* **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail tại `D:\tool\reports\feed_readiness_20260605_210633.json`.
-* **thay đổi** Obsidian export report: `D:\tool\reports\obsidian_exporter_20260605_210611.json`.
+* **thay đổi** Tool Tester pass 40/40 tại `D:\tool\reports\tool_tester_20260605_213135.json`.
+* **thay đổi** Full System Tester pass 31/31 tại `D:\tool\reports\full_system_tester_20260606_124008.json`.
+* **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail tại `D:\tool\reports\feed_readiness_20260606_124031.json`.
+* **thay đổi** Obsidian export report: `D:\tool\reports\obsidian_exporter_20260606_124034.json`.
 
 ### Bot Move-later Flow verification
 

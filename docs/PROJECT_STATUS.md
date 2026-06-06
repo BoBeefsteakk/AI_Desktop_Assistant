@@ -422,17 +422,20 @@ Chức năng:
 * **thay đổi** Main CLI expose `Obsidian Exporter` ở mục 40.
 * **thay đổi** Natural Command route được `obsidian`, `export obsidian`, `database file`, `sơ đồ database file`.
 * **thay đổi** Export vault mặc định tại `D:\tool\obsidian_vault`.
-* **thay đổi** Vault tạo `00_Index.md`, system overview, Mermaid flow, Obsidian Canvas, capability map, recommendation queue, action policies, latest reports và safety contract.
+* **thay đổi** Vault tạo 9 trang nền: `00_Index.md`, system overview, Mermaid flow, Obsidian Canvas, capability map, recommendation queue, action policies, latest reports và safety contract.
+* **thay đổi** Graph Mode tạo nhiều note nhỏ dưới `60_Graph_Nodes`: tools, external apps, reports, policies, decisions và file/folder paths.
+* **thay đổi** `60_Graph_Nodes/Graph Hub.md` là note trung tâm để mở Local Graph/Graph view.
+* **thay đổi** `10_System_Map/Graph View Guide.md` hướng dẫn group node theo thư mục graph.
 * **thay đổi** Vault output được ignore khỏi git bằng `obsidian_vault/`.
 * **thay đổi** Tool này chỉ ghi file trong vault; không scan sâu từng file, không xóa, không move, không approve action.
 
 Kết quả mới nhất:
 
-* **thay đổi** Export thật đã tạo 9 file tại `D:\tool\obsidian_vault`.
-* **thay đổi** Obsidian Exporter report: `D:\tool\reports\obsidian_exporter_20260605_210611.json`.
-* **thay đổi** Tool Tester pass 40/40 tại `D:\tool\reports\tool_tester_20260605_210518.json`.
-* **thay đổi** Full System Tester pass 31/31 tại `D:\tool\reports\full_system_tester_20260605_210551.json`.
-* **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail tại `D:\tool\reports\feed_readiness_20260605_210633.json`.
+* **thay đổi** Export thật đã tạo 283 note tại `D:\tool\obsidian_vault`, trong đó có 273 graph node; exporter đã prune 159 graph node generated cũ.
+* **thay đổi** Obsidian Exporter report: `D:\tool\reports\obsidian_exporter_20260606_124034.json`.
+* **thay đổi** Tool Tester pass 40/40 tại `D:\tool\reports\tool_tester_20260605_213135.json`.
+* **thay đổi** Full System Tester pass 31/31 tại `D:\tool\reports\full_system_tester_20260606_124008.json`.
+* **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail tại `D:\tool\reports\feed_readiness_20260606_124031.json`.
 
 Ý nghĩa:
 

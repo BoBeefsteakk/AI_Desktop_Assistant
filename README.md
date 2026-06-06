@@ -54,7 +54,7 @@ Active workspace hiện tại là `D:\tool`. Snapshot cũ đã được chuyển
 - **thay đổi** AI Bot Controller v2: một entrypoint auto-check tổng, gom recommendation/policy/candidate/plan/readiness thành màn OK/lựa chọn/hủy, có Selection UI/Decision Report read-only và chưa execute file thật
 - **thay đổi** Bot Move-later Flow v1: trong Bot Controller, chọn item `move_later`, nhập destination, dry-run rồi apply bằng token `MOVE_SELECTION_V1`
 - **thay đổi** Recommendation Center test-report hygiene: contract/full-system report không làm bẩn queue thật hoặc Feed Readiness
-- **thay đổi** Obsidian Exporter v1: xuất vault Markdown/Canvas tại `D:\tool\obsidian_vault` để sơ đồ hóa tool, queue, policy, report và safety contract
+- **thay đổi** Obsidian Exporter v1 Graph Mode: xuất vault Markdown/Canvas tại `D:\tool\obsidian_vault`, có `60_Graph_Nodes` để Obsidian Graph hiện mạng tool/app/report/policy/path
 - **thay đổi** Execution Adapter v1: đọc Selection Decision Report hợp lệ, ghi nhận quyết định an toàn dạng record-only, chặn xóa/move/backup thật ở bản v1
 - **thay đổi** File Operation Adapter v1: chỉ xử lý `move_later` có destination rõ ràng, token `MOVE_SELECTION_V1`, `safe_move` và manifest restore; chưa bật delete
 - **thay đổi** Scenario Tester: chạy fake-file sandbox cho Downloads, media, game data, archive, temp/junk và manifest restore

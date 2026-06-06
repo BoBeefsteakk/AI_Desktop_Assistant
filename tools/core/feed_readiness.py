@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -38,6 +39,7 @@ DOC_FEED_SOURCES = [
     "docs/EXTERNAL_APPS.md",
     "docs/CHANGELOG.md",
 ]
+SELF_REFERENTIAL_FULL_SYSTEM_FAILURES = {"Feed Readiness Contract"}
 
 
 def make_check(
@@ -72,6 +74,60 @@ def get_latest_report_by_tool(
         return record
 
     return None
+
+
+def load_full_system_failure_summary(report_record: dict[str, Any] | None) -> dict[str, Any]:
+    if not report_record:
+        return {
+            "failed_tests": [],
+            "ignored_self_failures": [],
+            "blocking_failures": [],
+            "load_status": "missing",
+        }
+
+    report_path = report_record.get("report_path")
+    if not report_path:
+        return {
+            "failed_tests": [],
+            "ignored_self_failures": [],
+            "blocking_failures": [],
+            "load_status": "missing_path",
+        }
+
+    try:
+        report = json.loads(Path(report_path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        return {
+            "failed_tests": [],
+            "ignored_self_failures": [],
+            "blocking_failures": [],
+            "load_status": "error",
+            "error": str(error),
+        }
+
+    tests = report.get("results", {}).get("tests", [])
+    failed_tests = [
+        str(item.get("name") or "unknown")
+        for item in tests
+        if item.get("status") == "fail"
+    ]
+    ignored = [
+        name
+        for name in failed_tests
+        if name in SELF_REFERENTIAL_FULL_SYSTEM_FAILURES
+    ]
+    blocking = [
+        name
+        for name in failed_tests
+        if name not in SELF_REFERENTIAL_FULL_SYSTEM_FAILURES
+    ]
+
+    return {
+        "failed_tests": failed_tests,
+        "ignored_self_failures": ignored,
+        "blocking_failures": blocking,
+        "load_status": "loaded",
+    }
 
 
 def validate_recent_report_schemas(limit: int = 80) -> dict[str, Any]:
@@ -252,12 +308,32 @@ def build_feed_readiness_result() -> dict[str, Any]:
     ))
 
     latest_full_system = get_latest_report_by_tool("full_system_tester")
+    full_system_failure_summary = load_full_system_failure_summary(latest_full_system)
     full_system_status = "fail"
     full_system_detail = "No Full System Tester report found."
     if latest_full_system:
         latest_status = str(latest_full_system.get("status") or "")
-        full_system_status = "pass" if latest_status == "success" else "fail"
-        full_system_detail = f"Latest Full System Tester report status: {latest_status}."
+        blocking_failures = full_system_failure_summary["blocking_failures"]
+        ignored_failures = full_system_failure_summary["ignored_self_failures"]
+
+        if latest_status == "success" or (ignored_failures and not blocking_failures):
+            full_system_status = "pass"
+        else:
+            full_system_status = "fail"
+
+        if blocking_failures:
+            full_system_detail = (
+                "Latest Full System Tester has blocking failures: "
+                + ", ".join(blocking_failures)
+                + "."
+            )
+        elif ignored_failures:
+            full_system_detail = (
+                "Latest Full System Tester only has self-referential Feed Readiness failure; "
+                "no other blocker found."
+            )
+        else:
+            full_system_detail = f"Latest Full System Tester report status: {latest_status}."
     checks.append(make_check(
         "full_system_tester",
         full_system_status,
@@ -265,6 +341,7 @@ def build_feed_readiness_result() -> dict[str, Any]:
         full_system_detail,
         {
             "latest_report": latest_full_system,
+            "failure_summary": full_system_failure_summary,
         },
     ))
 
