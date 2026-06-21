@@ -18,13 +18,21 @@ from tools.core.action_policy import (
 )
 from tools.core.behavior_tester import make_sandbox, cleanup_sandbox, write_text
 from tools.core.action_planner import build_action_plan
+from tools.core.backup_adapter import (
+    BACKUP_ADAPTER_SCHEMA,
+    FINAL_BACKUP_TOKEN,
+    build_backup_adapter_result,
+)
 from tools.core.bot_controller import (
     build_bot_controller_result,
     build_selection_session_from_groups,
     build_selection_decision,
     execute_bot_decision,
+    export_backup_selection_flow_report,
     export_move_later_selection_flow_report,
+    export_safe_delete_selection_flow_report,
 )
+from tools.core.auto_scan_session import AUTO_SCAN_SESSION_SCHEMA, build_auto_scan_session_result
 from tools.core.candidate_review import build_candidate_review
 from tools.core.capability_registry import (
     get_capabilities,
@@ -63,17 +71,29 @@ from tools.core.file_operation_adapter import (
     FINAL_MOVE_TOKEN,
     build_file_operation_adapter_result,
 )
+from tools.core.issue_classifier import ISSUE_CLASSIFIER_SCHEMA, build_issue_classifier_result
 from tools.core.obsidian_exporter import (
     OBSIDIAN_EXPORT_SCHEMA,
     build_obsidian_export_result,
 )
 from tools.core.risk_classifier import PROTECTED, REVIEW_REQUIRED, SAFE_DELETE, classify_file_risk
 from tools.core.scenario_tester import run_sandbox_scenarios
+from tools.core.safe_delete_adapter import (
+    FINAL_DELETE_TOKEN,
+    SAFE_DELETE_ADAPTER_SCHEMA,
+    build_safe_delete_adapter_result,
+)
 from tools.core.safe_executor import safe_delete
 from tools.core.safety_utils import safe_move, save_manifest
 from tools.core.tool_tester import TOOLS_TO_TEST
 from tools.core.undo_manager import preview_manifest, restore_manifest
 from tools.search import natural_command
+from tools.ui.bot_panel import (
+    BOT_PANEL_SCHEMA,
+    build_bot_panel_snapshot,
+    cleanup_demo_sandbox as cleanup_ui_demo_sandbox,
+    create_demo_sandbox,
+)
 from tools.storage.wiztree_adapter import (
     get_top_wiztree_files,
     get_top_wiztree_folders,
@@ -100,6 +120,8 @@ STATIC_AUDIT_ALLOWLIST = {
     ("tools/core/safety_utils.py", "shutil.move"),
     ("tools/core/behavior_tester.py", "shutil.rmtree"),
     ("tools/core/scenario_tester.py", "shutil.rmtree"),
+    ("tools/ui/bot_panel.py", "shutil.rmtree"),
+    ("tools/automation/startup_registration.py", ".unlink("),
 }
 
 
@@ -191,6 +213,14 @@ def test_main_menu_coverage() -> dict[str, Any]:
         "Execution Adapter",
         "File Operation Adapter",
         "Obsidian Exporter",
+        "Auto Scan Session",
+        "Issue Classifier",
+        "Safe Delete Adapter",
+        "Bot Panel UI",
+        "Backup Adapter",
+        "Startup Scan",
+        "Startup Registration",
+        "Startup Decision Window",
     ]
     missing = [label for label in expected if label not in main_text]
 
@@ -1145,7 +1175,7 @@ def test_bot_controller_contract() -> dict[str, Any]:
         "Bot Controller v2 must not execute file operations.",
     )
     assert_condition(
-        {"ok", "select", "move_later", "cancel", "details"}.issubset(decision_screen),
+        {"ok", "select", "move_later", "delete_candidate", "cancel", "details"}.issubset(decision_screen),
         "Bot Controller should expose simple user decisions.",
     )
     assert_condition(
@@ -1187,6 +1217,15 @@ def test_bot_controller_contract() -> dict[str, Any]:
         move_later_result["selection_ui"]["schema"] == "bot_selection_ui_v2",
         "Move-later decision should return selection UI.",
     )
+    delete_result = execute_bot_decision("delete_candidate", bot_result=result)
+    assert_condition(
+        delete_result["executed"] is False,
+        "Safe-delete bot decision should require selection and token first.",
+    )
+    assert_condition(
+        delete_result["selection_ui"]["schema"] == "bot_selection_ui_v2",
+        "Safe-delete decision should return selection UI.",
+    )
 
     selection_items = selection_ui["groups"]["needs_selection"]
     if selection_items:
@@ -1226,7 +1265,96 @@ def test_bot_controller_contract() -> dict[str, Any]:
         "selection_summary": selection_ui["summary"],
         "ok_result": ok_result,
         "move_later_result_status": move_later_result["status"],
+        "delete_result_status": delete_result["status"],
     }
+
+
+def test_auto_scan_and_issue_classifier_contract() -> dict[str, Any]:
+    sandbox = make_sandbox()
+    try:
+        safe_file = sandbox / "Downloads" / "old_cache.tmp"
+        video_file = sandbox / "Media" / "selected_video.mp4"
+        project_file = sandbox / "Work" / "edit_project.prproj"
+        write_text(safe_file, "safe delete contract")
+        write_text(video_file, "video contract")
+        write_text(project_file, "project contract")
+
+        top_folders = [
+            {
+                "path": str(sandbox / "Downloads"),
+                "size": 1024,
+                "source": "contract_test",
+            }
+        ]
+        large_files = [
+            {
+                "path": str(safe_file),
+                "size": safe_file.stat().st_size,
+                "source": "contract_test",
+            },
+            {
+                "path": str(video_file),
+                "size": video_file.stat().st_size,
+                "source": "contract_test",
+            },
+            {
+                "path": str(project_file),
+                "size": project_file.stat().st_size,
+                "source": "contract_test",
+            },
+        ]
+        scan = build_auto_scan_session_result(
+            root_drive=sandbox,
+            top_folders=top_folders,
+            large_files=large_files,
+        )
+        assert_condition(scan["schema"] == AUTO_SCAN_SESSION_SCHEMA, "Auto Scan Session should expose v1 schema.")
+        assert_condition(
+            scan["safety_contract"]["executes_file_operations"] is False,
+            "Auto Scan Session must be read-only.",
+        )
+        assert_condition(
+            scan["summary"]["large_file_count"] == 3,
+            "Auto Scan Session should preserve supplied large-file snapshot.",
+        )
+
+        classifier = build_issue_classifier_result(
+            auto_scan_result=scan,
+            include_items=True,
+        )
+        summary = classifier["summary"]
+        assert_condition(
+            classifier["schema"] == ISSUE_CLASSIFIER_SCHEMA,
+            "Issue Classifier should expose v1 schema.",
+        )
+        assert_condition(classifier["status"] == "ready", "Issue Classifier should be ready for valid auto scan.")
+        assert_condition(
+            classifier["safety_contract"]["executes_file_operations"] is False,
+            "Issue Classifier must not execute file operations.",
+        )
+        assert_condition(
+            summary["delete_candidate_count"] >= 1,
+            "Issue Classifier should detect safe delete candidates.",
+        )
+        assert_condition(
+            summary["move_later_count"] >= 1,
+            "Issue Classifier should detect move_later candidates.",
+        )
+        assert_condition(
+            summary["needs_backup_count"] >= 1,
+            "Issue Classifier should detect backup-first candidates.",
+        )
+
+        return {
+            "scan_summary": scan["summary"],
+            "classifier_summary": summary,
+            "group_counts": {
+                key: len(value)
+                for key, value in classifier["action_groups"].items()
+            },
+        }
+    finally:
+        cleanup_sandbox(sandbox)
 
 
 def write_fake_selection_decision_report(path: Path, target_file: Path) -> None:
@@ -1376,6 +1504,169 @@ def write_fake_move_selection_decision_report(path: Path, target_file: Path) -> 
     write_text(path, json.dumps(data, ensure_ascii=False))
 
 
+def write_fake_backup_selection_decision_report(path: Path, target_file: Path) -> None:
+    data = {
+        "schema_version": REPORT_SCHEMA_VERSION,
+        "tool": "bot_controller",
+        "action": "export_selection_decision",
+        "risk_level": "safe",
+        "status": "success",
+        "summary": {
+            "selected_count": 2,
+            "blocked_count": 0,
+            "invalid_count": 0,
+            "undo_available": False,
+        },
+        "input": {},
+        "results": {
+            "schema": "bot_selection_decision_v2",
+            "status": "ready",
+            "summary": {
+                "input_decision_count": 2,
+                "selected_count": 2,
+                "skipped_count": 0,
+                "blocked_count": 0,
+                "invalid_count": 0,
+                "unselected_count": 0,
+                "by_decision": {
+                    "needs_backup": 1,
+                    "keep": 1,
+                },
+                "execution_enabled": False,
+                "undo_available": False,
+            },
+            "selected": [
+                {
+                    "selection_id": "M001",
+                    "path": str(target_file),
+                    "name": target_file.name,
+                    "size_text": "1.00 KB",
+                    "selection_group": "needs_selection",
+                    "policy_decision": "needs_backup",
+                    "plan_action": "backup_first",
+                    "decision": "needs_backup",
+                    "execution_enabled": False,
+                },
+                {
+                    "selection_id": "M002",
+                    "path": str(target_file),
+                    "name": target_file.name,
+                    "size_text": "1.00 KB",
+                    "selection_group": "needs_selection",
+                    "policy_decision": "manual_only",
+                    "plan_action": "manual_review",
+                    "decision": "keep",
+                    "execution_enabled": False,
+                },
+            ],
+            "skipped": [],
+            "blocked": [],
+            "invalid": [],
+            "safety_contract": {
+                "decision_report_only": True,
+                "executes_file_operations": False,
+                "requires_execution_adapter": True,
+                "requires_backup_adapter_for_backup": True,
+                "delete_candidate_is_not_delete": True,
+            },
+        },
+        "manifest": None,
+        "undo_available": False,
+        "recommendations": [],
+        "tags": ["contract_test"],
+    }
+    write_text(path, json.dumps(data, ensure_ascii=False))
+
+
+def write_fake_safe_delete_selection_decision_report(
+    path: Path,
+    safe_file: Path,
+    review_file: Path,
+) -> None:
+    data = {
+        "schema_version": REPORT_SCHEMA_VERSION,
+        "tool": "bot_controller",
+        "action": "export_selection_decision",
+        "risk_level": "safe",
+        "status": "success",
+        "summary": {
+            "selected_count": 3,
+            "blocked_count": 0,
+            "invalid_count": 0,
+            "undo_available": False,
+        },
+        "input": {},
+        "results": {
+            "schema": "bot_selection_decision_v2",
+            "status": "ready",
+            "summary": {
+                "input_decision_count": 3,
+                "selected_count": 3,
+                "skipped_count": 0,
+                "blocked_count": 0,
+                "invalid_count": 0,
+                "unselected_count": 0,
+                "by_decision": {
+                    "delete_candidate": 2,
+                    "keep": 1,
+                },
+                "execution_enabled": False,
+                "undo_available": False,
+            },
+            "selected": [
+                {
+                    "selection_id": "M001",
+                    "path": str(safe_file),
+                    "name": safe_file.name,
+                    "size_text": "1.00 KB",
+                    "selection_group": "needs_selection",
+                    "policy_decision": "delete_candidate",
+                    "plan_action": "delete_candidate",
+                    "decision": "delete_candidate",
+                    "execution_enabled": False,
+                },
+                {
+                    "selection_id": "M002",
+                    "path": str(review_file),
+                    "name": review_file.name,
+                    "size_text": "1.00 KB",
+                    "selection_group": "needs_selection",
+                    "policy_decision": "manual_only",
+                    "plan_action": "manual_review",
+                    "decision": "delete_candidate",
+                    "execution_enabled": False,
+                },
+                {
+                    "selection_id": "M003",
+                    "path": str(safe_file),
+                    "name": safe_file.name,
+                    "size_text": "1.00 KB",
+                    "selection_group": "needs_selection",
+                    "policy_decision": "manual_only",
+                    "plan_action": "manual_review",
+                    "decision": "keep",
+                    "execution_enabled": False,
+                },
+            ],
+            "skipped": [],
+            "blocked": [],
+            "invalid": [],
+            "safety_contract": {
+                "decision_report_only": True,
+                "executes_file_operations": False,
+                "requires_execution_adapter": True,
+                "requires_safe_delete_adapter_for_delete": True,
+                "delete_candidate_is_not_delete": True,
+            },
+        },
+        "manifest": None,
+        "undo_available": False,
+        "recommendations": [],
+        "tags": ["contract_test"],
+    }
+    write_text(path, json.dumps(data, ensure_ascii=False))
+
+
 def test_execution_adapter_contract() -> dict[str, Any]:
     sandbox = make_sandbox()
     try:
@@ -1507,6 +1798,225 @@ def test_file_operation_adapter_contract() -> dict[str, Any]:
         cleanup_sandbox(sandbox)
 
 
+def test_backup_adapter_contract() -> dict[str, Any]:
+    sandbox = make_sandbox()
+    try:
+        source_file = sandbox / "backup_adapter" / "needs_backup.prproj"
+        backup_run_dir = sandbox / "backup_run"
+        report_path = sandbox / "backup_selection_decision_report.json"
+        write_text(source_file, "backup adapter contract")
+        write_fake_backup_selection_decision_report(report_path, source_file)
+
+        dry_run = build_backup_adapter_result(
+            source_report_path=report_path,
+            backup_run_dir=backup_run_dir,
+            mode="dry_run",
+        )
+        assert_condition(dry_run["schema"] == BACKUP_ADAPTER_SCHEMA, "Backup Adapter should expose v1 schema.")
+        assert_condition(dry_run["status"] == "dry_run", "Backup dry-run should be ready.")
+        assert_condition(dry_run["summary"]["backup_requested_count"] == 1, "Backup dry-run should find one needs_backup item.")
+        assert_condition(dry_run["summary"]["backupable_count"] == 1, "Backup dry-run should have one backupable item.")
+        assert_condition(
+            dry_run["summary"]["file_operations_executed"] is False,
+            "Backup dry-run must not copy files.",
+        )
+        planned_backup = Path(dry_run["steps"][0]["planned_backup_path"])
+        assert_condition(source_file.exists(), "Backup dry-run must preserve source file.")
+        assert_condition(not planned_backup.exists(), "Backup dry-run must not create the backup copy.")
+
+        no_token = build_backup_adapter_result(
+            source_report_path=report_path,
+            backup_run_dir=backup_run_dir,
+            mode="apply",
+        )
+        assert_condition(
+            no_token["status"] == "requires_final_confirmation",
+            "Backup apply should require final token.",
+        )
+        assert_condition(source_file.exists(), "Missing token must preserve source file.")
+        assert_condition(not planned_backup.exists(), "Missing token must not copy backup file.")
+
+        applied = build_backup_adapter_result(
+            source_report_path=report_path,
+            backup_run_dir=backup_run_dir,
+            mode="apply",
+            final_token=FINAL_BACKUP_TOKEN,
+        )
+        manifest = applied.get("manifest")
+        actual_backup = Path(applied["steps"][0]["actual_backup_path"])
+        assert_condition(applied["status"] == "completed", "Backup apply should complete in sandbox.")
+        assert_condition(applied["summary"]["backed_up_count"] == 1, "Backup apply should copy one file.")
+        assert_condition(applied["summary"]["file_operations_executed"] is True, "Backup apply should execute one copy operation.")
+        assert_condition(bool(manifest), "Backup apply should create a manifest.")
+        assert_condition(source_file.exists(), "Backup apply must preserve source file.")
+        assert_condition(actual_backup.exists(), "Backup copy should exist after apply.")
+        assert_condition(
+            source_file.read_text(encoding="utf-8") == actual_backup.read_text(encoding="utf-8"),
+            "Backup copy content should match source.",
+        )
+
+        return {
+            "dry_run_summary": dry_run["summary"],
+            "no_token_status": no_token["status"],
+            "applied_summary": applied["summary"],
+            "manifest": manifest,
+            "source_exists_after_apply": source_file.exists(),
+            "backup_exists_after_apply": actual_backup.exists(),
+        }
+    finally:
+        cleanup_sandbox(sandbox)
+
+
+def test_safe_delete_adapter_contract() -> dict[str, Any]:
+    sandbox = make_sandbox()
+    try:
+        safe_file = sandbox / "Downloads" / "delete_me.tmp"
+        review_file = sandbox / "Review" / "keep_me.log"
+        report_path = sandbox / "safe_delete_selection_decision_report.json"
+        write_text(safe_file, "safe delete adapter contract")
+        write_text(review_file, "review required contract")
+        write_fake_safe_delete_selection_decision_report(report_path, safe_file, review_file)
+
+        dry_run = build_safe_delete_adapter_result(
+            source_report_path=report_path,
+            mode="dry_run",
+        )
+        assert_condition(dry_run["schema"] == SAFE_DELETE_ADAPTER_SCHEMA, "Safe Delete Adapter should expose v1 schema.")
+        assert_condition(dry_run["status"] == "dry_run", "Safe delete dry-run should be ready.")
+        assert_condition(dry_run["summary"]["delete_requested_count"] == 2, "Safe delete dry-run should find two delete_candidate items.")
+        assert_condition(dry_run["summary"]["deletable_count"] == 1, "Safe delete dry-run should allow only safe_delete risk.")
+        assert_condition(dry_run["summary"]["blocked_count"] == 1, "Safe delete dry-run should block review_required risk.")
+        assert_condition(
+            dry_run["summary"]["file_operations_executed"] is False,
+            "Safe delete dry-run must not delete files.",
+        )
+        assert_condition(safe_file.exists(), "Safe delete dry-run must not delete the safe file.")
+        assert_condition(review_file.exists(), "Safe delete dry-run must not delete the review file.")
+
+        no_token = build_safe_delete_adapter_result(
+            source_report_path=report_path,
+            mode="apply",
+        )
+        assert_condition(
+            no_token["status"] == "requires_final_confirmation",
+            "Safe delete apply should require final token.",
+        )
+        assert_condition(safe_file.exists(), "Missing token must not delete the safe file.")
+
+        applied = build_safe_delete_adapter_result(
+            source_report_path=report_path,
+            mode="apply",
+            final_token=FINAL_DELETE_TOKEN,
+        )
+        assert_condition(applied["status"] == "completed_with_blocks", "Safe delete apply should delete safe file and block review file.")
+        assert_condition(applied["summary"]["deleted_count"] == 1, "Safe delete apply should delete one file.")
+        assert_condition(applied["summary"]["blocked_count"] == 1, "Safe delete apply should keep one blocked file.")
+        assert_condition(applied["summary"]["file_operations_executed"] is True, "Safe delete apply should execute one file operation.")
+        assert_condition(not safe_file.exists(), "Safe file should be sent to Recycle Bin after token.")
+        assert_condition(review_file.exists(), "Review-required file must remain after token.")
+
+        return {
+            "dry_run_summary": dry_run["summary"],
+            "no_token_status": no_token["status"],
+            "applied_summary": applied["summary"],
+            "safe_file_exists_after_apply": safe_file.exists(),
+            "review_file_exists_after_apply": review_file.exists(),
+        }
+    finally:
+        cleanup_sandbox(sandbox)
+
+
+def test_bot_backup_flow_contract() -> dict[str, Any]:
+    sandbox = make_sandbox()
+    try:
+        source_file = sandbox / "bot_backup_flow" / "project_file.prproj"
+        write_text(source_file, "bot backup flow")
+
+        groups = {
+            "safe_to_execute": [],
+            "needs_selection": [
+                {
+                    "path": str(source_file),
+                    "name": source_file.name,
+                    "size": source_file.stat().st_size,
+                    "size_text": "1.00 KB",
+                    "candidate_group": "large_project_or_archive",
+                    "context": "contract_test",
+                    "policy_decision": "needs_backup",
+                    "plan_action": "backup_first",
+                    "plan_status": "requires_user_input",
+                    "reason": "Fake item for bot backup flow.",
+                    "can_execute_now": False,
+                    "requires_user_input": True,
+                }
+            ],
+            "do_not_touch": [],
+            "review_only": [],
+        }
+        session = build_selection_session_from_groups(groups, include_items=True)
+        selection_id = session["groups"]["needs_selection"][0]["selection_id"]
+        contract_report_tags = ["contract_test", "full_system"]
+
+        dry_run = export_backup_selection_flow_report(
+            {selection_id: "needs_backup"},
+            mode="dry_run",
+            session=session,
+            note="full_system_bot_backup_contract",
+            extra_tags=contract_report_tags,
+        )
+        dry_flow = dry_run["flow"]
+        assert_condition(dry_flow["schema"] == "bot_backup_flow_v1", "Bot backup flow should expose v1 schema.")
+        assert_condition(dry_flow["status"] == "dry_run", "Bot backup dry-run should be ready.")
+        assert_condition(
+            dry_flow["summary"]["backupable_count"] == 1,
+            "Bot backup dry-run should find one backupable item.",
+        )
+        assert_condition(source_file.exists(), "Bot backup dry-run must preserve source file.")
+
+        no_token = export_backup_selection_flow_report(
+            {selection_id: "needs_backup"},
+            mode="apply",
+            session=session,
+            note="full_system_bot_backup_contract_no_token",
+            extra_tags=contract_report_tags,
+        )
+        assert_condition(
+            no_token["flow"]["status"] == "requires_final_confirmation",
+            "Bot backup apply should require final token.",
+        )
+        assert_condition(source_file.exists(), "Bot backup missing token must preserve source file.")
+
+        applied = export_backup_selection_flow_report(
+            {selection_id: "needs_backup"},
+            mode="apply",
+            final_token=FINAL_BACKUP_TOKEN,
+            session=session,
+            note="full_system_bot_backup_contract_apply",
+            extra_tags=contract_report_tags,
+        )
+        applied_flow = applied["flow"]
+        manifest = applied_flow["summary"]["manifest"]
+        backup_report = applied_flow["backup_report"]["backup"]
+        actual_backup = Path(backup_report["steps"][0]["actual_backup_path"])
+        assert_condition(applied_flow["status"] == "completed", "Bot backup apply should complete in sandbox.")
+        assert_condition(applied_flow["summary"]["backed_up_count"] == 1, "Bot backup should copy one file.")
+        assert_condition(applied_flow["summary"]["file_operations_executed"] is True, "Bot backup should execute copy after token.")
+        assert_condition(bool(manifest), "Bot backup apply should expose a manifest.")
+        assert_condition(source_file.exists(), "Bot backup apply must preserve source file.")
+        assert_condition(actual_backup.exists(), "Bot backup copy should exist.")
+
+        return {
+            "dry_summary": dry_flow["summary"],
+            "no_token_status": no_token["flow"]["status"],
+            "applied_summary": applied_flow["summary"],
+            "manifest": manifest,
+            "source_exists_after_apply": source_file.exists(),
+            "backup_exists_after_apply": actual_backup.exists(),
+        }
+    finally:
+        cleanup_sandbox(sandbox)
+
+
 def test_bot_move_later_flow_contract() -> dict[str, Any]:
     sandbox = make_sandbox()
     try:
@@ -1600,6 +2110,90 @@ def test_bot_move_later_flow_contract() -> dict[str, Any]:
             "manifest": manifest,
             "restore_status": restored["status"],
             "source_exists_after_restore": source_file.exists(),
+        }
+    finally:
+        cleanup_sandbox(sandbox)
+
+
+def test_bot_safe_delete_flow_contract() -> dict[str, Any]:
+    sandbox = make_sandbox()
+    try:
+        safe_file = sandbox / "Downloads" / "delete_me.tmp"
+        write_text(safe_file, "bot safe delete flow")
+
+        groups = {
+            "safe_to_execute": [],
+            "needs_selection": [
+                {
+                    "path": str(safe_file),
+                    "name": safe_file.name,
+                    "size": safe_file.stat().st_size,
+                    "size_text": "1.00 KB",
+                    "candidate_group": "safe_delete_candidate",
+                    "context": "contract_test",
+                    "policy_decision": "delete_candidate",
+                    "plan_action": "delete_candidate",
+                    "plan_status": "requires_user_input",
+                    "reason": "Fake item for bot safe-delete flow.",
+                    "can_execute_now": False,
+                    "requires_user_input": True,
+                }
+            ],
+            "do_not_touch": [],
+            "review_only": [],
+        }
+        session = build_selection_session_from_groups(groups, include_items=True)
+        selection_id = session["groups"]["needs_selection"][0]["selection_id"]
+        contract_report_tags = ["contract_test", "full_system"]
+
+        dry_run = export_safe_delete_selection_flow_report(
+            {selection_id: "delete_candidate"},
+            mode="dry_run",
+            session=session,
+            note="full_system_bot_safe_delete_contract",
+            extra_tags=contract_report_tags,
+        )
+        dry_flow = dry_run["flow"]
+        assert_condition(dry_flow["schema"] == "bot_safe_delete_flow_v1", "Bot safe-delete flow should expose v1 schema.")
+        assert_condition(dry_flow["status"] == "dry_run", "Bot safe-delete dry-run should be ready.")
+        assert_condition(
+            dry_flow["summary"]["deletable_count"] == 1,
+            "Bot safe-delete dry-run should find one deletable item.",
+        )
+        assert_condition(safe_file.exists(), "Bot safe-delete dry-run must not delete the file.")
+
+        no_token = export_safe_delete_selection_flow_report(
+            {selection_id: "delete_candidate"},
+            mode="apply",
+            session=session,
+            note="full_system_bot_safe_delete_contract_no_token",
+            extra_tags=contract_report_tags,
+        )
+        assert_condition(
+            no_token["flow"]["status"] == "requires_final_confirmation",
+            "Bot safe-delete apply should require final token.",
+        )
+        assert_condition(safe_file.exists(), "Bot safe-delete missing token must not delete source file.")
+
+        applied = export_safe_delete_selection_flow_report(
+            {selection_id: "delete_candidate"},
+            mode="apply",
+            final_token=FINAL_DELETE_TOKEN,
+            session=session,
+            note="full_system_bot_safe_delete_contract_apply",
+            extra_tags=contract_report_tags,
+        )
+        applied_flow = applied["flow"]
+        assert_condition(applied_flow["status"] == "completed", "Bot safe-delete apply should complete in sandbox.")
+        assert_condition(applied_flow["summary"]["deleted_count"] == 1, "Bot safe-delete should delete one file.")
+        assert_condition(applied_flow["summary"]["file_operations_executed"] is True, "Bot safe-delete should execute delete after token.")
+        assert_condition(not safe_file.exists(), "Safe file should be sent to Recycle Bin after bot flow apply.")
+
+        return {
+            "dry_summary": dry_flow["summary"],
+            "no_token_status": no_token["flow"]["status"],
+            "applied_summary": applied_flow["summary"],
+            "safe_file_exists_after_apply": safe_file.exists(),
         }
     finally:
         cleanup_sandbox(sandbox)
@@ -1743,6 +2337,144 @@ def test_scenario_tester_contract() -> dict[str, Any]:
     }
 
 
+def test_bot_panel_ui_contract() -> dict[str, Any]:
+    snapshot = build_bot_panel_snapshot()
+    demo_root = Path(snapshot["demo_sandbox_root"])
+    assert_condition(
+        snapshot["schema"] == BOT_PANEL_SCHEMA,
+        "Bot Panel UI should expose a stable schema.",
+    )
+    assert_condition(
+        snapshot["entrypoint"] == "python -m tools.ui.bot_panel",
+        "Bot Panel UI should expose its module entrypoint.",
+    )
+    assert_condition(
+        snapshot["executes_file_operations_directly"] is False,
+        "Bot Panel UI should not bypass adapters for file operations.",
+    )
+    assert_condition(
+        snapshot["supports_assistant_dashboard"] is True,
+        "Bot Panel UI should expose an assistant-first dashboard.",
+    )
+    assert_condition(
+        snapshot["supports_issue_cards"] is True,
+        "Bot Panel UI should expose assistant issue cards.",
+    )
+    assert_condition(
+        snapshot["supports_full_demo_flow"] is True,
+        "Bot Panel UI should expose a full guided demo flow.",
+    )
+    assert_condition(
+        snapshot["supports_one_click_ai_plan"] is True,
+        "Bot Panel UI should expose one-click AI plan preview/apply.",
+    )
+    assert_condition(
+        snapshot["supports_assistant_activity_log"] is True,
+        "Bot Panel UI should expose a readable assistant activity log.",
+    )
+    assert_condition(
+        snapshot["supports_run_history_panel"] is True,
+        "Bot Panel UI should expose recent report history on the assistant screen.",
+    )
+    assert_condition(
+        snapshot["assistant_result_panel_scope"] == "full_width",
+        "Bot Panel UI should expose the assistant result panel as a full-width reading area.",
+    )
+    assert_condition(
+        int(snapshot["assistant_result_panel_min_height_px"]) >= 480,
+        "Bot Panel UI result panel should be tall enough to read multi-line output.",
+    )
+    assert_condition(
+        int(snapshot["assistant_history_panel_rows"]) >= 8,
+        "Bot Panel UI history panel should show enough recent reports without feeling clipped.",
+    )
+    assert_condition(
+        snapshot["assistant_history_panel_scope"] == "bottom_full_height",
+        "Bot Panel UI history panel should live in the tall bottom reading area.",
+    )
+    assert_condition(
+        int(snapshot["assistant_history_panel_min_height_px"]) >= 480,
+        "Bot Panel UI history panel should have enough vertical room for multiple reports.",
+    )
+    assert_condition(
+        snapshot["assistant_bottom_panel_anchor"] == "bottom_visible",
+        "Bot Panel UI should anchor result/history at the bottom so it stays visible.",
+    )
+    assert_condition(
+        snapshot["can_call_safe_delete_adapter"] is True,
+        "Bot Panel UI should connect to Safe Delete Adapter.",
+    )
+    assert_condition(
+        snapshot["can_call_backup_adapter"] is True,
+        "Bot Panel UI should connect to Backup Adapter.",
+    )
+    assert_condition(
+        snapshot["backup_apply_requires_token"] == FINAL_BACKUP_TOKEN,
+        "Bot Panel UI should use the Backup Adapter token.",
+    )
+    assert_condition(
+        snapshot["can_call_file_operation_adapter"] is True,
+        "Bot Panel UI should connect to File Operation Adapter.",
+    )
+    assert_condition(
+        snapshot["move_apply_requires_token"] == FINAL_MOVE_TOKEN,
+        "Bot Panel UI should use the File Operation Adapter token.",
+    )
+    assert_condition(
+        snapshot["safe_delete_apply_requires_token"] == FINAL_DELETE_TOKEN,
+        "Bot Panel UI should use the Safe Delete Adapter token.",
+    )
+    assert_condition(
+        snapshot["supports_move_later_flow"] is True,
+        "Bot Panel UI should support move_later flow.",
+    )
+    assert_condition(
+        snapshot["supports_backup_flow"] is True,
+        "Bot Panel UI should support needs_backup flow.",
+    )
+    assert_condition(
+        snapshot["supports_move_undo"] is True,
+        "Bot Panel UI should expose undo for the latest move manifest.",
+    )
+    assert_condition(
+        snapshot["supports_safe_delete_flow"] is True,
+        "Bot Panel UI should support safe_delete flow.",
+    )
+    assert_condition(
+        not demo_root.resolve().is_relative_to(BASE_DIR.resolve()),
+        "Bot Panel demo sandbox should stay outside the protected tool workspace.",
+    )
+
+    sandbox = create_demo_sandbox()
+    try:
+        tmp_file = sandbox / "cache" / "old_cache.tmp"
+        log_file = sandbox / "logs" / "review_me.log"
+        project_file = sandbox / "work" / "edit_project.prproj"
+        move_destination = sandbox / "_move_destination"
+        assert_condition(tmp_file.exists(), "Bot Panel demo sandbox should create a tmp file.")
+        assert_condition(log_file.exists(), "Bot Panel demo sandbox should create a review file.")
+        assert_condition(project_file.exists(), "Bot Panel demo sandbox should create a needs_backup project file.")
+        assert_condition(move_destination.is_dir(), "Bot Panel demo sandbox should create a move destination.")
+        assert_condition(
+            classify_file_risk(tmp_file)["risk"] == SAFE_DELETE,
+            "Bot Panel demo tmp file should classify as SAFE_DELETE.",
+        )
+        assert_condition(
+            classify_file_risk(log_file)["risk"] == REVIEW_REQUIRED,
+            "Bot Panel demo log file should classify as REVIEW_REQUIRED.",
+        )
+        return {
+            **snapshot,
+            "demo_sandbox": str(sandbox),
+            "move_destination": str(move_destination),
+            "tmp_risk": classify_file_risk(tmp_file)["risk"],
+            "log_risk": classify_file_risk(log_file)["risk"],
+            "project_risk": classify_file_risk(project_file)["risk"],
+        }
+    finally:
+        cleanup_ui_demo_sandbox(sandbox)
+
+
 def test_dependency_health() -> dict[str, Any]:
     modules = ["psutil", "send2trash", "watchdog"]
     results = []
@@ -1799,12 +2531,18 @@ FULL_SYSTEM_TESTS: list[tuple[str, Callable[[], dict[str, Any]]]] = [
     ("Dry-run Action Planner Contract", test_action_planner_contract),
     ("Pre-feed Bundle Contract", test_pre_feed_bundle_contract),
     ("AI Bot Controller Contract", test_bot_controller_contract),
+    ("Auto Scan and Issue Classifier Contract", test_auto_scan_and_issue_classifier_contract),
     ("Execution Adapter Contract", test_execution_adapter_contract),
+    ("Backup Adapter Contract", test_backup_adapter_contract),
     ("File Operation Adapter Contract", test_file_operation_adapter_contract),
+    ("Safe Delete Adapter Contract", test_safe_delete_adapter_contract),
+    ("Bot Backup Flow Contract", test_bot_backup_flow_contract),
     ("Bot Move-later Flow Contract", test_bot_move_later_flow_contract),
+    ("Bot Safe-delete Flow Contract", test_bot_safe_delete_flow_contract),
     ("Obsidian Exporter Contract", test_obsidian_exporter_contract),
     ("Feed Readiness Contract", test_feed_readiness_contract),
     ("Scenario Tester Contract", test_scenario_tester_contract),
+    ("Bot Panel UI Contract", test_bot_panel_ui_contract),
     ("Dependency Health", test_dependency_health),
     ("Git Submodule Health", test_git_submodule_health),
 ]

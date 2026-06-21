@@ -47,6 +47,14 @@ TOOLS_TO_TEST = [
     {"name": "File Operation Adapter", "module": "tools.core.file_operation_adapter", "function": "run_file_operation_adapter", "risk": "medium"},
     {"name": "File Location Opener", "module": "tools.core.file_location_opener", "function": "open_file_location", "risk": "safe"},
     {"name": "Obsidian Exporter", "module": "tools.core.obsidian_exporter", "function": "run_obsidian_exporter", "risk": "safe"},
+    {"name": "Auto Scan Session", "module": "tools.core.auto_scan_session", "function": "run_auto_scan_session", "risk": "safe"},
+    {"name": "Issue Classifier", "module": "tools.core.issue_classifier", "function": "run_issue_classifier", "risk": "safe"},
+    {"name": "Safe Delete Adapter", "module": "tools.core.safe_delete_adapter", "function": "run_safe_delete_adapter", "risk": "medium"},
+    {"name": "Bot Panel UI", "module": "tools.ui.bot_panel", "function": "run_bot_panel", "risk": "medium"},
+    {"name": "Backup Adapter", "module": "tools.core.backup_adapter", "function": "run_backup_adapter", "risk": "medium"},
+    {"name": "Startup Scan", "module": "tools.core.startup_scan", "function": "run_startup_scan", "risk": "safe"},
+    {"name": "Startup Registration", "module": "tools.automation.startup_registration", "function": "run_startup_registration", "risk": "medium"},
+    {"name": "Startup Decision Window", "module": "tools.ui.startup_window", "function": "run_startup_window", "risk": "medium"},
 ]
 
 

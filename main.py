@@ -18,13 +18,16 @@ from tools.search.file_indexer import run_file_indexer
 from tools.search.natural_command import run_natural_command
 
 from tools.automation.startup_launcher import run_startup_launcher
+from tools.automation.startup_registration import run_startup_registration
 from tools.automation.download_organizer import run_download_organizer
 from tools.automation.download_watcher import run_download_watcher
 from tools.core.assistant_logger import run_assistant_logger
 from tools.core.action_policy import run_action_policy_manager
 from tools.core.action_planner import run_action_planner
 from tools.core.audit_center import run_audit_center
+from tools.core.auto_scan_session import run_auto_scan_session
 from tools.core.behavior_tester import run_behavior_tester
+from tools.core.backup_adapter import run_backup_adapter
 from tools.core.bot_controller import run_bot_controller
 from tools.core.candidate_review import run_candidate_review
 from tools.core.capability_registry import run_capability_registry
@@ -35,12 +38,17 @@ from tools.core.feed_readiness import run_feed_readiness
 from tools.core.file_operation_adapter import run_file_operation_adapter
 from tools.core.full_system_tester import run_full_system_tester
 from tools.core.guided_action_runner import run_guided_action_runner
+from tools.core.issue_classifier import run_issue_classifier
 from tools.core.obsidian_exporter import run_obsidian_exporter
 from tools.core.pre_feed_bundle import run_pre_feed_bundle
 from tools.core.recommendation_center import run_recommendation_center
+from tools.core.safe_delete_adapter import run_safe_delete_adapter
 from tools.core.scenario_tester import run_scenario_tester
+from tools.core.startup_scan import run_startup_scan
+from tools.ui.startup_window import run_startup_window
 from tools.core.tool_tester import run_tool_tester
 from tools.core.undo_manager import run_undo_manager
+from tools.ui.bot_panel import run_bot_panel
 
 
 EXIT_COMMANDS = ["0", "out", "exit", "quit", "thoat", "thoát"]
@@ -93,6 +101,14 @@ def main():
 38. Execution Adapter
 39. File Operation Adapter
 40. Obsidian Exporter
+41. Auto Scan Session
+42. Issue Classifier
+43. Safe Delete Adapter
+44. Bot Panel UI
+45. Backup Adapter
+46. Startup Scan (boot scan + tu van)
+47. Startup Registration (tu chay khi khoi dong)
+48. Startup Decision Window (man 3 nut do hoa)
 
 0. Thoat
 
@@ -225,6 +241,30 @@ def main():
 
         elif choice == "40":
             run_obsidian_exporter()
+
+        elif choice == "41":
+            run_auto_scan_session()
+
+        elif choice == "42":
+            run_issue_classifier()
+
+        elif choice == "43":
+            run_safe_delete_adapter()
+
+        elif choice == "44":
+            run_bot_panel()
+
+        elif choice == "45":
+            run_backup_adapter()
+
+        elif choice == "46":
+            run_startup_scan()
+
+        elif choice == "47":
+            run_startup_registration()
+
+        elif choice == "48":
+            run_startup_window()
 
         else:
             print("Lua chon khong hop le.")
