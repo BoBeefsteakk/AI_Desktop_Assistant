@@ -53,10 +53,15 @@ Active workspace hiện tại là `D:\tool`. Snapshot cũ đã được chuyển
 - **thay đổi** Feed Assistant Readiness
 - **thay đổi** AI Bot Controller v2: một entrypoint auto-check tổng, gom recommendation/policy/candidate/plan/readiness thành màn OK/lựa chọn/hủy, có Selection UI/Decision Report read-only và chưa execute file thật
 - **thay đổi** Bot Move-later Flow v1: trong Bot Controller, chọn item `move_later`, nhập destination, dry-run rồi apply bằng token `MOVE_SELECTION_V1`
+- **thay đổi** Auto Scan Session v1: gom snapshot read-only cho disk/storage/process/external apps/audit để bot có đầu vào tự động.
+- **thay đổi** Issue Classifier v1: phân loại snapshot thành issue/action group `manual_review`, `move_later`, `backup_first`, `delete_candidate`, `keep`.
+- **thay đổi** Safe Delete Adapter v1: chỉ xử lý selection `delete_candidate`, chỉ cho risk `safe_delete`, dry-run trước và apply bằng token `DELETE_SELECTION_V1` qua Recycle Bin.
+- **thay doi** Backup Adapter v1: chi xu ly selection `needs_backup`, copy-only vao `D:\tool\backups\selection_backups\...`, giu nguyen source va apply bang token `BACKUP_SELECTION_V1`.
+- **thay doi** Bot Panel UI v2: desktop UI Tkinter theo huong assistant-first, co tab `Assistant` cho issue cards, one-click AI plan, activity log/run history, nut `Chay full demo` bang file gia va tab `Advanced` cho bang decision/report ky thuat.
 - **thay đổi** Recommendation Center test-report hygiene: contract/full-system report không làm bẩn queue thật hoặc Feed Readiness
 - **thay đổi** Obsidian Exporter v1 Graph Mode: xuất vault Markdown/Canvas tại `D:\tool\obsidian_vault`, có `60_Graph_Nodes` để Obsidian Graph hiện mạng tool/app/report/policy/path
 - **thay đổi** Execution Adapter v1: đọc Selection Decision Report hợp lệ, ghi nhận quyết định an toàn dạng record-only, chặn xóa/move/backup thật ở bản v1
-- **thay đổi** File Operation Adapter v1: chỉ xử lý `move_later` có destination rõ ràng, token `MOVE_SELECTION_V1`, `safe_move` và manifest restore; chưa bật delete
+- **thay đổi** File Operation Adapter v1: chỉ xử lý `move_later` có destination rõ ràng, token `MOVE_SELECTION_V1`, `safe_move` và manifest restore; delete đi qua Safe Delete Adapter riêng
 - **thay đổi** Scenario Tester: chạy fake-file sandbox cho Downloads, media, game data, archive, temp/junk và manifest restore
 
 ## Project Structure
@@ -76,8 +81,20 @@ D:\tool/
     ├── core/
     ├── search/
     ├── storage/
-    └── system/
+    ├── system/
+    └── ui/        # **thay doi** Bot Panel UI
 ```
+
+## **thay doi** Chay UI de nghiem thu
+
+```powershell
+cd /d D:\tool
+python -m tools.ui.bot_panel
+```
+
+**thay doi** Cach test an toan nhat: mo tab `Assistant`, bam `Chay full demo` de xem tron luong bang file gia. UI se tu tao sandbox, scan, chon de xuat, dry-run/apply backup, dry-run/apply move va dry-run/apply safe cleanup; log tung buoc hien trong tab `Advanced`.
+
+**thay doi** Luong user that sau khi quet: bam `Dung de xuat AI`, bam `Xem ke hoach AI`, doc preview trong `Advanced`, tick `Toi da xem ke hoach`, roi bam `Ap dung ke hoach` neu hop ly.
 
 ## Tiến độ hiện tại
 
@@ -90,10 +107,10 @@ Storage Tools	Done
 Automation Tools	Done
 Search Tools	Done
 Core Utilities	Done
-Tool Tester	**thay đổi** Passed 40/40
+Tool Tester	**thay doi** Passed 45/45
 Scenario Tester	Passed 6/6
 Behavior Tester	Passed 18/18
-Full System Tester	**thay đổi** Passed 31/31
+Full System Tester	**thay doi** Passed 37/37
 WizTree Adapter	Done
 External Apps Integration	Done
 External App Drift Detection	Done
@@ -114,6 +131,11 @@ Pre-feed Bundle	Done
 AI Bot Controller	Done
 Selection UI / Decision Report	Done
 Bot Move-later Flow	**thay đổi** Done
+Auto Scan Session	**thay đổi** Done
+Issue Classifier	**thay đổi** Done
+Safe Delete Adapter	**thay đổi** Done
+Backup Adapter	**thay doi** Done
+Bot Panel UI	**thay doi** Assistant Dashboard v2 + issue cards + one-click AI plan + readable result/history panels Done
 Obsidian Exporter	**thay đổi** Done
 Execution Adapter	**thay đổi** Done
 File Operation Adapter	**thay đổi** Done
@@ -121,4 +143,4 @@ Refactor Tools Folder	Done
 Config System	Done
 Audit System	Basic Done
 Undo System	Basic Done
-UI Desktop	Later
+UI Desktop	**thay doi** Bot Panel UI v2 Done: assistant dashboard + issue cards + one-click plan + full demo

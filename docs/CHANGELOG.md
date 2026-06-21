@@ -1,5 +1,116 @@
 # Changelog
 
+## 2026-06-13
+
+### Bot Panel UI Readability Fix
+
+* **thay doi** Sua layout tab `Assistant`: tang kich thuoc mac dinh cua cua so, chia cot de `Ket qua gan nhat` khong bi bop thanh khung nho.
+* **thay doi** `Ket qua gan nhat` duoc uu tien chieu cao va chieu rong de user doc duoc scan/preview/apply summary ngay trong man Assistant.
+* **thay doi** `Lich su gan day` duoc giu o khung phu nho hon, tranh chen mat vung ket qua chinh.
+* **thay doi** Tang manh chieu cao `Ket qua gan nhat` len khung toi thieu 280px, them scrollbar va thu gon `Lich su gan day` xuong 2 dong.
+* **thay doi** Dua `Ket qua gan nhat` ra khoi cot phai thanh panel full-width ben duoi man Assistant, cao toi thieu 360px va rong gan ca cua so.
+* **thay doi** Tang tiep chieu cao doc cua `Ket qua gan nhat` len toi thieu 520px, nang cua so mac dinh len `1680x1040` va tang contract threshold len 480px.
+* **thay doi** Tang `Lich su gan day` len 10 dong va them scrollbar de doc nhieu report gan nhat, khong con bi kep thanh o mong.
+* **thay doi** Chuyen `Lich su gan day` xuong vung doc cao ben duoi, canh phai `Ket qua gan nhat`, de hien thi nhieu thong tin theo hang doc xuong.
+* **thay doi** Neo vung `Ket qua gan nhat` + `Lich su gan day` vao day man Assistant de no luon hien thi, con vung `De xuat cua AI` chi chiem phan chieu cao con lai.
+* **thay doi** Bot Panel UI Contract them assertion `supports_run_history_panel`, `assistant_result_panel_scope=full_width`, chieu cao toi thieu cua result panel, so dong toi thieu, scope cua history panel va anchor day man hinh.
+* **thay doi** Tool Tester pass 45/45 tai `D:\tool\reports\tool_tester_20260614_164416.json`.
+* **thay doi** Full System Tester pass 37/37 tai `D:\tool\reports\full_system_tester_20260614_164456.json`.
+* **thay doi** Feed Readiness ready, 9 pass, 0 warn, 0 fail tai `D:\tool\reports\feed_readiness_20260614_164517.json`.
+
+## 2026-06-11
+
+### Bot Panel One-click AI Plan
+
+* **thay doi** Don gian hoa tab `Assistant`: panel quyet dinh chinh chi con 3 buoc `Dung de xuat AI` -> `Xem ke hoach AI` -> `Ap dung ke hoach`.
+* **thay doi** `Xem ke hoach AI` gom backup/move/safe cleanup vao mot dry-run tong; preview khong thay doi file.
+* **thay doi** `Ap dung ke hoach` chi chay sau khi user tick `Toi da xem ke hoach`, popup confirm va preview signature con khop.
+* **thay doi** Delete trong ke hoach tong van di qua Safe Delete Adapter va Recycle Bin; move van di qua File Operation Adapter va manifest restore; backup van la copy-only.
+* **thay doi** Them khung `Ket qua gan nhat` ngay trong tab `Assistant`, de scan/preview/apply hien summary de doc ma khong bat user vao `Advanced`.
+* **thay doi** Bot Panel UI Contract them assertion `supports_one_click_ai_plan`.
+* **thay doi** Bot Panel UI Contract them assertion `supports_assistant_activity_log`.
+* **thay doi** Tool Tester pass 45/45 tai `D:\tool\reports\tool_tester_20260611_204617.json`.
+* **thay doi** Full System Tester pass 37/37 tai `D:\tool\reports\full_system_tester_20260611_204703.json`.
+* **thay doi** Feed Readiness ready, 9 pass, 0 warn, 0 fail tai `D:\tool\reports\feed_readiness_20260611_204731.json`.
+
+## 2026-06-08
+
+### Bot Panel Full Demo Flow
+
+* **thay doi** Them nut `Chay full demo` trong tab `Assistant` de UI tu chay tron luong bang file gia: sandbox -> scan -> AI choices -> backup dry-run/apply -> move dry-run/apply -> safe cleanup dry-run/apply.
+* **thay doi** Full demo chi tao va dung file gia trong `D:\_ai_desktop_assistant_ui_demo\run_<timestamp>\...`, khong thao tac len folder that cua user.
+* **thay doi** Ket qua full demo duoc in thanh step log trong tab `Advanced`, gom chuoi click mo phong va summary backup/move/delete.
+* **thay doi** Bot Panel UI Contract them assertion `supports_full_demo_flow`.
+* **thay doi** Tool Tester pass 45/45 tai `D:\tool\reports\tool_tester_20260608_202112.json`.
+* **thay doi** Full System Tester pass 37/37 tai `D:\tool\reports\full_system_tester_20260608_202217.json`.
+* **thay doi** Feed Readiness ready, 9 pass, 0 warn, 0 fail tai `D:\tool\reports\feed_readiness_20260608_203317.json`.
+
+## 2026-06-07
+
+### Backup Adapter v1 + Bot Panel Backup Flow
+
+* **thay doi** Them `tools/core/backup_adapter.py` voi schema `backup_adapter_v1`, chi xu ly selection `needs_backup`.
+* **thay doi** Backup Adapter la copy-only: file source duoc giu nguyen, ban copy duoc ghi vao `D:\tool\backups\selection_backups\run_<timestamp>\...`.
+* **thay doi** Dry-run backup khong copy file; apply can final token `BACKUP_SELECTION_V1`.
+* **thay doi** Bot Controller them `bot_backup_flow_v1`, tao Selection Decision Report roi goi Backup Adapter dry-run/apply.
+* **thay doi** Bot Panel UI them `Show needs_backup`, `Backup dry-run`, checkbox confirm, `Apply backup` va `Open backup`.
+* **thay doi** UI giu cung `backup_run_dir` tu dry-run sang apply de report preview va ket qua copy trung duong dan.
+* **thay doi** Main CLI expose `Backup Adapter` o muc 45; Natural Command route them cac lenh backup/needs_backup.
+* **thay doi** Capability Registry, Tool Tester, Feed Readiness va Full System Tester da co entry/contract cho Backup Adapter va Bot Backup Flow.
+* **thay doi** Tool Tester pass 45/45 tai `D:\tool\reports\tool_tester_20260607_200856.json`.
+* **thay doi** Full System Tester pass 37/37 tai `D:\tool\reports\full_system_tester_20260607_200824.json`.
+* **thay doi** Feed Readiness ready, 9 pass, 0 warn, 0 fail tai `D:\tool\reports\feed_readiness_20260607_200859.json`.
+
+### Bot Panel Assistant Dashboard v2
+
+* **thay doi** Doi huong UI: Bot Panel khong con mo thang vao bang ky thuat, ma co tab `Assistant` lam man hinh chinh.
+* **thay doi** Tab `Assistant` hien target folder, trang thai scan, so luong backup/move/safe cleanup/review/protected va next step de doc hon.
+* **thay doi** Them nut assistant-level: `Use assistant choices`, `Preview backups`, `Copy backups`, `Preview moves`, `Move files`, `Preview safe cleanup`, `Send to Recycle Bin`.
+* **thay doi** Bang decision/report ky thuat duoc dua vao tab `Advanced` de debug va nghiem thu sau, khong phai man hinh chinh cho user.
+* **thay doi** Full System Tester Bot Panel UI Contract them assertion `supports_assistant_dashboard`.
+* **thay doi** Dua mode/limit/raw scan controls sang tab `Advanced`, de tab `Assistant` chi con flow 3 buoc cho user.
+* **thay doi** Thay bang `Recommended work` o man chinh bang issue cards: moi card co so luong, y nghia, nut xem nhom va nut chon theo de xuat.
+* **thay doi** Full System Tester Bot Panel UI Contract them assertion `supports_issue_cards`.
+* **thay doi** Tool Tester pass 45/45 tai `D:\tool\reports\tool_tester_20260607_205049.json`.
+* **thay doi** Full System Tester pass 37/37 tai `D:\tool\reports\full_system_tester_20260607_205121.json`.
+* **thay doi** Feed Readiness ready, 9 pass, 0 warn, 0 fail tai `D:\tool\reports\feed_readiness_20260607_210022.json`.
+
+## 2026-06-06
+
+### Bot Panel UI v1
+
+* **thay doi** Them `tools/ui/bot_panel.py` voi entrypoint `python -m tools.ui.bot_panel`.
+* **thay doi** Main CLI expose `Bot Panel UI` o muc 44.
+* **thay doi** UI co folder picker, storage mode `light/python/wiztree`, threshold/limit, bang issue selection, detail panel va latest report panel.
+* **thay doi** UI tao duoc demo sandbox trong `D:\_ai_desktop_assistant_ui_demo\run_<timestamp>\...` de nghiem thu bang file gia truoc khi dung file that va tranh protected root `D:\tool`.
+* **thay doi** UI ghi Selection Decision Report, chay Move/Safe Delete dry-run, va chi apply khi user tick checkbox + popup confirm; token `MOVE_SELECTION_V1` / `DELETE_SELECTION_V1` duoc UI gui noi bo cho backend adapter.
+* **thay doi** Bot Panel UI them destination picker cho `move_later`, dung File Operation Adapter va manifest restore sau apply.
+* **thay doi** Bot Panel UI them `Undo last move`, goi Undo Manager de restore manifest move moi nhat trong UI session.
+* **thay doi** Capability Registry tang len 44 tool; Bot Panel UI la risk `medium`, mutates_files `true` vi co the goi Safe Delete Adapter token-gated.
+* **thay doi** Natural Command route them `mo ui`, `giao dien bot`, `bot panel`.
+* **thay doi** Full System Tester them Bot Panel UI Contract, khong mo cua so khi test.
+* **thay doi** Huong dan nghiem thu nam o `D:\tool\docs\UI_ACCEPTANCE.md`.
+* **thay doi** Tool Tester pass 44/44 tai `D:\tool\reports\tool_tester_20260606_195651.json`.
+* **thay doi** Full System Tester pass 35/35 tai `D:\tool\reports\full_system_tester_20260606_195719.json`.
+* **thay doi** Feed Readiness ready, 9 pass, 0 warn, 0 fail tai `D:\tool\reports\feed_readiness_20260606_195739.json`.
+
+### Bot Autonomy v1: Auto Scan, Issue Classifier, Safe Delete
+
+* **thay đổi** Thêm `tools/core/auto_scan_session.py` với schema `auto_scan_session_v1`, gom snapshot read-only cho disk/storage/process/external apps/audit.
+* **thay đổi** Thêm `tools/core/issue_classifier.py` với schema `issue_classifier_v1`, biến auto-scan snapshot thành issue/action group cho Bot Controller.
+* **thay đổi** Thêm `tools/core/safe_delete_adapter.py` với schema `safe_delete_adapter_v1`, chỉ xử lý decision `delete_candidate`.
+* **thay đổi** Safe Delete Adapter chỉ cho file có risk `safe_delete`; `review_required` và `protected` bị chặn kể cả khi user chọn xóa.
+* **thay đổi** Apply safe-delete cần token `DELETE_SELECTION_V1`, dry-run không cần token và không xóa file.
+* **thay đổi** Bot Controller v2 thêm decision `delete_candidate`, summary đếm issue classifier và flow `bot_safe_delete_flow_v1`.
+* **thay đổi** File Operation Adapter vẫn chỉ xử lý `move_later`; delete được tách sang Safe Delete Adapter để giảm nhầm lẫn giữa move và xóa.
+* **thay đổi** Main CLI expose `Auto Scan Session` mục 41, `Issue Classifier` mục 42, `Safe Delete Adapter` mục 43.
+* **thay đổi** Capability Registry mở rộng lên 43 tool; summary 28 safe, 9 medium, 6 dangerous; 14 mutating; 15 cần confirmation; 10 dùng external app.
+* **thay đổi** Natural Command route thêm `auto scan`, `scan tổng`, `phân loại vấn đề`, `safe delete`, `xóa an toàn`.
+* **thay đổi** Feed Readiness đọc latest report của `auto_scan_session`, `issue_classifier`, `safe_delete_adapter`.
+* **thay đổi** Full System Tester thêm contract cho Auto Scan + Issue Classifier, Safe Delete Adapter và Bot Safe-delete Flow bằng file giả trong sandbox.
+* **thay đổi** Tool Tester pass 43/43 tại `D:\tool\reports\tool_tester_20260606_133546.json`.
+* **thay đổi** Full System Tester pass 34/34 tại `D:\tool\reports\full_system_tester_20260606_133601.json`.
+
 ## 2026-06-05
 
 ### Obsidian Exporter v1

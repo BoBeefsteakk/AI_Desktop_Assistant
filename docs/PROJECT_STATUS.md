@@ -2,7 +2,17 @@
 
 ## Giai đoạn hiện tại
 
-**thay đổi** Giai đoạn 5 - AI Decision Engine / Obsidian Exporter v1, tạo bản đồ review-only cho registry, queue, policy, report và safety contract; delete vẫn chưa bật.
+**thay doi** Startup/Boot v1: da co `tools/core/startup_scan.py` (boot scan full o -> issue classifier -> man tu van 3 lua chon: khong xoa / chon file / xoa tat ca an toan, route qua Safe Delete flow), `tools/ui/startup_window.py` (man Decision Inbox do hoa 3 nut, menu 48), `tools/automation/startup_registration.py` (bat/tat tu chay khi khoi dong qua shell:startup launcher, go duoc, menu 47) va `tools/automation/boot_runner.py` (entry chay luc login: scan read-only roi mo startup_window). Scan mode `auto` uu tien WizTree, fallback Python. Menu 46 = Startup Scan CLI. Autorun da duoc BAT (launcher trong shell:startup). Toggle o `config/user_settings.json` muc `startup`. Tool Tester 48/48, Full System Tester 37/37. Luu y: may chi co Python 3.12 (khong phai 3.11) nen launcher dung `py` khong pin version; da sua `start_download_watcher.bat` tuong tu.
+
+**thay doi** Giai doan hien tai: Bot Autonomy v1 da co auto-scan, issue classifier, decision flow, Backup Adapter copy-only, Move-later Adapter va Safe Delete Adapter token-gated.
+
+**thay doi** Bot Panel UI v2 da chuyen sang assistant-first: tab `Assistant` cho status/issue cards/one-click AI plan/full demo, tab `Advanced` cho bang ky thuat va step log. Huong dan nghiem thu nam o `D:\tool\docs\UI_ACCEPTANCE.md`.
+
+**thay doi** Bot Panel UI da sua layout doc ket qua: `Ket qua gan nhat` la panel doc lon ben duoi man Assistant, co scrollbar va toi thieu 520px; `Lich su gan day` nam cung vung doc cao, canh phai result panel, 10 dong co scrollbar; vung doc duoc neo day man hinh de khong bi `De xuat cua AI` day mat, va Full System Tester da co contract cho result panel/run history.
+
+**thay doi** Moc verify moi nhat: Tool Tester 45/45 `D:\tool\reports\tool_tester_20260614_164416.json`; Full System Tester 37/37 `D:\tool\reports\full_system_tester_20260614_164456.json`; Feed Readiness 9 pass, 0 warn, 0 fail `D:\tool\reports\feed_readiness_20260614_164517.json`.
+
+**thay doi** Ban handoff/take-note tong hop cho lan tiep tuc sau nam tai `D:\tool\docs\AI_ASSISTANT_HANDOFF_2026_06_15.md`.
 
 ---
 
@@ -433,8 +443,8 @@ Kết quả mới nhất:
 
 * **thay đổi** Export thật đã tạo 283 note tại `D:\tool\obsidian_vault`, trong đó có 273 graph node; exporter đã prune 159 graph node generated cũ.
 * **thay đổi** Obsidian Exporter report: `D:\tool\reports\obsidian_exporter_20260606_124034.json`.
-* **thay đổi** Tool Tester pass 40/40 tại `D:\tool\reports\tool_tester_20260605_213135.json`.
-* **thay đổi** Full System Tester pass 31/31 tại `D:\tool\reports\full_system_tester_20260606_124008.json`.
+* **thay đổi** Tool Tester pass 43/43 tại `D:\tool\reports\tool_tester_20260606_133546.json`.
+* **thay đổi** Full System Tester pass 34/34 tại `D:\tool\reports\full_system_tester_20260606_133601.json`.
 * **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail tại `D:\tool\reports\feed_readiness_20260606_124031.json`.
 
 Ý nghĩa:
@@ -458,7 +468,7 @@ Chức năng:
 * **thay đổi** `apply` cần token riêng `MOVE_SELECTION_V1`.
 * **thay đổi** Move dùng `safe_move()` và lưu manifest `file_operation_adapter_move_*.json`.
 * **thay đổi** Undo Manager restore được manifest sau move.
-* **thay đổi** Delete vẫn chưa bật trong adapter này.
+* **thay đổi** Delete không nằm trong adapter này; `delete_candidate` đã được tách sang Safe Delete Adapter riêng.
 
 Kết quả mới nhất:
 
@@ -466,14 +476,79 @@ Kết quả mới nhất:
 * **thay đổi** Dry-run sandbox report: `D:\tool\reports\file_operation_adapter_20260604_205528.json`.
 * **thay đổi** Apply sandbox report: `D:\tool\reports\file_operation_adapter_20260604_205528_1.json`.
 * **thay đổi** Manifest sandbox đã restore: `D:\tool\backups\file_operation_adapter_move_20260604_205528.json`.
-* **thay đổi** Tool Tester pass 40/40.
-* **thay đổi** Full System Tester pass 29/29 tại mốc File Operation Adapter.
+* **thay đổi** Tool Tester pass 43/43.
+* **thay đổi** Full System Tester pass 34/34 tại mốc Bot Autonomy v1.
 * **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail.
 
 Ý nghĩa:
 
 * **thay đổi** Bot flow đã có bước move thật đầu tiên, nhưng chỉ cho file được user chọn rõ qua decision report và folder đích cụ thể.
-* **thay đổi** `delete_candidate` vẫn là ý định, chưa phải action.
+* **thay đổi** `delete_candidate` chỉ trở thành action khi đi qua Safe Delete Adapter, risk `safe_delete`, dry-run và token `DELETE_SELECTION_V1`.
+
+---
+
+### Bot Autonomy v1: Auto Scan / Issue Classifier / Safe Delete
+
+**thay đổi** Đã thêm mốc backend cho assistant tự scan, tự phân loại vấn đề và chuẩn bị action có kiểm soát.
+
+Chức năng:
+
+* **thay đổi** `tools/core/auto_scan_session.py` tạo snapshot read-only cho disk/storage/process/external apps/audit, schema `auto_scan_session_v1`.
+* **thay đổi** `tools/core/issue_classifier.py` biến snapshot thành issue/action group cho Bot Controller, schema `issue_classifier_v1`.
+* **thay đổi** Bot Controller v2 nay merge action plan cũ với issue classifier và có decision `delete_candidate`.
+* **thay đổi** `tools/core/safe_delete_adapter.py` xử lý selection `delete_candidate`, schema `safe_delete_adapter_v1`.
+* **thay đổi** Safe Delete Adapter chỉ cho file có risk `safe_delete`; `review_required` và `protected` bị chặn dù user chọn xóa.
+* **thay đổi** Apply delete cần token `DELETE_SELECTION_V1` và chỉ gửi file vào Recycle Bin, không permanent delete.
+* **thay đổi** Main CLI expose `Auto Scan Session` mục 41, `Issue Classifier` mục 42, `Safe Delete Adapter` mục 43.
+* **thay đổi** Natural Command route thêm các lệnh kiểu `auto scan`, `phân loại vấn đề`, `xóa an toàn`.
+
+Kết quả mới nhất:
+
+* **thay đổi** Capability Registry valid 43/43; summary 28 safe, 9 medium, 6 dangerous; 14 tool có thể thay đổi file; 15 tool cần confirmation; 10 tool dùng external app.
+* **thay đổi** Tool Tester pass 43/43 tại `D:\tool\reports\tool_tester_20260606_133546.json`.
+* **thay đổi** Full System Tester pass 34/34 tại `D:\tool\reports\full_system_tester_20260606_133601.json`.
+* **thay đổi** Full System Tester có contract cho Auto Scan + Issue Classifier, Safe Delete Adapter và Bot Safe-delete Flow bằng file giả trong sandbox.
+
+Ý nghĩa:
+
+* **thay đổi** Bot đã tiến gần hơn tới app tự động check máy: scan và phân loại được tự động, còn thao tác thật vẫn cần user chọn và token.
+* **thay doi** Backend nay hien da duoc Bot Panel UI v2 dung lai; UI/folder picker khong viet logic xoa/move moi ma goi report/flow san co.
+
+---
+
+### Bot Panel UI v2
+
+**thay doi** Da chuyen desktop UI tu man nghiem thu ky thuat sang man assistant-first de user khong can nho 45 menu CLI.
+
+Chuc nang:
+
+* **thay doi** `tools/ui/bot_panel.py` tao UI Tkinter voi entrypoint `python -m tools.ui.bot_panel`.
+* **thay doi** Main CLI expose `Bot Panel UI` o muc 44.
+* **thay doi** UI co folder picker, storage mode `light/python/wiztree`, threshold/limit va nut `Auto scan + classify`.
+* **thay doi** UI co tab `Assistant` lam man hinh chinh: target folder, trang thai scan, issue cards, count theo backup/move/safe cleanup/review/protected.
+* **thay doi** UI co flow 3 buoc tren man chinh: `Dung de xuat AI` -> `Xem ke hoach AI` -> `Ap dung ke hoach`.
+* **thay doi** `Xem ke hoach AI` gom backup/move/safe cleanup vao mot preview tong, khong thay doi file.
+* **thay doi** `Ap dung ke hoach` yeu cau tick `Toi da xem ke hoach`, popup confirm va preview signature con khop.
+* **thay doi** UI co khung `Ket qua gan nhat` tren tab `Assistant`, nen scan/preview/apply co summary de doc ma khong can vao `Advanced`.
+* **thay doi** UI co nut `Chay full demo` de tu chay tron luong bang file gia va in step log trong tab `Advanced`.
+* **thay doi** Bang selection item, recommended decision, allowed decision, risk/group/action va detail panel da duoc dua vao tab `Advanced` de man chinh bot bot ky thuat hon.
+* **thay doi** Man chinh hien issue cards thay cho bang `Recommended work`: moi card co so luong, y nghia, nut xem nhom va nut chon theo de xuat.
+* **thay doi** UI co `Demo sandbox` tao file gia trong `D:\_ai_desktop_assistant_ui_demo\run_<timestamp>\...` de test truoc khi dung file that va tranh protected root `D:\tool`.
+* **thay doi** UI tao Selection Decision Report, chay Backup/Move/Safe Delete dry-run, va apply chi khi user tick checkbox + popup confirm; backend adapter van nhan token noi bo.
+* **thay doi** UI backup chi copy file `needs_backup` sang `D:\tool\backups\selection_backups\...`, source duoc giu nguyen.
+* **thay doi** UI khong bypass adapter; delete that van di qua Safe Delete Adapter va Recycle Bin.
+
+Ket qua moi nhat:
+
+* **thay doi** Capability Registry valid 45/45 sau khi them Backup Adapter v1.
+* **thay doi** Tool Tester pass 45/45 tai `D:\tool\reports\tool_tester_20260611_204617.json`.
+* **thay doi** Full System Tester pass 37/37 tai `D:\tool\reports\full_system_tester_20260611_204703.json`.
+* **thay doi** Feed Readiness ready, 9 pass, 0 warn, 0 fail tai `D:\tool\reports\feed_readiness_20260611_204731.json`.
+* **thay doi** Huong dan nghiem thu: `D:\tool\docs\UI_ACCEPTANCE.md`.
+
+Con lai:
+
+* **thay doi** UI v2 da co `needs_backup` backup flow, `move_later` destination picker/apply, Undo last move, safe-delete acceptance, Assistant Dashboard, issue cards, one-click AI plan va full demo. Buoc tiep theo la run history/latest report preview, giam bot tab/label ky thuat va polished UI de dat moc nghiem thu 90%.
 
 ---
 
@@ -652,10 +727,10 @@ Kết quả mới nhất:
 * **thay đổi** Readiness status: ready.
 * **thay đổi** Checks: 9 pass, 0 warn, 0 fail.
 * **thay đổi** Không còn warning trong readiness snapshot mới nhất.
-* **thay đổi** Tool Tester pass 40/40.
+* **thay đổi** Tool Tester pass 43/43.
 * **thay đổi** Behavior Tester pass 18/18.
 * **thay đổi** Scenario Tester pass 6/6.
-* **thay đổi** Full System Tester pass 31/31 tại mốc Obsidian Exporter v1.
+* **thay đổi** Full System Tester pass 34/34 tại mốc Bot Autonomy v1.
 
 ---
 
@@ -956,12 +1031,17 @@ Lý do:
 * **thay đổi** Execution Adapter v1 record-only
 * **thay đổi** File Operation Adapter v1 cho `move_later`
 * **thay đổi** Bot Move-later Flow v1
+* **thay đổi** Auto Scan Session v1
+* **thay đổi** Issue Classifier v1
+* **thay đổi** Safe Delete Adapter v1
+* **thay đổi** Bot Safe-delete Flow v1
+* **thay doi** Backup Adapter v1 va Bot Backup Flow v1
 
 Cần làm tiếp để ổn định tool tổng:
 
-* **thay đổi** Ưu tiên 1: Tạo Desktop UI hoặc bot panel có folder picker để thay việc nhập destination path thủ công trong CLI.
-* **thay đổi** Ưu tiên 2: Sau khi move flow UI ổn mới xét `delete_candidate`, bắt buộc qua Safe Executor, trash/backup policy, manifest/report và confirmation mạnh hơn.
-* **thay đổi** Ưu tiên 3: Tạo Desktop UI hoặc bot panel để user nhìn issue, chọn `ok / lựa chọn / hủy` mà không phải nhớ 38 menu.
+* **thay doi** Uu tien 1: Nang Bot Panel UI thanh dashboard day du hon de user nhin issue, chon `ok / lua chon / huy` ma khong phai nho 45 menu.
+* **thay doi** Uu tien 2: Them issue grouping/filter tot hon cho `keep`, `needs_backup`, `move_later`, `delete_candidate`, `review_required`, tranh phai doc raw report.
+* **thay doi** Uu tien 3: Them run history + latest report preview gon hon trong UI.
 * **thay đổi** Mở rộng Natural Command v3 thành intent engine sau khi có thêm lịch sử/report để feed assistant
 * **thay đổi** Chuẩn hóa feed assistant sau khi Execution/Report flow ổn, để assistant nhớ flow bằng context sạch thay vì train sớm
 * **thay đổi** Bổ sung thêm case vào Scenario Tester và Full System Tester khi phát hiện lỗi thực tế mới

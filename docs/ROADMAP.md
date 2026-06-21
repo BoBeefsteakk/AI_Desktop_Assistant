@@ -1,5 +1,7 @@
 # Roadmap AI Desktop Assistant
 
+**thay doi** Ban handoff tong hop moi nhat nam tai `D:\tool\docs\AI_ASSISTANT_HANDOFF_2026_06_15.md`. Doc file nay truoc khi tiep tuc build AI Assistant.
+
 ## Phase 1 - Refactor
 
 Hoàn thành
@@ -64,6 +66,12 @@ Hoàn thành
 * **thay đổi** Bot Move-later Flow v1: chọn item và destination ngay trong Bot Controller, dry-run rồi apply bằng token
 * **thay đổi** Recommendation Center test-report hygiene: lọc contract/full-system report bằng tag, marker và linked source report để queue thật không bị warning giả
 * **thay đổi** Obsidian Exporter v1 Graph Mode: xuất vault Markdown/Canvas và graph nodes review-only tại `D:\tool\obsidian_vault`
+* **thay đổi** Auto Scan Session v1: gom snapshot read-only cho bot.
+* **thay đổi** Issue Classifier v1: phân loại snapshot thành issue/action group.
+* **thay đổi** Safe Delete Adapter v1: xóa token-gated chỉ cho `risk=safe_delete` qua Recycle Bin.
+* **thay doi** Backup Adapter v1: copy-only cho `needs_backup`, source duoc giu nguyen, apply token-gated bang `BACKUP_SELECTION_V1`.
+* **thay doi** Bot Panel UI v2: desktop UI Tkinter theo huong assistant-first, co tab `Assistant` cho status/issue cards/one-click AI plan/activity log/run history/full demo va tab `Advanced` cho raw decision/report/step log.
+* **thay doi** Bot Panel UI readability fix: `Ket qua gan nhat` duoc uu tien layout de doc summary, `Lich su gan day` la khung phu, va contract test da bao phu run history panel.
 
 Cần rà soát tiếp:
 
@@ -154,13 +162,17 @@ Một lệnh test tổng hợp trước khi refactor lớn hoặc feed assistant
 * **thay đổi** File Operation Adapter Contract test: move file giả trong sandbox, tạo manifest và restore bằng Undo Manager
 * **thay đổi** Bot Move-later Flow Contract test: bot tạo decision report, gọi adapter, move file giả và restore manifest
 * **thay đổi** Obsidian Exporter Contract test: tạo vault trong sandbox, kiểm tra index, Mermaid flow, Canvas và safety contract
-* **thay đổi** Full System Tester hiện pass 31/31
+* **thay đổi** Auto Scan + Issue Classifier Contract test: snapshot giả tạo issue `delete_candidate`, `move_later`, `backup_first`.
+* **thay đổi** Safe Delete Adapter Contract test: dry-run không xóa, thiếu token không xóa, token đúng chỉ xóa file giả `safe_delete` và chặn file `review_required`.
+* **thay đổi** Bot Safe-delete Flow Contract test: bot tạo decision report, gọi Safe Delete Adapter, dry-run trước và apply bằng token.
+* **thay doi** Bot Panel UI Contract test: kiem tra entrypoint, checkbox confirm UI va adapter token safety contract ma khong mo cua so UI.
+* **thay doi** Full System Tester hien pass 37/37 tai `D:\tool\reports\full_system_tester_20260611_204703.json`
 
 ---
 
 ## Phase 5 - AI Decision Engine
 
-**thay đổi** Đã có AI Bot Controller v2, Selection UI / Decision Report, Execution Adapter v1 record-only, File Operation Adapter v1, Bot Move-later Flow v1 và Obsidian Exporter v1.
+**thay doi** Da co AI Bot Controller v2, Selection UI / Decision Report, Execution Adapter v1 record-only, Backup Adapter v1, File Operation Adapter v1, Bot Backup Flow v1, Bot Move-later Flow v1, Auto Scan Session v1, Issue Classifier v1, Safe Delete Adapter v1, Bot Panel UI v2 va Obsidian Exporter v1.
 
 Mục tiêu:
 
@@ -169,28 +181,33 @@ Assistant có thể:
 * Phân tích file
 * Đề xuất dọn dẹp
 * **thay đổi** Ghi nhớ chính sách user trước khi đề xuất/xử lý
-* **thay đổi** Chưa tự động xử lý SAFE_DELETE ở mốc hiện tại; cần policy gate + candidate review + dry-run plan + confirm rõ trước khi mở rộng
+* **thay đổi** SAFE_DELETE đã có adapter riêng nhưng vẫn không “OK là xóa luôn”: cần selection rõ, dry-run và token `DELETE_SELECTION_V1`
 * **thay đổi** Bot Controller v2 đã gom queue/policy/candidate/plan/readiness thành một màn quyết định và export decision report, nhưng chưa execute file thật
 * **thay đổi** Execution Adapter v1 đã có final token và report, nhưng vẫn chưa bật manifest/undo mới vì chưa chạy file operation thật
 * **thay đổi** File Operation Adapter v1 đã move được `move_later` trong sandbox với manifest restore
 * **thay đổi** Bot Controller đã gọi được File Operation Adapter qua flow riêng, có destination và dry-run trước apply
-* **thay đổi** Bước tiếp theo của Phase 5 là Desktop UI/bot panel có folder picker; `delete_candidate` vẫn chưa bật
+* **thay đổi** Bot Controller đã gọi được Safe Delete Adapter qua flow riêng, chỉ xóa file giả `risk=safe_delete` sau token.
+* **thay doi** Bot Panel UI v2 da co folder picker, demo sandbox, full demo, one-click AI plan, activity log, Assistant Dashboard, issue cards, `needs_backup` backup copy-only, `move_later` destination picker, Undo last move va safe-delete flow. Buoc tiep theo la run history/latest report preview va UI polish de dat moc nghiem thu 90%.
 
 ---
 
 ## Phase 6 - Desktop UI
 
-Mục tiêu:
+**thay doi** Trang thai: Bot Panel UI v2 Done cho nghiem thu flow assistant/issue cards/one-click AI plan/full demo/backup/move_later/safe-delete.
 
-Giao diện trực quan.
+Muc tieu tiep theo:
+
+Giao dien truc quan day du hon.
 
 Bao gồm:
 
-* Dashboard
-* Storage View
-* Cleanup View
-* Reports
-* History
+* **thay doi** Dashboard
+* **thay doi** Storage View
+* **thay doi** Cleanup View
+* **thay doi** Reports
+* **thay doi** History
+* **thay doi** Dashboard tong hop issue + run history + latest reports preview
+* **thay doi** Needs-backup flow
 
 ---
 

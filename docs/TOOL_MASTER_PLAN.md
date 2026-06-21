@@ -4,18 +4,18 @@
 
 ## Trạng Thái Đã Verify
 
-**thay đổi** Ngày rà lại: 2026-06-05.
+**thay doi** Ngay ra lai: 2026-06-13.
 
 **thay đổi** Kết quả hiện tại:
 
-* **thay đổi** Main CLI đang expose 40 tool.
-* **thay đổi** Capability Registry valid 40/40, không thiếu entry so với Tool Tester.
-* **thay đổi** Tool Tester pass 40/40 tại `D:\tool\reports\tool_tester_20260605_213135.json`.
+* **thay doi** Main CLI dang expose 45 tool.
+* **thay doi** Capability Registry valid 45/45, khong thieu entry so voi Tool Tester.
+* **thay doi** Tool Tester pass 45/45 tai `D:\tool\reports\tool_tester_20260614_164416.json`.
 * **thay đổi** Behavior Tester pass 18/18.
 * **thay đổi** Scenario Tester pass 6/6.
-* **thay đổi** Full System Tester pass 31/31 tại `D:\tool\reports\full_system_tester_20260606_124008.json`.
-* **thay đổi** Feed Readiness ready, 9 pass, 0 warn, 0 fail tại `D:\tool\reports\feed_readiness_20260606_124031.json`.
-* **thay đổi** Capability summary: 26 safe, 8 medium, 6 dangerous; 13 tool có thể thay đổi file; 14 tool cần confirmation; 9 tool dùng external app.
+* **thay doi** Full System Tester pass 37/37 tai `D:\tool\reports\full_system_tester_20260614_164456.json`.
+* **thay doi** Feed Readiness ready, 9 pass, 0 warn, 0 fail tai `D:\tool\reports\feed_readiness_20260614_164517.json`.
+* **thay doi** Capability summary da duoc verify lai tai moc Bot Panel UI readability fix.
 
 ## Luồng Tool Tổng Chuẩn
 
@@ -32,16 +32,22 @@
 9. **thay đổi** Action Policy Manager gắn quyết định keep/move/delete/manual/ignore theo path/context/recommendation trước khi mở action thật.
 10. **thay đổi** Policy Enforcement Gate kiểm tra policy trước khi Guided Action Runner mở target tool.
 11. **thay đổi** Candidate Review và Dry-run Action Planner phân loại candidate thành keep/manual/backup/move sau, nhưng không execute.
-12. **thay đổi** AI Bot Controller gom các lớp trên thành màn quyết định `ok`/`select`/`move_later`/`cancel`/`details`.
-13. **thay đổi** Execution Adapter v1 đọc Selection Decision Report hợp lệ, ghi nhận record-only decision và chặn cleanup thật.
-14. **thay đổi** File Operation Adapter v1 chỉ xử lý `move_later` khi có destination rõ ràng, token `MOVE_SELECTION_V1`, `safe_move()` và manifest restore.
-15. **thay đổi** Bot Move-later Flow v1 nối Selection UI với File Operation Adapter: chọn item, nhập destination, dry-run, token apply, manifest restore.
-16. **thay đổi** Guided Action Runner mở tool được đề xuất từ recommendation sau khi user nhập token phù hợp.
-17. **thay đổi** Scenario Tester tái hiện case rủi ro bằng file giả trước khi đụng dữ liệu thật.
-18. **thay đổi** Feed Assistant Readiness và Pre-feed Bundle đóng gói pre-feed checklist/context, nhưng chưa feed/train thật.
-19. **thay đổi** Obsidian Exporter v1 Graph Mode xuất vault Markdown/Canvas và graph node từ registry, queue, policy, report và readiness để user xem bản đồ hệ thống.
-20. **thay đổi** Nếu user chọn chạy tool thật, tool đó vẫn tự xử lý confirmation, risk classification, safe executor, manifest/undo và report/log.
-21. **thay đổi** Audit Center, Report Manager và Undo Manager lưu lại lịch sử, report, manifest để kiểm tra sau.
+12. **thay đổi** Auto Scan Session gom snapshot read-only cho disk/storage/process/external apps/audit.
+13. **thay đổi** Issue Classifier biến snapshot thành issue/action group để bot hiểu file nào nên giữ, review, move sau, backup trước hoặc xóa an toàn.
+14. **thay đổi** AI Bot Controller gom các lớp trên thành màn quyết định `ok`/`select`/`move_later`/`delete_candidate`/`cancel`/`details`.
+15. **thay đổi** Execution Adapter v1 đọc Selection Decision Report hợp lệ, ghi nhận record-only decision và chặn cleanup thật.
+16. **thay đổi** File Operation Adapter v1 chỉ xử lý `move_later` khi có destination rõ ràng, token `MOVE_SELECTION_V1`, `safe_move()` và manifest restore.
+17. **thay đổi** Bot Move-later Flow v1 nối Selection UI với File Operation Adapter: chọn item, nhập destination, dry-run, token apply, manifest restore.
+18. **thay đổi** Safe Delete Adapter v1 chỉ xử lý `delete_candidate` có risk `safe_delete`, dry-run trước và apply bằng token `DELETE_SELECTION_V1` qua Recycle Bin.
+19. **thay đổi** Bot Safe-delete Flow v1 nối Selection UI với Safe Delete Adapter: chọn item, dry-run, token apply, chặn `review_required`/`protected`.
+20. **thay doi** Backup Adapter v1 chi xu ly `needs_backup`, copy-only vao backup managed folder, dry-run truoc va apply bang token `BACKUP_SELECTION_V1`.
+21. **thay doi** Bot Panel UI v2 gom auto scan, assistant dashboard, issue cards, activity log/result panel cao toi thieu 520px co scrollbar va neo day man hinh, run history nam cung vung doc cao 10 dong co scrollbar, one-click AI plan, full demo, decision report, backup flow, move_later flow va safe-delete flow vao mot desktop UI co folder picker va demo sandbox.
+22. **thay đổi** Guided Action Runner mở tool được đề xuất từ recommendation sau khi user nhập token phù hợp.
+23. **thay đổi** Scenario Tester tái hiện case rủi ro bằng file giả trước khi đụng dữ liệu thật.
+24. **thay đổi** Feed Assistant Readiness và Pre-feed Bundle đóng gói pre-feed checklist/context, nhưng chưa feed/train thật.
+25. **thay đổi** Obsidian Exporter v1 Graph Mode xuất vault Markdown/Canvas và graph node từ registry, queue, policy, report và readiness để user xem bản đồ hệ thống.
+26. **thay đổi** Nếu user chọn chạy tool thật, tool đó vẫn tự xử lý confirmation, risk classification, safe executor, manifest/undo và report/log.
+27. **thay đổi** Audit Center, Report Manager và Undo Manager lưu lại lịch sử, report, manifest để kiểm tra sau.
 
 ## Nguyên Tắc Không Được Phá
 
@@ -49,7 +55,7 @@
 
 **thay đổi** Guided Action Runner chỉ được mở tool sau xác nhận rõ ràng; không được bypass confirmation của tool đích.
 
-**thay đổi** Mọi thao tác xóa phải đi qua `safe_executor.safe_delete()`.
+**thay đổi** Mọi thao tác xóa phải đi qua `safe_executor.safe_delete()` và với bot flow phải bị chặn ở Safe Delete Adapter nếu risk không phải `safe_delete`.
 
 **thay đổi** Mọi thao tác move có khả năng restore phải đi qua manifest/safe move.
 
@@ -89,6 +95,12 @@
 * **thay đổi** Execution Adapter v1 record-only
 * **thay đổi** File Operation Adapter v1 cho `move_later`
 * **thay đổi** Bot Move-later Flow v1
+* **thay đổi** Auto Scan Session v1
+* **thay đổi** Issue Classifier v1
+* **thay đổi** Safe Delete Adapter v1
+* **thay đổi** Bot Safe-delete Flow v1
+* **thay doi** Backup Adapter v1
+* **thay doi** Bot Panel UI v2
 * **thay đổi** Obsidian Exporter v1
 
 **thay đổi** External app layer:
@@ -125,9 +137,11 @@
 
 **thay đổi** Gap 12: File Operation Adapter v1 đã hoàn thành cho `move_later`; move thật chỉ chạy với destination đã tồn tại, token `MOVE_SELECTION_V1`, `safe_move()` và manifest restore.
 
-**thay đổi** Gap 13: Bot Move-later Flow v1 đã nối Selection UI với File Operation Adapter bằng CLI destination prompt; Desktop UI/folder picker vẫn chưa có.
+**thay doi** Gap 13: Bot Move-later Flow v1 da noi Selection UI voi File Operation Adapter va Bot Panel UI da co destination picker.
 
-**thay đổi** Gap 14: `delete_candidate` và `needs_backup` vẫn chưa được execute; cần adapter riêng sau khi UI/destination/restore flow ổn định.
+**thay doi** Gap 14: `delete_candidate` da co Safe Delete Adapter rieng; `needs_backup` da co Backup Adapter copy-only rieng, apply bang token `BACKUP_SELECTION_V1`, source duoc giu nguyen.
+
+**thay doi** Gap 15: Desktop UI/bot panel v2 da co folder picker, Assistant Dashboard, issue cards, activity log, run history/latest report shortcut, one-click AI plan, full demo, selection review trong Advanced, decision report, demo sandbox, backup dry-run/apply, `move_later` destination picker/apply, Undo last move va safe-delete dry-run/apply. Phan con lai la polish ngon ngu, bot tab/label ky thuat va giam do phuc tap thao tac de dat moc nghiem thu 90%.
 
 ## Kế Hoạch Chuẩn Từ Bây Giờ
 
@@ -457,7 +471,7 @@
 * **thay đổi** Không cho move vào chính folder nguồn.
 * **thay đổi** Move dùng `safe_move()` và tạo manifest `file_operation_adapter_move_*.json`.
 * **thay đổi** Undo Manager restore được manifest.
-* **thay đổi** Delete vẫn disabled.
+* **thay đổi** Delete không nằm trong adapter này; Safe Delete Adapter xử lý `delete_candidate` riêng.
 
 **thay đổi** Kết quả tại mốc File Operation Adapter:
 
@@ -466,7 +480,7 @@
 * **thay đổi** Manifest sandbox đã restore: `D:\tool\backups\file_operation_adapter_move_20260604_205528.json`.
 * **thay đổi** Tool Tester pass 39/39; Full System Tester pass 29/29; Feed Readiness pass 9/9 tại mốc File Operation Adapter.
 
-**thay đổi** Bước kế tiếp: nối UI/Bot selection với destination picker để user chọn nơi chuyển file dễ hơn, sau đó mới xét adapter cho `delete_candidate`.
+**thay doi** Trang thai UI cua move flow: Bot Panel UI da co destination picker, dry-run/apply `move_later` bang File Operation Adapter va Undo last move bang manifest, thay vi nhap path thu cong trong CLI.
 
 ## Bot Move-later Flow v1
 
@@ -496,7 +510,45 @@
 * **thay đổi** Report contract được tag `contract_test`/`full_system`, đồng thời Recommendation Center lọc được marker test cũ để Feed Readiness không còn warning giả.
 * **thay đổi** Report verify mới nhất: `D:\tool\reports\full_system_tester_20260605_204115.json`.
 
-**thay đổi** Bước kế tiếp: Desktop UI hoặc bot panel có folder picker để thay việc nhập path thủ công.
+**thay doi** Trang thai UI cua move flow: Bot Panel UI da co destination picker, manifest report va `Undo last move` cho `move_later`.
+
+## Safe Delete Adapter v1
+
+**thay đổi** Safe Delete Adapter v1 là lớp xóa riêng cho `delete_candidate`, chỉ chạy sau Selection Decision Report.
+
+**thay đổi** Schema và entrypoint:
+
+* **thay đổi** Module: `tools/core/safe_delete_adapter.py`.
+* **thay đổi** Schema: `safe_delete_adapter_v1`.
+* **thay đổi** Input hợp lệ: report `bot_selection_decision_v2`.
+* **thay đổi** Main CLI: mục 43 `Safe Delete Adapter`.
+* **thay đổi** Final delete token: `DELETE_SELECTION_V1`.
+
+**thay đổi** Guardrail:
+
+* **thay đổi** Chỉ xử lý decision `delete_candidate`; decision khác là `not_in_scope`.
+* **thay đổi** Source phải là file tồn tại.
+* **thay đổi** Chỉ risk `safe_delete` mới được xóa; `review_required` và `protected` bị block.
+* **thay đổi** Dry-run không xóa file.
+* **thay đổi** Apply cần token `DELETE_SELECTION_V1`.
+* **thay đổi** Xóa đi qua `safe_executor.safe_delete()` và Recycle Bin, không permanent delete.
+* **thay đổi** Adapter không empty Recycle Bin và không tự rollback; undo strategy là Recycle Bin.
+
+**thay đổi** Bot Safe-delete Flow v1:
+
+1. **thay đổi** User mở Bot Controller mục 37.
+2. **thay đổi** User chọn `Safe-delete selected delete_candidate`.
+3. **thay đổi** Bot in Selection UI và user nhập decision như `M001=delete_candidate`.
+4. **thay đổi** Bot export Selection Decision Report.
+5. **thay đổi** Bot gọi Safe Delete Adapter dry-run và in preview.
+6. **thay đổi** Nếu user nhập token `DELETE_SELECTION_V1`, bot gọi apply.
+7. **thay đổi** Bot tạo flow report `bot_safe_delete_flow_v1`.
+
+**thay đổi** Kết quả verify:
+
+* **thay đổi** Safe Delete Adapter Contract: dry-run không xóa, thiếu token không xóa, token đúng chỉ xóa file giả `safe_delete` và chặn file giả `review_required`.
+* **thay đổi** Bot Safe-delete Flow Contract: bot tạo decision report, gọi adapter, dry-run trước và apply bằng token.
+* **thay đổi** Full System Tester pass 34/34 tại `D:\tool\reports\full_system_tester_20260606_133601.json`.
 
 ## Obsidian Exporter v1
 

@@ -27,7 +27,9 @@ tools/
 
 ├── storage/
 
-└── system/
+├── system/
+
+└── ui/  # **thay doi** desktop bot panel
 
 ---
 
@@ -59,8 +61,11 @@ Bao gồm:
 * **thay đổi** action_planner.py
 * **thay đổi** pre_feed_bundle.py
 * **thay đổi** bot_controller.py
+* **thay đổi** auto_scan_session.py
+* **thay đổi** issue_classifier.py
 * **thay đổi** execution_adapter.py
 * **thay đổi** file_operation_adapter.py
+* **thay đổi** safe_delete_adapter.py
 
 ---
 
@@ -131,6 +136,18 @@ Ví dụ:
 
 * startup_launcher
 * download_watcher
+
+---
+
+### ui
+
+**thay doi** Chua desktop UI theo huong assistant-first de user khong phai nho 45 menu CLI.
+
+Bao gom:
+
+* **thay doi** bot_panel.py: Tkinter Bot Panel v2 co Assistant Dashboard lam man hinh chinh va Advanced tab cho issue selection, decision report, backup flow, move_later flow va safe-delete flow.
+
+**thay doi** UI layer khong duoc bypass adapter. Neu co file operation, UI phai di qua Bot Controller report va Backup Adapter/Safe Delete Adapter/File Operation Adapter tuong ung.
 
 ---
 
@@ -426,6 +443,8 @@ Nguồn dữ liệu:
 * **thay đổi** Action Policy health.
 * **thay đổi** Candidate Review.
 * **thay đổi** Dry-run Action Planner.
+* **thay đổi** Auto Scan Session snapshot.
+* **thay đổi** Issue Classifier action groups.
 * **thay đổi** Feed Readiness.
 * **thay đổi** Latest reports.
 
@@ -433,10 +452,12 @@ Output:
 
 * **thay đổi** Report `bot_controller` với schema `bot_controller_v2`.
 * **thay đổi** Summary tổng: recommendation, candidate, policy, readiness, safe-to-execute, needs-selection, do-not-touch.
-* **thay đổi** Decision screen gồm `ok`, `select`, `move_later`, `cancel`, `details`.
+* **thay doi** Decision screen gom `ok`, `select`, `needs_backup`, `move_later`, `delete_candidate`, `cancel`, `details`.
 * **thay đổi** Selection UI schema `bot_selection_ui_v2`.
 * **thay đổi** Selection Decision schema `bot_selection_decision_v2`.
 * **thay đổi** Bot Move-later Flow schema `bot_move_later_flow_v1`.
+* **thay doi** Bot Backup Flow schema `bot_backup_flow_v1`.
+* **thay đổi** Bot Safe-delete Flow schema `bot_safe_delete_flow_v1`.
 
 Nguyên tắc:
 
@@ -444,8 +465,10 @@ Nguyên tắc:
 * **thay đổi** `executes_file_operations=false`.
 * **thay đổi** `ok` không chạy gì nếu không có item `can_execute_now`.
 * **thay đổi** `select` trả Selection UI có mã item và allowed decisions.
+* **thay doi** `needs_backup` yeu cau user chon item, dry-run va token `BACKUP_SELECTION_V1` truoc khi goi Backup Adapter.
 * **thay đổi** `move_later` yêu cầu user chọn item, destination, dry-run và token `MOVE_SELECTION_V1` trước khi gọi File Operation Adapter.
-* **thay đổi** Selection Decision chỉ ghi ý định; `delete_candidate` không phải lệnh xóa.
+* **thay đổi** `delete_candidate` yêu cầu user chọn item, dry-run và token `DELETE_SELECTION_V1` trước khi gọi Safe Delete Adapter.
+* **thay đổi** Selection Decision chỉ ghi ý định; `delete_candidate` không phải lệnh xóa cho tới khi adapter riêng xác nhận `risk=safe_delete`.
 * **thay đổi** Nhóm `do_not_touch` bị locked và chỉ được `keep`.
 * **thay đổi** Không đụng policy `ignore_forever` hoặc `keep`.
 * **thay đổi** Không bypass confirmation/manifest/undo của tool thật.
@@ -473,9 +496,9 @@ Nguyên tắc:
 * **thay đổi** `dry_run` chỉ preview, không cần token.
 * **thay đổi** `apply` cần token `EXECUTE_SELECTION_V1`.
 * **thay đổi** `keep`, `manual_review`, `skip` chỉ được ghi nhận record-only.
-* **thay đổi** `needs_backup`, `move_later`, `delete_candidate` bị blocked ở Execution Adapter v1.
+* **thay doi** `needs_backup`, `move_later`, `delete_candidate` bi blocked o Execution Adapter v1 neu goi truc tiep; cac action nay phai di qua adapter rieng.
 * **thay đổi** Execution Adapter không sinh manifest/undo mới vì không trực tiếp chạy file operation.
-* **thay đổi** `move_later` phải đi qua File Operation Adapter v1 bên dưới.
+* **thay doi** `needs_backup` phai di qua Backup Adapter v1; `move_later` phai di qua File Operation Adapter v1; `delete_candidate` phai di qua Safe Delete Adapter v1.
 
 ---
 
@@ -502,7 +525,59 @@ Nguyên tắc:
 * **thay đổi** Source phải là file tồn tại và không thuộc vùng `PROTECTED`.
 * **thay đổi** Apply cần token `MOVE_SELECTION_V1`.
 * **thay đổi** Move dùng `safe_move()`; restore dùng Undo Manager/manifest.
-* **thay đổi** `delete_candidate` và `needs_backup` chưa được execute ở layer này.
+* **thay đổi** `delete_candidate` không được execute ở layer này; nó đi qua Safe Delete Adapter riêng.
+
+---
+
+## Backup Adapter Layer
+
+**thay doi** Backup Adapter la lop file-operation rieng cho `needs_backup`, tach khoi move/delete de tranh user hieu nham "backup" la cleanup.
+
+Nguon du lieu:
+
+* **thay doi** Report `bot_controller` action `export_selection_decision`.
+* **thay doi** Schema input bat buoc: `bot_selection_decision_v2`.
+* **thay doi** Chi doc cac item user da chon `decision=needs_backup`.
+
+Output:
+
+* **thay doi** Report `backup_adapter` voi schema `backup_adapter_v1`.
+* **thay doi** Bot flow tong schema `bot_backup_flow_v1` de trace decision report va backup adapter report.
+* **thay doi** Backup copy nam trong `D:\tool\backups\selection_backups\run_<timestamp>\...`.
+
+Nguyen tac:
+
+* **thay doi** `dry_run` khong can token va khong copy file.
+* **thay doi** `apply` can token `BACKUP_SELECTION_V1`.
+* **thay doi** Source file duoc giu nguyen; adapter khong move, khong delete.
+* **thay doi** Source bi protected/missing/non-file thi blocked.
+* **thay doi** Manifest/report chi phuc vu audit; undo strategy la `not_needed`, vi source file duoc giu nguyen.
+
+---
+
+## Safe Delete Adapter Layer
+
+**thay đổi** Safe Delete Adapter là lớp file-operation riêng cho `delete_candidate`, tách khỏi File Operation Adapter để không lẫn move và delete.
+
+Nguồn dữ liệu:
+
+* **thay đổi** Report `bot_controller` action `export_selection_decision`.
+* **thay đổi** Schema input bắt buộc: `bot_selection_decision_v2`.
+* **thay đổi** Chỉ đọc các item user đã chọn `decision=delete_candidate`.
+
+Output:
+
+* **thay đổi** Report `safe_delete_adapter` với schema `safe_delete_adapter_v1`.
+* **thay đổi** Summary delete_requested/deletable/deleted/blocked/error/not-in-scope.
+* **thay đổi** Bot flow tổng schema `bot_safe_delete_flow_v1` để trace decision report và delete adapter report.
+
+Nguyên tắc:
+
+* **thay đổi** `dry_run` không cần token và không xóa file.
+* **thay đổi** `apply` cần token `DELETE_SELECTION_V1`.
+* **thay đổi** Chỉ file có `risk=safe_delete` mới được gửi vào Recycle Bin.
+* **thay đổi** File `review_required` hoặc `protected` bị chặn dù user chọn `delete_candidate`.
+* **thay đổi** Không permanent delete; undo strategy là Recycle Bin, không empty Recycle Bin trong adapter này.
 
 ---
 
@@ -574,9 +649,15 @@ Các lớp kiểm tra:
 * **thay đổi** Action Policy Contract kiểm tra baseline policy, path/context matching và Step 3 coverage
 * **thay đổi** Candidate Review, Dry-run Action Planner và Pre-feed Bundle contract
 * **thay đổi** AI Bot Controller contract kiểm tra decision screen, Selection UI v2, Selection Decision v2, locked item bị block và OK không execute file trong v2
-* **thay đổi** Execution Adapter contract kiểm tra dry-run/apply record-only, block `delete_candidate` và không xóa file sandbox
+* **thay doi** Execution Adapter contract kiem tra dry-run/apply record-only, block direct file-operation decisions va khong xoa file sandbox
 * **thay đổi** File Operation Adapter contract kiểm tra move file giả trong sandbox, tạo manifest và restore bằng Undo Manager
 * **thay đổi** Bot Move-later Flow contract kiểm tra bot tạo decision report, gọi adapter, move file giả và restore manifest
+* **thay đổi** Auto Scan + Issue Classifier contract kiểm tra snapshot giả và phân loại issue/action group.
+* **thay đổi** Safe Delete Adapter contract kiểm tra dry-run, thiếu token, token đúng và chặn `review_required`.
+* **thay doi** Backup Adapter contract kiem tra dry-run, thieu token, token dung, source duoc giu nguyen va backup copy duoc tao trong sandbox.
+* **thay doi** Bot Backup Flow contract kiem tra bot tao decision report, goi Backup Adapter va chi copy file gia sau token.
+* **thay doi** Bot Panel UI contract kiem tra assistant dashboard, entrypoint, backup/move/delete checkbox confirm UI va adapter token safety contract ma khong mo cua so UI.
+* **thay đổi** Bot Safe-delete Flow contract kiểm tra bot tạo decision report, gọi adapter và chỉ xóa file giả `safe_delete` sau token.
 * **thay đổi** Obsidian Exporter contract kiểm tra vault sandbox, index, Mermaid flow, Canvas và safety contract
 
 ---
@@ -678,7 +759,7 @@ Nguyên tắc:
 * **thay đổi** Chỉ prune graph node generated cũ trong `60_Graph_Nodes` qua helper an toàn; không xóa/move file thật của user.
 * **thay đổi** Obsidian Graph lấy mạng liên kết từ wiki-link giữa các graph node, không lấy từ bảng Markdown.
 * **thay đổi** Không xóa, không move, không approve action.
-* **thay đổi** Mọi thao tác thật vẫn đi qua Bot Controller, File Operation Adapter, Safe Executor, manifest và Undo Manager.
+* **thay doi** Moi thao tac that van di qua Bot Controller va adapter rieng: Backup Adapter, File Operation Adapter hoac Safe Delete Adapter; move/delete van dung Safe Executor/manifest/Undo khi phu hop.
 
 ---
 
