@@ -7,6 +7,11 @@ from typing import Any
 from tools.core.action_planner import build_action_plan
 from tools.core.action_policy import build_action_policy_health
 from tools.core.assistant_logger import log_action
+from tools.core.backup_adapter import (
+    FINAL_BACKUP_TOKEN,
+    export_backup_adapter_report,
+    print_backup_summary,
+)
 from tools.core.candidate_review import build_candidate_review
 from tools.core.feed_readiness import build_feed_readiness_result
 from tools.core.file_operation_adapter import (
@@ -15,20 +20,28 @@ from tools.core.file_operation_adapter import (
     print_operation_summary,
 )
 from tools.core.guided_action_runner import build_action_contexts
+from tools.core.issue_classifier import build_issue_classifier_result
 from tools.core.recommendation_center import (
     DEFAULT_VISIBLE_STATES,
     collect_recommendation_queue,
     summarize_recommendation_queue,
 )
 from tools.core.report_manager import create_report, read_recent_report_index
+from tools.core.safe_delete_adapter import (
+    FINAL_DELETE_TOKEN,
+    export_safe_delete_adapter_report,
+    print_delete_summary,
+)
 
 
 BOT_CONTROLLER_TOOL = "bot_controller"
-BOT_DECISIONS = {"ok", "select", "move_later", "cancel", "details"}
+BOT_DECISIONS = {"ok", "select", "needs_backup", "move_later", "delete_candidate", "cancel", "details"}
 BOT_CONTROLLER_SCHEMA = "bot_controller_v2"
 BOT_SELECTION_UI_SCHEMA = "bot_selection_ui_v2"
 BOT_SELECTION_DECISION_SCHEMA = "bot_selection_decision_v2"
+BOT_BACKUP_FLOW_SCHEMA = "bot_backup_flow_v1"
 BOT_MOVE_LATER_FLOW_SCHEMA = "bot_move_later_flow_v1"
+BOT_SAFE_DELETE_FLOW_SCHEMA = "bot_safe_delete_flow_v1"
 SELECTION_DECISIONS = {
     "keep",
     "manual_review",
@@ -45,7 +58,11 @@ LATEST_REPORT_TOOLS = {
     "action_planner",
     "feed_readiness",
     "full_system_tester",
+    "auto_scan_session",
+    "issue_classifier",
+    "backup_adapter",
     "file_operation_adapter",
+    "safe_delete_adapter",
 }
 
 
@@ -128,6 +145,21 @@ def group_plan_items(plan: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
         else:
             groups["review_only"].append(slim_item)
     return groups
+
+
+def merge_grouped_plans(
+    *group_sets: dict[str, list[dict[str, Any]]],
+) -> dict[str, list[dict[str, Any]]]:
+    merged = {
+        "safe_to_execute": [],
+        "needs_selection": [],
+        "do_not_touch": [],
+        "review_only": [],
+    }
+    for groups in group_sets:
+        for key in merged:
+            merged[key].extend(groups.get(key, []))
+    return merged
 
 
 def summarize_grouped_plan(groups: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
@@ -414,6 +446,7 @@ def build_selection_decision(
             "executes_file_operations": False,
             "requires_execution_adapter": True,
             "requires_manifest_for_move": True,
+            "requires_safe_delete_adapter_for_delete": True,
             "delete_candidate_is_not_delete": True,
         },
     }
@@ -466,6 +499,145 @@ def export_selection_decision_report(
         "status": status,
         "report": str(report),
         "decision": decision_report,
+    }
+
+
+def summarize_backup_flow(
+    decision_export: dict[str, Any],
+    backup_export: dict[str, Any] | None,
+) -> dict[str, Any]:
+    decision = decision_export.get("decision", {})
+    decision_summary = decision.get("summary", {}) if isinstance(decision, dict) else {}
+    backup = backup_export.get("backup", {}) if isinstance(backup_export, dict) else {}
+    backup_summary = backup.get("summary", {}) if isinstance(backup, dict) else {}
+
+    return {
+        "decision_report": decision_export.get("report"),
+        "backup_report": backup_export.get("report") if backup_export else None,
+        "selection_status": decision.get("status"),
+        "selected_count": decision_summary.get("selected_count", 0),
+        "blocked_count": decision_summary.get("blocked_count", 0),
+        "invalid_count": decision_summary.get("invalid_count", 0),
+        "backup_requested_count": backup_summary.get("backup_requested_count", 0),
+        "backupable_count": backup_summary.get("backupable_count", 0),
+        "backed_up_count": backup_summary.get("backed_up_count", 0),
+        "backup_blocked_count": backup_summary.get("blocked_count", 0),
+        "backup_error_count": backup_summary.get("error_count", 0),
+        "file_operations_executed": backup_summary.get("file_operations_executed", False),
+        "backup_run_dir": backup_summary.get("backup_run_dir"),
+        "manifest": backup.get("manifest") or backup_summary.get("manifest"),
+        "undo_available": False,
+        "source_preserved": backup_summary.get("source_preserved", True),
+    }
+
+
+def export_backup_selection_flow_report(
+    decisions: dict[str, str],
+    *,
+    mode: str = "dry_run",
+    final_token: str | None = None,
+    backup_run_dir: str | Path | None = None,
+    session: dict[str, Any] | None = None,
+    note: str | None = None,
+    extra_tags: list[str] | None = None,
+) -> dict[str, Any]:
+    decision_export = export_selection_decision_report(
+        decisions,
+        session=session,
+        note=note,
+        extra_tags=extra_tags,
+    )
+    decision = decision_export["decision"]
+    backup_export: dict[str, Any] | None = None
+
+    if decision["status"] == "ready":
+        backup_export = export_backup_adapter_report(
+            source_report_path=decision_export["report"],
+            mode=mode,
+            final_token=final_token,
+            backup_run_dir=backup_run_dir,
+            extra_tags=extra_tags,
+        )
+
+    summary = summarize_backup_flow(decision_export, backup_export)
+    if decision["status"] != "ready":
+        flow_status = "decision_report_not_ready"
+    elif backup_export:
+        flow_status = backup_export["backup"]["status"]
+    else:
+        flow_status = "backup_not_started"
+
+    report_status = "success"
+    if flow_status in {"decision_report_not_ready", "requires_final_confirmation"}:
+        report_status = "warning"
+    elif flow_status in {"completed_with_errors", "invalid_decision_report", "missing_source_report"}:
+        report_status = "error"
+
+    result = {
+        "schema": BOT_BACKUP_FLOW_SCHEMA,
+        "status": flow_status,
+        "mode": str(mode or "dry_run").strip().lower(),
+        "decision_report": decision_export,
+        "backup_report": backup_export,
+        "summary": summary,
+        "safety_contract": {
+            "requires_selection_decision": True,
+            "requires_final_backup_token": True,
+            "final_backup_token": FINAL_BACKUP_TOKEN,
+            "file_operations_limited_to_needs_backup": True,
+            "source_preserved": True,
+            "delete_enabled": False,
+            "move_enabled": False,
+            "uses_backup_adapter": True,
+            "undo_strategy": "not_needed",
+        },
+    }
+
+    report = create_report(
+        tool_name=BOT_CONTROLLER_TOOL,
+        action="backup_selection_flow",
+        status=report_status,
+        risk_level="medium",
+        input_data={
+            "decision_count": len(decisions or {}),
+            "mode": mode,
+            "final_token_provided": bool(final_token),
+            "backup_run_dir": str(backup_run_dir) if backup_run_dir else None,
+            "note": note,
+        },
+        results=result,
+        recommendations=[
+            "This flow only backs up items explicitly selected as needs_backup.",
+            "Backup copy preserves the source file; review the Backup Adapter report before any later cleanup.",
+            "Use move/delete flows separately after backup has been verified.",
+        ],
+        summary=summary,
+        manifest=summary.get("manifest"),
+        undo_available=False,
+        tags=merge_report_tags(
+            ["bot_controller", "backup_flow", "backup_adapter", "selection_ui_v2"],
+            extra_tags,
+        ),
+    )
+    log_action(
+        BOT_CONTROLLER_TOOL,
+        "export_backup_selection_flow_report",
+        report_status,
+        {
+            "report": str(report),
+            "flow_status": flow_status,
+            "decision_report": decision_export.get("report"),
+            "backup_report": backup_export.get("report") if backup_export else None,
+            "manifest": summary.get("manifest"),
+            "file_operations_executed": summary["file_operations_executed"],
+        },
+    )
+    print(f"Bot backup flow report: {report}")
+
+    return {
+        "status": report_status,
+        "report": str(report),
+        "flow": result,
     }
 
 
@@ -575,7 +747,7 @@ def export_move_later_selection_flow_report(
             "This flow only moves items explicitly selected as move_later.",
             "Review the File Operation Adapter report before trusting any move result.",
             "Use Undo Manager with the manifest if moved files need to be restored.",
-            "delete_candidate remains disabled.",
+            "Use Safe Delete Adapter separately for delete_candidate selections.",
         ],
         summary=summary,
         manifest=summary.get("manifest"),
@@ -599,6 +771,141 @@ def export_move_later_selection_flow_report(
         },
     )
     print(f"Bot flow report: {report}")
+
+    return {
+        "status": report_status,
+        "report": str(report),
+        "flow": result,
+    }
+
+
+def summarize_safe_delete_flow(
+    decision_export: dict[str, Any],
+    delete_export: dict[str, Any] | None,
+) -> dict[str, Any]:
+    decision = decision_export.get("decision", {})
+    decision_summary = decision.get("summary", {}) if isinstance(decision, dict) else {}
+    delete = delete_export.get("delete", {}) if isinstance(delete_export, dict) else {}
+    delete_summary = delete.get("summary", {}) if isinstance(delete, dict) else {}
+
+    return {
+        "decision_report": decision_export.get("report"),
+        "delete_report": delete_export.get("report") if delete_export else None,
+        "selection_status": decision.get("status"),
+        "selected_count": decision_summary.get("selected_count", 0),
+        "blocked_count": decision_summary.get("blocked_count", 0),
+        "invalid_count": decision_summary.get("invalid_count", 0),
+        "delete_requested_count": delete_summary.get("delete_requested_count", 0),
+        "deletable_count": delete_summary.get("deletable_count", 0),
+        "deleted_count": delete_summary.get("deleted_count", 0),
+        "delete_blocked_count": delete_summary.get("blocked_count", 0),
+        "delete_error_count": delete_summary.get("error_count", 0),
+        "file_operations_executed": delete_summary.get("file_operations_executed", False),
+        "recycle_bin_only": delete_summary.get("recycle_bin_only", True),
+        "undo_available": False,
+    }
+
+
+def export_safe_delete_selection_flow_report(
+    decisions: dict[str, str],
+    *,
+    mode: str = "dry_run",
+    final_token: str | None = None,
+    session: dict[str, Any] | None = None,
+    note: str | None = None,
+    extra_tags: list[str] | None = None,
+) -> dict[str, Any]:
+    decision_export = export_selection_decision_report(
+        decisions,
+        session=session,
+        note=note,
+        extra_tags=extra_tags,
+    )
+    decision = decision_export["decision"]
+    delete_export: dict[str, Any] | None = None
+
+    if decision["status"] == "ready":
+        delete_export = export_safe_delete_adapter_report(
+            source_report_path=decision_export["report"],
+            mode=mode,
+            final_token=final_token,
+            extra_tags=extra_tags,
+        )
+
+    summary = summarize_safe_delete_flow(decision_export, delete_export)
+    if decision["status"] != "ready":
+        flow_status = "decision_report_not_ready"
+    elif delete_export:
+        flow_status = delete_export["delete"]["status"]
+    else:
+        flow_status = "delete_not_started"
+
+    report_status = "success"
+    if flow_status in {"decision_report_not_ready", "requires_final_confirmation", "no_deletes_completed"}:
+        report_status = "warning"
+    elif flow_status in {"completed_with_errors", "invalid_decision_report", "missing_source_report"}:
+        report_status = "error"
+
+    result = {
+        "schema": BOT_SAFE_DELETE_FLOW_SCHEMA,
+        "status": flow_status,
+        "mode": str(mode or "dry_run").strip().lower(),
+        "decision_report": decision_export,
+        "delete_report": delete_export,
+        "summary": summary,
+        "safety_contract": {
+            "requires_selection_decision": True,
+            "requires_final_delete_token": True,
+            "final_delete_token": FINAL_DELETE_TOKEN,
+            "file_operations_limited_to_delete_candidate": True,
+            "requires_risk_safe_delete": True,
+            "review_required_is_blocked": True,
+            "protected_is_blocked": True,
+            "permanent_delete": False,
+            "recycle_bin_only": True,
+            "uses_safe_delete_adapter": True,
+            "undo_strategy": "recycle_bin",
+        },
+    }
+
+    report = create_report(
+        tool_name=BOT_CONTROLLER_TOOL,
+        action="safe_delete_selection_flow",
+        status=report_status,
+        risk_level="medium",
+        input_data={
+            "decision_count": len(decisions or {}),
+            "mode": mode,
+            "final_token_provided": bool(final_token),
+            "note": note,
+        },
+        results=result,
+        recommendations=[
+            "This flow only deletes items explicitly selected as delete_candidate.",
+            "Safe Delete Adapter blocks review_required and protected files even when selected.",
+            "Files are sent to Recycle Bin only; do not empty Recycle Bin until the result is verified.",
+        ],
+        summary=summary,
+        undo_available=False,
+        tags=merge_report_tags(
+            ["bot_controller", "safe_delete_flow", "safe_delete_adapter", "selection_ui_v2"],
+            extra_tags,
+        ),
+    )
+    log_action(
+        BOT_CONTROLLER_TOOL,
+        "export_safe_delete_selection_flow_report",
+        report_status,
+        {
+            "report": str(report),
+            "flow_status": flow_status,
+            "decision_report": decision_export.get("report"),
+            "delete_report": delete_export.get("report") if delete_export else None,
+            "file_operations_executed": summary["file_operations_executed"],
+            "deleted_count": summary["deleted_count"],
+        },
+    )
+    print(f"Bot safe-delete flow report: {report}")
 
     return {
         "status": report_status,
@@ -640,13 +947,19 @@ def build_bot_controller_result(
     contexts = build_action_contexts(queue)
     candidate_review = build_candidate_review(include_items=include_items)
     action_plan = build_action_plan(include_items=True)
-    grouped_plan = group_plan_items(action_plan)
+    issue_classifier = build_issue_classifier_result(include_items=True)
+    grouped_plan = merge_grouped_plans(
+        group_plan_items(action_plan),
+        issue_classifier.get("action_groups", {}),
+    )
     group_summary = summarize_grouped_plan(grouped_plan)
     selection_ui = build_selection_session_from_groups(
         grouped_plan,
         include_items=include_items,
     )
+    needs_backup_selectable_count = count_grouped_items_allowing_decision(grouped_plan, "needs_backup")
     move_later_selectable_count = count_grouped_items_allowing_decision(grouped_plan, "move_later")
+    delete_candidate_selectable_count = count_grouped_items_allowing_decision(grouped_plan, "delete_candidate")
     readiness = build_feed_readiness_result()
     action_policy = build_action_policy_health()
     latest_reports = {
@@ -669,10 +982,20 @@ def build_bot_controller_result(
             "enabled": group_summary["needs_selection_count"] > 0,
             "effect": "Open/review candidate list before any action.",
         },
+        "needs_backup": {
+            "label": "Backup selected needs_backup items",
+            "enabled": needs_backup_selectable_count > 0,
+            "effect": "Create a selection decision report, dry-run Backup Adapter, then require final token.",
+        },
         "move_later": {
             "label": "Move selected move_later items",
             "enabled": move_later_selectable_count > 0,
             "effect": "Create a selection decision report, require a destination, then use File Operation Adapter.",
+        },
+        "delete_candidate": {
+            "label": "Delete selected safe_delete candidates",
+            "enabled": delete_candidate_selectable_count > 0,
+            "effect": "Create a selection decision report, dry-run Safe Delete Adapter, then require final token.",
         },
         "cancel": {
             "label": "Huy - do nothing",
@@ -702,7 +1025,11 @@ def build_bot_controller_result(
             "safe_to_execute_count": group_summary["safe_to_execute_count"],
             "needs_selection_count": group_summary["needs_selection_count"],
             "do_not_touch_count": group_summary["do_not_touch_count"],
+            "needs_backup_selectable_count": needs_backup_selectable_count,
             "move_later_selectable_count": move_later_selectable_count,
+            "delete_candidate_selectable_count": delete_candidate_selectable_count,
+            "classified_issue_count": issue_classifier["summary"]["issue_count"],
+            "classified_delete_candidate_count": issue_classifier["summary"]["delete_candidate_count"],
             "candidate_count": candidate_review["summary"]["total"],
             "policy_count": action_policy["summary"]["total"],
             "readiness_status": readiness["summary"]["readiness_status"],
@@ -723,12 +1050,29 @@ def build_bot_controller_result(
             "items": candidate_review.get("items", []) if include_items else [],
         },
         "action_plan": {
-            "summary": action_plan["summary"],
-            "source_report": action_plan.get("source_report"),
+            "summary": {
+                **action_plan["summary"],
+                "merged_safe_to_execute_count": group_summary["safe_to_execute_count"],
+                "merged_needs_selection_count": group_summary["needs_selection_count"],
+                "merged_do_not_touch_count": group_summary["do_not_touch_count"],
+                "merged_review_only_count": group_summary["review_only_count"],
+                "classified_issue_count": issue_classifier["summary"]["issue_count"],
+            },
+            "source_report": {
+                "action_planner": action_plan.get("source_report"),
+                "issue_classifier": issue_classifier.get("source_report"),
+            },
             "groups": grouped_plan if include_items else {
                 key: [] for key in grouped_plan
             },
             "safety_contract": action_plan["safety_contract"],
+        },
+        "issue_classifier": {
+            "status": issue_classifier["status"],
+            "summary": issue_classifier["summary"],
+            "source_report": issue_classifier.get("source_report"),
+            "issues": issue_classifier.get("issues", []) if include_items else [],
+            "safety_contract": issue_classifier["safety_contract"],
         },
         "selection_ui": selection_ui,
         "action_policy": action_policy,
@@ -754,7 +1098,10 @@ def build_bot_controller_result(
             "selection_decision_schema": BOT_SELECTION_DECISION_SCHEMA,
             "selection_report_only": True,
             "move_later_uses_file_operation_adapter": True,
-            "delete_candidate_enabled": False,
+            "needs_backup_uses_backup_adapter": True,
+            "delete_candidate_uses_safe_delete_adapter": True,
+            "needs_backup_requires_final_token": True,
+            "delete_candidate_requires_final_token": True,
             "never_touch_policy_decisions": ["ignore_forever", "keep"],
         },
     }
@@ -821,6 +1168,28 @@ def execute_bot_decision(
             "message": "Select move_later items and destination, then File Operation Adapter will dry-run before apply.",
         }
 
+    if decision == "needs_backup":
+        selection_session = build_selection_session(bot_result=result, include_items=True)
+        return {
+            "status": "needs_backup_selection_required",
+            "executed": False,
+            "decision": decision,
+            "selection_ui": selection_session,
+            "final_backup_token": FINAL_BACKUP_TOKEN,
+            "message": "Select needs_backup items, then Backup Adapter will dry-run before token-gated copy.",
+        }
+
+    if decision == "delete_candidate":
+        selection_session = build_selection_session(bot_result=result, include_items=True)
+        return {
+            "status": "safe_delete_selection_required",
+            "executed": False,
+            "decision": decision,
+            "selection_ui": selection_session,
+            "final_delete_token": FINAL_DELETE_TOKEN,
+            "message": "Select delete_candidate items, then Safe Delete Adapter will dry-run before token-gated apply.",
+        }
+
     if decision == "ok":
         if not safe_items:
             return {
@@ -860,7 +1229,7 @@ def export_bot_controller_report(*, include_items: bool = True) -> dict[str, Any
         recommendations=[
             "Bot Controller v2 scans, plans and exports selection decisions, but does not execute cleanup automatically.",
             "Use OK only when safe_to_execute_count is greater than zero.",
-            "Use selection flow to create a decision report for manual_only, needs_backup and move_later items.",
+            "Use selection flow to create a decision report for manual_only, needs_backup, move_later and delete_candidate items.",
         ],
         summary=result["summary"],
         undo_available=False,
@@ -891,7 +1260,10 @@ def print_bot_summary(result: dict[str, Any]) -> None:
     print(f"Recommendations: {summary['visible_recommendation_count']} visible / {summary['all_recommendation_count']} total")
     print(f"Safe to execute: {summary['safe_to_execute_count']}")
     print(f"Need selection: {summary['needs_selection_count']}")
+    print(f"Needs-backup selectable: {summary['needs_backup_selectable_count']}")
     print(f"Move-later selectable: {summary['move_later_selectable_count']}")
+    print(f"Delete-candidate selectable: {summary['delete_candidate_selectable_count']}")
+    print(f"Classified issues: {summary['classified_issue_count']}")
     print(f"Do not touch: {summary['do_not_touch_count']}")
     print(f"Candidates: {summary['candidate_count']}")
     print(f"Readiness: {summary['readiness_status']}")
@@ -954,8 +1326,10 @@ def run_bot_controller() -> None:
 3. OK - run safe-only decision
 4. Preview selection UI v2
 5. Export selection decision report
-6. Move selected move_later with destination
-7. Huy - cancel decision
+6. Backup selected needs_backup
+7. Move selected move_later with destination
+8. Safe-delete selected delete_candidate
+9. Huy - cancel decision
 0. Thoat
 """)
         choice = input("Chon: ").strip()
@@ -983,6 +1357,44 @@ def run_bot_controller() -> None:
             export_selection_decision_report(decisions, session=session, note=note)
 
         elif choice == "6":
+            session = build_selection_session(include_items=True)
+            print_selection_session(session)
+            raw_text = input("Nhap item can backup (vd M001=needs_backup): ").strip()
+            decisions = parse_selection_input(raw_text)
+            note = input("Ghi chu report (bo trong neu khong co): ").strip() or None
+
+            dry_run = export_backup_selection_flow_report(
+                decisions,
+                mode="dry_run",
+                session=session,
+                note=note,
+            )
+            backup_report = dry_run["flow"].get("backup_report")
+            if backup_report:
+                print_backup_summary(backup_report["backup"])
+
+            if dry_run["flow"]["summary"].get("backupable_count", 0) <= 0:
+                print("Khong co item nao san sang backup.")
+                continue
+
+            print(f"Final backup token required: {FINAL_BACKUP_TOKEN}")
+            token = input("Nhap final backup token de apply, bo trong de huy: ").strip()
+            if not token:
+                print("Da huy apply backup.")
+                continue
+
+            applied = export_backup_selection_flow_report(
+                decisions,
+                mode="apply",
+                final_token=token,
+                session=session,
+                note=note,
+            )
+            applied_backup = applied["flow"].get("backup_report")
+            if applied_backup:
+                print_backup_summary(applied_backup["backup"])
+
+        elif choice == "7":
             session = build_selection_session(include_items=True)
             print_selection_session(session)
             raw_text = input("Nhap item can move (vd M001=move_later): ").strip()
@@ -1023,7 +1435,45 @@ def run_bot_controller() -> None:
             if applied_operation:
                 print_operation_summary(applied_operation["operation"])
 
-        elif choice == "7":
+        elif choice == "8":
+            session = build_selection_session(include_items=True)
+            print_selection_session(session)
+            raw_text = input("Nhap item can safe-delete (vd M001=delete_candidate): ").strip()
+            decisions = parse_selection_input(raw_text)
+            note = input("Ghi chu report (bo trong neu khong co): ").strip() or None
+
+            dry_run = export_safe_delete_selection_flow_report(
+                decisions,
+                mode="dry_run",
+                session=session,
+                note=note,
+            )
+            delete_report = dry_run["flow"].get("delete_report")
+            if delete_report:
+                print_delete_summary(delete_report["delete"])
+
+            if dry_run["flow"]["summary"].get("deletable_count", 0) <= 0:
+                print("Khong co item nao du dieu kien safe_delete.")
+                continue
+
+            print(f"Final delete token required: {FINAL_DELETE_TOKEN}")
+            token = input("Nhap final delete token de apply, bo trong de huy: ").strip()
+            if not token:
+                print("Da huy apply delete.")
+                continue
+
+            applied = export_safe_delete_selection_flow_report(
+                decisions,
+                mode="apply",
+                final_token=token,
+                session=session,
+                note=note,
+            )
+            applied_delete = applied["flow"].get("delete_report")
+            if applied_delete:
+                print_delete_summary(applied_delete["delete"])
+
+        elif choice == "9":
             decision = execute_bot_decision("cancel")
             print(decision)
 

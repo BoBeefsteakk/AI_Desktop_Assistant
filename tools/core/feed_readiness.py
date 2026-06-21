@@ -184,8 +184,12 @@ def build_feed_sources() -> dict[str, Any]:
         "action_planner",
         "pre_feed_bundle",
         "bot_controller",
+        "auto_scan_session",
+        "issue_classifier",
         "execution_adapter",
+        "backup_adapter",
         "file_operation_adapter",
+        "safe_delete_adapter",
     ]:
         latest = get_latest_report_by_tool(tool_name)
         latest_reports[tool_name] = latest

@@ -58,8 +58,13 @@ INTENT_ALIASES: list[tuple[str, list[str]]] = [
     ("action_planner", ["action plan", "dry run plan", "planner", "ke hoach hanh dong", "lap ke hoach"]),
     ("pre_feed_bundle", ["pre feed bundle", "pre-feed bundle", "feed bundle", "dong goi feed", "goi feed"]),
     ("bot_controller", ["bot controller", "ai bot", "auto check", "check may", "kiem tra may", "tu dong check", "bot tong"]),
+    ("auto_scan_session", ["auto scan", "scan tong", "quet tong", "phien scan", "scan may", "scan he thong"]),
+    ("issue_classifier", ["issue classifier", "phan loai van de", "phan loai issue", "classifier", "phan loai file"]),
     ("execution_adapter", ["execution adapter", "thuc thi", "cong thuc thi", "apply decision", "chay decision", "execute selection"]),
     ("file_operation_adapter", ["file operation adapter", "move decision", "move later", "chuyen file", "chuyen selection", "chuyen quyet dinh"]),
+    ("backup_adapter", ["backup adapter", "needs backup", "backup selection", "sao luu selection", "sao luu file", "backup file"]),
+    ("safe_delete_adapter", ["safe delete", "delete selection", "xoa selection", "xoa an toan", "delete candidate", "xoa candidate"]),
+    ("bot_panel_ui", ["bot panel", "bot ui", "desktop ui", "assistant dashboard", "ai assistant ui", "mo ui", "giao dien", "giao dien bot", "nghiem thu ui"]),
     ("obsidian_exporter", ["obsidian", "obsidian exporter", "export obsidian", "vault", "database file", "so do database file", "ban do file"]),
 ]
 
