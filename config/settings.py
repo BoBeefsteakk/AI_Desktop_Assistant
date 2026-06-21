@@ -41,6 +41,12 @@ DEFAULT_USER_SETTINGS: dict[str, Any] = {
         "ram_warning_percent": 70,
         "ram_critical_percent": 85,
     },
+    "startup": {
+        "auto_scan_on_boot": True,
+        "scan_mode": "auto",
+        "open_ui": True,
+        "delay_seconds": 0,
+    },
     "safety": {
         "protected_root_paths": [
             "{BASE_DIR}",
@@ -458,6 +464,15 @@ DEFAULT_DOWNLOAD_FOLDER = str(get_setting("paths.downloads_folder", r"D:\Downloa
 DEFAULT_LARGE_FILE_MB = get_int_setting("thresholds.large_file_mb", 500)
 
 DEFAULT_RESULT_LIMIT = get_int_setting("thresholds.result_limit", 50)
+
+# =========================
+# STARTUP / BOOT SETTINGS
+# =========================
+
+STARTUP_AUTO_SCAN_ON_BOOT = get_bool_setting("startup.auto_scan_on_boot", True)
+STARTUP_SCAN_MODE = str(get_setting("startup.scan_mode", "auto")).strip().lower()
+STARTUP_OPEN_UI = get_bool_setting("startup.open_ui", True)
+STARTUP_DELAY_SECONDS = get_int_setting("startup.delay_seconds", 0)
 
 DISK_WARNING_PERCENT = get_int_setting("thresholds.disk_warning_percent", 80)
 DISK_CRITICAL_PERCENT = get_int_setting("thresholds.disk_critical_percent", 90)
