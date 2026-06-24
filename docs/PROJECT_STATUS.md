@@ -2,7 +2,21 @@
 
 ## Giai đoạn hiện tại
 
-**thay doi** Startup/Boot v1: da co `tools/core/startup_scan.py` (boot scan full o -> issue classifier -> man tu van 3 lua chon: khong xoa / chon file / xoa tat ca an toan, route qua Safe Delete flow), `tools/ui/startup_window.py` (man Decision Inbox do hoa 3 nut, menu 48), `tools/automation/startup_registration.py` (bat/tat tu chay khi khoi dong qua shell:startup launcher, go duoc, menu 47) va `tools/automation/boot_runner.py` (entry chay luc login: scan read-only roi mo startup_window). Scan mode `auto` uu tien WizTree, fallback Python. Menu 46 = Startup Scan CLI. Autorun da duoc BAT (launcher trong shell:startup). Toggle o `config/user_settings.json` muc `startup`. Tool Tester 48/48, Full System Tester 37/37. Luu y: may chi co Python 3.12 (khong phai 3.11) nen launcher dung `py` khong pin version; da sua `start_download_watcher.bat` tuong tu.
+**thay doi (2026-06-25) Advisory Dashboard v1 - huong toi dich cuoi Phase 7:** Bot Panel UI (`tools/ui/bot_panel.py`) gio tu dong kiem tra may khi mo app va tu van suc khoe o cung bang tieng Viet, dung muc tieu user: "AI tu dong chay full tool, tu van file rac/file nang, user chi chon xoa hoac giu".
+
+Da lam duoc:
+- **Tu quet khi mo app:** `auto_start_scan()` chay sau khi cua so ve xong (`root.after`), khong can user bam gi. Read-only, khong dung file.
+- **Storage mode mac dinh storage-aware:** `default_storage_mode()` uu tien WizTree (fallback Python) thay vi `light`, nen file nang/file rac hien ngay.
+- **Panel "Suc khoe o cung & tu van cua AI":** `update_health_panel()` doc snapshot tu auto-scan, hien O DIA (% dung, con trong, trang thai), SMART, FILE NANG, THU MUC LON NHAT, va AI TU VAN theo muc do (NGHIEM TRONG/CANH BAO/Thong tin).
+- **Phan biet ro DEMO vs MAY THAT:** nhan mau "Dang xem: MAY THAT" (xanh) / "Dang xem: DU LIEU THU" (vang); nut doi ten "Kiem tra may that" (nut chinh) / "Xem thu (file gia)" / "Chay demo toan bo".
+- **UI hien dai bang ttkbootstrap (theme `cosmo`):** header thanh mau, nut co mau theo chuc nang, issue cards vien mau. Da them `ttkbootstrap` vao `requirements.txt`. Fix gotcha `ttk.LabelFrame` -> alias `ttk.Labelframe`.
+- **Backend giu nguyen:** moi thao tac van qua Selection Decision Report + token (`BACKUP_SELECTION_V1`/`MOVE_SELECTION_V1`/`DELETE_SELECTION_V1`) + Recycle Bin. UI chi reskin + auto-scan, khong viet logic xoa/move moi.
+
+**thay doi (2026-06-25) Fix marketingskills gitlink:** `marketingskills` truoc day bi track nhu gitlink mo coi (thieu `.gitmodules`) lam `git submodule status` fail va keo Full System Tester con 36/37. Da go `.git` long, chuyen thanh ~381 file thuong duoc track. Gitlink mo coi con lai: 0.
+
+**thay doi Moc verify moi nhat (2026-06-25):** Tool Tester 48/48; Full System Tester 37/37 `D:\tool\reports\full_system_tester_20260625_001228.json`; Feed Readiness 9 pass, 0 warn, 0 fail.
+
+**thay doi Startup/Boot v1:** da co `tools/core/startup_scan.py` (boot scan full o -> issue classifier -> man tu van 3 lua chon: khong xoa / chon file / xoa tat ca an toan, route qua Safe Delete flow), `tools/ui/startup_window.py` (man Decision Inbox do hoa 3 nut, menu 48), `tools/automation/startup_registration.py` (bat/tat tu chay khi khoi dong qua shell:startup launcher, go duoc, menu 47) va `tools/automation/boot_runner.py` (entry chay luc login: scan read-only roi mo startup_window). Scan mode `auto` uu tien WizTree, fallback Python. Menu 46 = Startup Scan CLI. Autorun da duoc BAT (launcher trong shell:startup). Toggle o `config/user_settings.json` muc `startup`. Tool Tester 48/48, Full System Tester 37/37. Luu y: may chi co Python 3.12 (khong phai 3.11) nen launcher dung `py` khong pin version; da sua `start_download_watcher.bat` tuong tu.
 
 **thay doi** Giai doan hien tai: Bot Autonomy v1 da co auto-scan, issue classifier, decision flow, Backup Adapter copy-only, Move-later Adapter va Safe Delete Adapter token-gated.
 

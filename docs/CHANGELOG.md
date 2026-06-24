@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-25
+
+### Advisory Dashboard v1 + UI hiện đại hóa
+
+* **thay doi** Bot Panel UI tu dong quet may khi mo app (`auto_start_scan`), khong can user bam nut.
+* **thay doi** Default storage mode chuyen sang WizTree/Python (`default_storage_mode`) de file nang/file rac hien ngay thay vi `light`.
+* **thay doi** Them panel "Suc khoe o cung & tu van cua AI" (`update_health_panel`): o dia, SMART, file nang, thu muc lon nhat, AI tu van theo muc do - tieng Viet.
+* **thay doi** Phan biet ro DEMO (file gia) vs MAY THAT: nhan mau "Dang xem: MAY THAT/DU LIEU THU" + doi ten nut "Kiem tra may that"/"Xem thu (file gia)".
+* **thay doi** UI hien dai hoa bang `ttkbootstrap` (theme cosmo): header thanh mau, nut co mau theo chuc nang, issue cards vien mau. Them `ttkbootstrap` vao `requirements.txt`, fix gotcha `ttk.LabelFrame` bang alias.
+* **thay doi** Fix `marketingskills` gitlink mo coi (thieu `.gitmodules`) -> chuyen thanh ~381 file thuong duoc track; `git submodule status` exit 0.
+* **thay doi** Tool Tester 48/48; Full System Tester 37/37 tai `D:\tool\reports\full_system_tester_20260625_001228.json`; Feed Readiness 9 pass, 0 warn, 0 fail.
+
 ## 2026-06-13
 
 ### Bot Panel UI Readability Fix
