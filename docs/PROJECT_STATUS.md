@@ -2,6 +2,12 @@
 
 ## Giai đoạn hiện tại
 
+**thay doi (2026-06-27) Codex x Claude collaboration bridge:** Da tao branch
+`codex/backend-collab-bridge`, doc lai `AGENTS.md`, `CLAUDE.md`,
+`docs/COLLAB.md`, `docs/PROJECT_STATUS.md`, `docs/ROADMAP.md`, va them mailbox
+chung `.agents/AGENT_MAILBOX.md` de Codex/Claude de lai request, handoff, canh
+bao doi API. Buoc nay chi ket noi phoi hop agent, khong sua backend logic/UI.
+
 **thay doi (2026-06-25) Advisory Dashboard v1 - huong toi dich cuoi Phase 7:** Bot Panel UI (`tools/ui/bot_panel.py`) gio tu dong kiem tra may khi mo app va tu van suc khoe o cung bang tieng Viet, dung muc tieu user: "AI tu dong chay full tool, tu van file rac/file nang, user chi chon xoa hoac giu".
 
 Da lam duoc:
