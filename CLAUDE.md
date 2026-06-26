@@ -2,6 +2,9 @@
 
 Local Python tool suite để quản lý file, phân tích hệ thống, và tự động hóa tác vụ trên Windows.
 
+> **Làm việc đa agent (Claude + Codex):** đọc `docs/COLLAB.md` trước mỗi phiên để
+> tránh xung đột. Codex đọc `AGENTS.md`. Tuân thủ ownership map + worklog trong COLLAB.md.
+
 ## Tech Stack
 
 - **Language:** Python 3.12 (Windows, `py` launcher)
