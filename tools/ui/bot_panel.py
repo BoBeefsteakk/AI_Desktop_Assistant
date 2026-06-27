@@ -39,6 +39,7 @@ from tools.core.safe_delete_adapter import FINAL_DELETE_TOKEN
 from tools.core.issue_classifier import export_issue_classifier_report
 from tools.core.report_manager import read_recent_report_index
 from tools.core.safety_utils import format_size
+from tools.search.natural_command import answer_user_question
 from tools.core.undo_manager import restore_manifest
 from tools.storage.wiztree_adapter import is_wiztree_available
 
@@ -178,6 +179,7 @@ class BotPanel:
         self.assistant_next_step_var = tk.StringVar(value="Choose a folder or try the demo sandbox, then run scan.")
         self.assistant_counts_var = tk.StringVar(value="Backup 0 | Move 0 | Safe cleanup 0 | Review 0 | Protected 0")
         self.view_mode_var = tk.StringVar(value="Đang xem: chưa quét")
+        self.ask_question_var = tk.StringVar(value="")
         self.confirm_backup_var = tk.BooleanVar(value=False)
         self.confirm_move_var = tk.BooleanVar(value=False)
         self.confirm_delete_var = tk.BooleanVar(value=False)
@@ -353,6 +355,22 @@ class BotPanel:
         health_scroll.configure(command=self.health_text.yview)
         self.health_text.configure(state="disabled")
         self.write_text(self.health_text, "Đang chờ lần quét đầu tiên... AI sẽ tự kiểm tra ổ cứng khi mở app.")
+
+        ask = ttk.LabelFrame(parent, text="Hỏi AI", padding=8)
+        ask.pack(side=TOP, fill=X, pady=(0, 10))
+        ask_row = ttk.Frame(ask)
+        ask_row.pack(side=TOP, fill=X)
+        ttk.Entry(ask_row, textvariable=self.ask_question_var).pack(side=LEFT, fill=X, expand=True, padx=(0, 8))
+        ttk.Button(ask_row, text="Hỏi", command=self.ask_ai_question, bootstyle=PRIMARY).pack(side=LEFT)
+        ttk.Label(
+            ask,
+            text='Ví dụ: "tại sao ổ D đầy", "file nào nặng nhất", "máy có gì cần dọn"',
+            style="Guide.TLabel",
+        ).pack(anchor="w", pady=(4, 6))
+        self.ask_answer_text = tk.Text(ask, height=4, wrap="word", relief="flat", background="#f7f9fc")
+        self.ask_answer_text.pack(side=TOP, fill=X)
+        self.ask_answer_text.configure(state="disabled")
+        self.write_text(self.ask_answer_text, "Gõ câu hỏi rồi bấm Hỏi — AI trả lời dựa trên lần quét gần nhất.")
 
         quick = ttk.LabelFrame(parent, text="Dọn nhanh — chọn mục rồi bấm Xóa hoặc Giữ", padding=8)
         quick.pack(side=TOP, fill=X, pady=(0, 10))
@@ -1010,7 +1028,16 @@ class BotPanel:
         disk = snapshot.get("disk", {})
         storage = snapshot.get("storage", {})
 
-        lines: list[str] = ["== Ổ ĐĨA =="]
+        lines: list[str] = []
+        disk_full_reason = advisor.get("disk_full_reason", {})
+        if disk_full_reason.get("reason_text"):
+            lines.append("== VÌ SAO Ổ NHƯ VẬY ==")
+            lines.append(disk_full_reason["reason_text"])
+            if disk_full_reason.get("action_text"):
+                lines.append(f"Nên làm: {disk_full_reason['action_text']}")
+            lines.append("")
+
+        lines.append("== Ổ ĐĨA ==")
         status_label = {"ok": "Tốt", "warning": "Cần theo dõi", "critical": "Sắp đầy"}
         for item in disk.get("disks", []):
             status_text = status_label.get(item.get("status"), str(item.get("status")))
@@ -1057,12 +1084,42 @@ class BotPanel:
             for rec in recommendations:
                 sev = sev_label.get(rec.get("severity"), str(rec.get("severity")))
                 lines.append(f"[{sev}] {rec.get('title')}: {rec.get('detail')}")
+                if rec.get("explanation"):
+                    lines.append(f"      -> {rec['explanation']}")
 
         if storage.get("provider") in {"skipped", None} and not large_files and not top_folders:
             lines.append("")
             lines.append("(Chế độ quét nhanh không đọc chi tiết file. Chọn mode python/wiztree ở tab Chi tiết để xem file nặng.)")
 
         self.write_text(self.health_text, "\n".join(lines))
+
+    def ask_ai_question(self) -> None:
+        if not hasattr(self, "ask_answer_text"):
+            return
+        question = self.ask_question_var.get().strip()
+        if not question:
+            messagebox.showinfo("Chưa có câu hỏi", "Hãy gõ câu hỏi, ví dụ: tại sao ổ D đầy.")
+            return
+        scan_data = self.last_scan_data
+        self.write_text(self.ask_answer_text, "Đang trả lời...")
+
+        def worker() -> dict[str, Any]:
+            # Truyền scan gần nhất (storage-aware) để tránh fallback light-mode thiếu dữ liệu.
+            return answer_user_question(question, auto_scan_result=scan_data)
+
+        self.run_background("Hỏi AI", worker, self.load_ai_answer)
+
+    def load_ai_answer(self, answer: dict[str, Any]) -> None:
+        lines = [answer.get("answer_text", "Không có câu trả lời.")]
+        recommendations = answer.get("recommendations", [])
+        if recommendations:
+            lines.append("")
+            lines.append("Gợi ý liên quan:")
+            for rec in recommendations[:5]:
+                detail = rec.get("explanation") or rec.get("detail") or ""
+                lines.append(f"- {rec.get('title')}: {detail}")
+        self.write_text(self.ask_answer_text, "\n".join(lines))
+        self.set_status("AI đã trả lời câu hỏi.")
 
     # ----- Dọn nhanh: chọn Xóa hoặc Giữ cho từng file rác -----
 
