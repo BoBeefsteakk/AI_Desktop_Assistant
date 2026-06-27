@@ -1464,7 +1464,7 @@ def test_bot_controller_contract() -> dict[str, Any]:
     protected_reason = reason_session["groups"]["do_not_touch"][0]
     assert_condition("Recycle Bin" in safe_reason["reason_text"], "Safe-delete reason should explain guarded deletion.")
     assert_condition("project" in project_reason["reason_text"], "Project reason should require manual review.")
-    assert_condition("bao ve" in protected_reason["reason_text"], "Protected reason should explain the lock.")
+    assert_condition("bảo vệ" in protected_reason["reason_text"], "Protected reason should explain the lock.")
 
     return {
         "summary": summary,

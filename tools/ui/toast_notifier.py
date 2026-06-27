@@ -29,13 +29,23 @@ def _escape_xml(text: str) -> str:
     )
 
 
-def _build_script(title: str, message: str, app_id: str) -> str:
-    """Tạo script PowerShell bắn toast bằng Windows Runtime."""
+def _build_script(title: str, message: str, app_id: str, launch_arg: str = "") -> str:
+    """Tạo script PowerShell bắn toast bằng Windows Runtime.
+
+    `launch_arg` (vd "aidesktop:cleanup") biến cả toast thành nút bấm: click vào
+    sẽ kích hoạt protocol đó (8.3 — mở app tới banner Dọn). Cần đăng ký protocol
+    trước qua `tools.automation.toast_protocol.register_toast_protocol()`.
+    """
     safe_title = _escape_xml(title)
     safe_message = _escape_xml(message)
     safe_label = _escape_xml(_APP_LABEL)
+    launch_attr = (
+        f" launch='{_escape_xml(launch_arg)}' activationType='protocol'"
+        if launch_arg
+        else ""
+    )
     toast_xml = (
-        "<toast><visual><binding template='ToastGeneric'>"
+        f"<toast{launch_attr}><visual><binding template='ToastGeneric'>"
         f"<text>{safe_title}</text>"
         f"<text>{safe_message}</text>"
         f"<text placement='attribution'>{safe_label}</text>"
@@ -59,10 +69,12 @@ def show_toast(
     message: str,
     *,
     app_id: str = _DEFAULT_APP_ID,
+    launch_arg: str = "",
     timeout: int = 15,
 ) -> dict:
     """Hiển thị một toast notification. Read-only, không đụng file user.
 
+    `launch_arg`: protocol kích hoạt khi user bấm vào toast (8.3).
     Trả về dict: {shown, title, message, error, safety_contract}.
     """
     result = {
@@ -78,7 +90,7 @@ def show_toast(
         },
     }
 
-    script = _build_script(title, message, app_id)
+    script = _build_script(title, message, app_id, launch_arg)
     # Truyền script qua -EncodedCommand (base64 UTF-16LE) để không cần temp file
     # và tránh mọi vấn đề escape dấu nháy.
     encoded = base64.b64encode(script.encode("utf-16-le")).decode("ascii")

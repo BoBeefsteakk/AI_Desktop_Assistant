@@ -91,7 +91,15 @@ def run_background_assistant_cycle(
 
     should_notify = bool(notification.get("should_notify"))
     if notify and should_notify and not quiet:
-        toast = show_toast(notification["title"], notification["message"])
+        # launch_arg: click toast -> protocol aidesktop:cleanup -> mở app tới
+        # banner Dọn 1 chạm (8.3). Chỉ có tác dụng nếu protocol đã đăng ký
+        # (tools.automation.toast_protocol.register_toast_protocol); nếu chưa,
+        # toast vẫn hiện bình thường, chỉ là click không mở app.
+        toast = show_toast(
+            notification["title"],
+            notification["message"],
+            launch_arg="aidesktop:cleanup",
+        )
         result["toast"] = toast
         result["notified"] = bool(toast.get("shown"))
 

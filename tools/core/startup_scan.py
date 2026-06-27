@@ -199,15 +199,23 @@ def build_periodic_notification_payload(
     highest_new = get_highest_severity(new_issues)
     highest_current = str(current_snapshot.get("highest_severity") or "none")
 
+    severity_labels = {
+        "critical": "Nghiêm trọng",
+        "warning": "Cảnh báo",
+        "info": "Thông tin",
+        "none": "Không có",
+    }
+    highest_new_label = severity_labels.get(highest_new, highest_new)
+
     if not baseline_available:
-        title = "Da tao moc quet dinh ky"
-        message = f"AI da ghi nhan {len(current_items)} van de hien tai lam baseline; chua co van de moi de bao."
+        title = "Đã tạo mốc quét định kỳ"
+        message = f"AI đã ghi nhận {len(current_items)} vấn đề hiện tại làm mốc; chưa có vấn đề mới để báo."
     elif new_issues:
-        title = f"AI tim thay {len(new_issues)} van de moi"
-        message = f"Muc do cao nhat: {highest_new}. Bam vao thong bao de xem danh sach; chua co file nao bi thay doi."
+        title = f"AI tìm thấy {len(new_issues)} vấn đề mới"
+        message = f"Mức độ cao nhất: {highest_new_label}. Bấm vào thông báo để xem danh sách; chưa có file nào bị thay đổi."
     else:
-        title = "Khong co van de moi"
-        message = f"AI dang theo doi {len(current_items)} van de hien tai; khong xoa hoac move file."
+        title = "Không có vấn đề mới"
+        message = f"AI đang theo dõi {len(current_items)} vấn đề hiện tại; không xóa hoặc move file."
 
     return {
         "schema": PERIODIC_SCAN_SCHEMA,
