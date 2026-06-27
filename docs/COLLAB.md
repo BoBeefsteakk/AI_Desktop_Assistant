@@ -93,6 +93,8 @@ cảnh báo đổi API giữa Codex và Claude. Worklog vẫn dùng cho trạng 
 
 <!-- WORKLOG: thêm dòng mới ngay dưới đây -->
 
+- [2026-06-27 09:41] codex | codex/backend-collab-bridge | DONE | **thay doi** REQ#1 advisor explanations + disk_full_reason; REQ#2 answer_user_question read-only schema; Behavior 18/18, Tool 48/48, Full System 37/37
+- [2026-06-27 09:00] codex | codex/backend-collab-bridge | START | **thay doi** xử lý REQ#1 rồi REQ#2, giữ nguyên public UI API và safety invariants
 - [2026-06-27 02:10] codex | codex/backend-collab-bridge | DONE | tạo `.agents/AGENT_MAILBOX.md`, cập nhật COLLAB/PROJECT_STATUS, không sửa backend logic
 - [2026-06-27 02:00] codex | codex/backend-collab-bridge | START | đọc AGENTS/COLLAB/CLAUDE, tạo mailbox chung, không sửa backend logic
 - [2026-06-25] claude | add-claude-md-and-marketing-skills | DONE | tạo AGENTS.md + docs/COLLAB.md, advisory dashboard UI

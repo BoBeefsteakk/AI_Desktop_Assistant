@@ -9,6 +9,7 @@ from unittest.mock import patch
 from config.settings import BASE_DIR, USER_SETTINGS_FILE, validate_user_settings
 from tools.automation import download_organizer, download_watcher, startup_launcher
 from tools.core.audit_center import get_audit_snapshot
+from tools.core.auto_scan_session import build_auto_scan_session_result
 from tools.core.report_manager import create_report
 from tools.core import external_apps, guided_action_runner, recommendation_center
 from tools.core.risk_classifier import PROTECTED, REVIEW_REQUIRED, SAFE_DELETE, classify_file_risk
@@ -461,6 +462,7 @@ def test_natural_command_router(sandbox: Path) -> dict[str, Any]:
     cache_route = natural_command.resolve_command("don cache")
     full_test_route = natural_command.resolve_command("test tong")
     recommendation_route = natural_command.resolve_command("recommendation")
+    answer_route = natural_command.resolve_command("file nao nang nhat")
     queue_preview_route = natural_command.resolve_command("xem goi y")
     queue_open_route = natural_command.resolve_command("lam goi y so 1")
     queue_defer_route = natural_command.resolve_command("hoan muc 2")
@@ -497,6 +499,11 @@ def test_natural_command_router(sandbox: Path) -> dict[str, Any]:
         recommendation_route["type"] == "capability"
         and recommendation_route["capability"]["id"] == "recommendation_center",
         "Natural Command should route Recommendation Center.",
+    )
+    assert_condition(
+        answer_route["type"] == "answer_question"
+        and answer_route["intent"] == "largest_files",
+        "Natural Command should route natural questions to answer_user_question.",
     )
     assert_condition(
         queue_preview_route["type"] == "recommendation_queue_preview",
@@ -541,12 +548,48 @@ def test_natural_command_router(sandbox: Path) -> dict[str, Any]:
         "Guided Action Runner should require Natural Command confirmation.",
     )
 
+    question_scan = build_auto_scan_session_result(
+        root_drive=str(sandbox),
+        top_folders=[{
+            "path": str(sandbox / "Downloads"),
+            "size": 3 * 1024 * 1024,
+            "source": "behavior_test",
+        }],
+        large_files=[{
+            "path": str(sandbox / "Downloads" / "old_installer.zip"),
+            "size": 2 * 1024 * 1024,
+            "source": "behavior_test",
+        }],
+    )
+    largest_answer = natural_command.answer_user_question(
+        "file nao nang nhat",
+        auto_scan_result=question_scan,
+    )
+    cleanup_answer = natural_command.answer_user_question(
+        "may co gi can don",
+        auto_scan_result=question_scan,
+    )
+    assert_condition(
+        largest_answer["schema"] == "natural_command_answer_v1"
+        and largest_answer["intent"] == "largest_files"
+        and largest_answer["safety_contract"]["read_only"] is True
+        and largest_answer["safety_contract"]["executes_file_operations"] is False,
+        "Natural question answers must use the stable read-only schema.",
+    )
+    assert_condition(
+        cleanup_answer["intent"] == "cleanup_overview"
+        and isinstance(cleanup_answer["issues"], list),
+        "Cleanup overview should return structured related issues.",
+    )
+
     return {
         "disk_route": disk_route["capability"]["id"],
         "search_query": search_route["query"],
         "cache_route": cache_route["capability"]["id"],
         "full_test_route": full_test_route["capability"]["id"],
         "recommendation_route": recommendation_route["capability"]["id"],
+        "answer_route": answer_route["intent"],
+        "answer_schema": largest_answer["schema"],
         "queue_preview_type": queue_preview_route["type"],
         "queue_open_index": queue_open_route["index"],
         "guided_route": guided_route["capability"]["id"],
@@ -675,11 +718,22 @@ def test_system_advisor_v2_recommendations(sandbox: Path) -> dict[str, Any]:
         all(item["suggestion_only"] for item in result["recommendations"]),
         "System Advisor v2 must only suggest actions, not execute them.",
     )
+    assert_condition(
+        all(isinstance(item.get("explanation"), str) and item["explanation"] for item in result["recommendations"]),
+        "System Advisor v2 recommendations should include human-readable explanations.",
+    )
+    assert_condition(
+        result["disk_full_reason"]["read_only"] is True
+        and isinstance(result["disk_full_reason"].get("reason_text"), str)
+        and result["disk_full_reason"]["contributors"],
+        "System Advisor v2 should explain why the disk looks full without mutating files.",
+    )
 
     return {
         "recommendation_count": len(result["recommendations"]),
         "summary": result["recommendation_summary"],
         "recommendation_ids": sorted(recommendation_ids),
+        "disk_full_reason": result["disk_full_reason"],
     }
 
 

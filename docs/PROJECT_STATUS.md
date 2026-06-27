@@ -2,6 +2,14 @@
 
 ## Giai đoạn hiện tại
 
+**thay doi (2026-06-27) Phase 7 backend REQ#1 + REQ#2:** System Advisor
+them `explanation` cho moi recommendation va `disk_full_reason` o cap ket qua.
+Natural Command them public API `answer_user_question(text) -> dict`, schema
+`natural_command_answer_v1`, tra loi cau hoi ve o dia day, file/folder lon va
+noi dung can don. Toan bo luong moi la read-only, khong xoa/move file va khong
+doi chu ky public UI dang goi. Verify: Behavior Tester 18/18, Tool Tester
+48/48, Full System Tester 37/37.
+
 **thay doi (2026-06-27) Codex x Claude collaboration bridge:** Da tao branch
 `codex/backend-collab-bridge`, doc lai `AGENTS.md`, `CLAUDE.md`,
 `docs/COLLAB.md`, `docs/PROJECT_STATUS.md`, `docs/ROADMAP.md`, va them mailbox

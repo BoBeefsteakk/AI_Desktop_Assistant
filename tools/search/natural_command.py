@@ -9,6 +9,7 @@ from typing import Any
 from tools.core.assistant_logger import log_action
 from tools.core.capability_registry import get_capabilities, summarize_capabilities
 from tools.core import guided_action_runner, recommendation_center
+from tools.core.safety_utils import format_size
 from tools.search.file_indexer import search_files, show_search_results
 
 
@@ -16,6 +17,7 @@ EXIT_COMMANDS = {"0", "exit", "quit", "out", "thoat"}
 HELP_COMMANDS = {"help", "?", "huong dan", "commands", "lenh"}
 SEARCH_PREFIXES = {"find", "search", "tim", "locate"}
 RECOMMENDATION_VISIBLE_STATES = recommendation_center.DEFAULT_VISIBLE_STATES
+NATURAL_ANSWER_SCHEMA = "natural_command_answer_v1"
 
 SKIP_ROUTE_IDS = {
     "natural_command",
@@ -214,6 +216,59 @@ def resolve_recommendation_queue_command(command: str) -> dict[str, Any] | None:
     return None
 
 
+def resolve_question_intent(command: str) -> dict[str, Any] | None:
+    normalized = normalize_command(command)
+    if not normalized:
+        return None
+
+    disk_words = {"o", "disk", "drive", "dung luong", "day", "full", "het cho", "sap day"}
+    if any(_contains_phrase(normalized, phrase) for phrase in {"tai sao", "vi sao", "why"}):
+        if any(_contains_phrase(normalized, phrase) for phrase in disk_words):
+            return {"type": "answer_question", "intent": "disk_full_reason"}
+
+    if any(
+        _contains_phrase(normalized, phrase)
+        for phrase in {
+            "file nao nang nhat",
+            "file nang nhat",
+            "file nao lon nhat",
+            "file lon nhat",
+            "top file nang",
+            "top file lon",
+        }
+    ):
+        return {"type": "answer_question", "intent": "largest_files"}
+
+    if any(
+        _contains_phrase(normalized, phrase)
+        for phrase in {
+            "folder nao nang nhat",
+            "thu muc nao nang nhat",
+            "folder lon nhat",
+            "thu muc lon nhat",
+            "top folder",
+        }
+    ):
+        return {"type": "answer_question", "intent": "largest_folders"}
+
+    if any(
+        _contains_phrase(normalized, phrase)
+        for phrase in {
+            "may co gi can don",
+            "co gi can don",
+            "can don gi",
+            "nen don gi",
+            "co gi can xoa",
+            "co van de gi",
+            "may co van de gi",
+            "can xu ly gi",
+        }
+    ):
+        return {"type": "answer_question", "intent": "cleanup_overview"}
+
+    return None
+
+
 def resolve_command(command: str) -> dict[str, Any]:
     normalized = normalize_command(command)
 
@@ -236,6 +291,14 @@ def resolve_command(command: str) -> dict[str, Any]:
     recommendation_decision = resolve_recommendation_queue_command(command)
     if recommendation_decision is not None:
         return recommendation_decision
+
+    question_decision = resolve_question_intent(command)
+    if question_decision is not None:
+        return {
+            **question_decision,
+            "question": command,
+            "normalized": normalized,
+        }
 
     best_match: dict[str, Any] | None = None
     for route in get_command_routes():
@@ -446,6 +509,177 @@ def run_recommendation_open_command(
     return result
 
 
+def build_natural_answer_safety_contract() -> dict[str, Any]:
+    return {
+        "read_only": True,
+        "executes_file_operations": False,
+        "changes_files": False,
+        "delete_enabled": False,
+        "move_enabled": False,
+        "answer_only": True,
+    }
+
+
+def load_question_context(
+    *,
+    auto_scan_result: dict[str, Any] | None = None,
+    source_report_path: str | Path | None = None,
+    create_fallback_scan: bool = True,
+) -> dict[str, Any]:
+    from tools.core.auto_scan_session import build_auto_scan_session_result
+    from tools.core.issue_classifier import build_issue_classifier_result, load_auto_scan_result
+
+    source_report = None
+    scan = auto_scan_result
+    if scan is None:
+        scan, source_report = load_auto_scan_result(source_report_path)
+
+    if scan is None and create_fallback_scan:
+        scan = build_auto_scan_session_result(storage_mode="light")
+
+    if scan is None:
+        return {
+            "status": "missing_context",
+            "source_report": source_report,
+            "scan": None,
+            "classifier": None,
+        }
+
+    classifier = build_issue_classifier_result(
+        auto_scan_result=scan,
+        include_items=True,
+        create_fallback_scan=False,
+    )
+    return {
+        "status": "ready",
+        "source_report": source_report,
+        "scan": scan,
+        "classifier": classifier,
+    }
+
+
+def summarize_items(items: list[dict[str, Any]], *, key: str = "path", limit: int = 5) -> list[str]:
+    lines = []
+    for item in items[:limit]:
+        path = item.get(key) or item.get("title") or item.get("id") or "unknown"
+        size = item.get("size")
+        size_text = item.get("size_text") or (format_size(size) if isinstance(size, int) else None)
+        lines.append(f"{path} ({size_text})" if size_text else str(path))
+    return lines
+
+
+def answer_user_question(
+    text: str,
+    *,
+    auto_scan_result: dict[str, Any] | None = None,
+    source_report_path: str | Path | None = None,
+    create_fallback_scan: bool = True,
+    issue_limit: int = 10,
+) -> dict[str, Any]:
+    question_decision = resolve_question_intent(text)
+    intent = question_decision["intent"] if question_decision else "unknown"
+    context = load_question_context(
+        auto_scan_result=auto_scan_result,
+        source_report_path=source_report_path,
+        create_fallback_scan=create_fallback_scan,
+    )
+
+    if context["status"] != "ready":
+        return {
+            "schema": NATURAL_ANSWER_SCHEMA,
+            "status": "missing_context",
+            "question": text,
+            "normalized": normalize_command(text),
+            "intent": intent,
+            "answer_text": "Chua co snapshot de tra loi. Hay chay auto scan read-only truoc.",
+            "recommendations": [],
+            "issues": [],
+            "evidence": {},
+            "source_report": context.get("source_report"),
+            "safety_contract": build_natural_answer_safety_contract(),
+        }
+
+    scan = context["scan"]
+    classifier = context["classifier"] or {}
+    snapshot = scan.get("snapshot", {})
+    advisor = scan.get("advisor", {})
+    storage = snapshot.get("storage", {})
+    recommendations = advisor.get("recommendations", [])
+    issues = classifier.get("issues", [])[:issue_limit] if classifier.get("status") == "ready" else []
+    disk_full_reason = advisor.get("disk_full_reason", {})
+    large_files = storage.get("large_files", [])
+    top_folders = storage.get("top_folders", [])
+
+    if intent == "disk_full_reason":
+        reason = disk_full_reason.get("reason_text") or "Chua co du lieu dung luong chi tiet."
+        action = disk_full_reason.get("action_text") or "Nen chay scan storage-aware de co cau tra loi ro hon."
+        answer_text = f"{reason} {action}"
+        related_recommendations = [
+            item for item in recommendations
+            if item.get("source") in {"disk_checker", "storage", "large_file_finder"}
+            or item.get("suggested_tool_id") in {"large_file_finder", "folder_size_analyzer", "download_organizer"}
+        ]
+    elif intent == "largest_files":
+        if large_files:
+            answer_text = "File nang nhat hien thay: " + "; ".join(summarize_items(large_files, limit=5))
+        else:
+            answer_text = "Snapshot hien tai chua co danh sach file lon. Hay chay scan storage-aware neu can cau tra loi chi tiet."
+        related_recommendations = [
+            item for item in recommendations
+            if item.get("suggested_tool_id") in {"large_file_finder", "media_organizer"}
+        ]
+    elif intent == "largest_folders":
+        if top_folders:
+            answer_text = "Thu muc lon nhat hien thay: " + "; ".join(summarize_items(top_folders, limit=5))
+        else:
+            answer_text = "Snapshot hien tai chua co danh sach folder lon. Hay chay scan storage-aware neu can cau tra loi chi tiet."
+        related_recommendations = [
+            item for item in recommendations
+            if item.get("suggested_tool_id") in {"folder_size_analyzer", "download_organizer"}
+        ]
+    elif intent == "cleanup_overview":
+        summary = classifier.get("summary", {})
+        answer_text = (
+            f"AI thay {summary.get('issue_count', len(issues))} van de can xem, "
+            f"trong do {summary.get('needs_selection_count', 0)} muc can ban chon va "
+            f"{summary.get('do_not_touch_count', 0)} muc duoc khoa. "
+            "Day chi la goi y; muon xoa/move van phai qua preview va xac nhan."
+        )
+        related_recommendations = recommendations[:issue_limit]
+    else:
+        answer_text = "Cau hoi nay chua co intent rieng. Hay hoi ve o dia day, file nang nhat, folder nang nhat, hoac may co gi can don."
+        related_recommendations = []
+
+    return {
+        "schema": NATURAL_ANSWER_SCHEMA,
+        "status": "ready",
+        "question": text,
+        "normalized": normalize_command(text),
+        "intent": intent,
+        "answer_text": answer_text,
+        "recommendations": related_recommendations[:issue_limit],
+        "issues": issues,
+        "evidence": {
+            "disk_full_reason": disk_full_reason,
+            "top_folders": top_folders[:5],
+            "large_files": large_files[:5],
+            "scan_summary": scan.get("summary", {}),
+            "issue_summary": classifier.get("summary", {}),
+        },
+        "source_report": context.get("source_report"),
+        "safety_contract": build_natural_answer_safety_contract(),
+    }
+
+
+def print_natural_answer(answer: dict[str, Any]) -> None:
+    print(answer["answer_text"])
+    if answer.get("recommendations"):
+        print("\nGoi y lien quan:")
+        for item in answer["recommendations"][:5]:
+            explanation = item.get("explanation") or item.get("detail") or ""
+            print(f"- {item.get('title')}: {explanation}")
+
+
 def print_help() -> None:
     summary = summarize_capabilities()
     print("\n========== NATURAL COMMAND V3 ==========")
@@ -463,6 +697,9 @@ def print_help() -> None:
     print("- hoan muc 2")
     print("- danh dau muc 3 da xu ly")
     print("- lam goi y")
+    print("- tai sao o D day")
+    print("- file nao nang nhat")
+    print("- may co gi can don")
     print(f"\nDang co {summary['total']} capability trong registry.")
     print("Tool co risk medium/dangerous hoac co the thay doi file se hoi xac nhan truoc.")
 
@@ -494,6 +731,10 @@ def handle_command(command: str) -> bool:
 
     if decision["type"] == "recommendation_open":
         run_recommendation_open_command(decision["index"])
+        return True
+
+    if decision["type"] == "answer_question":
+        print_natural_answer(answer_user_question(decision["question"]))
         return True
 
     if decision["type"] == "capability":
