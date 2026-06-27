@@ -2,6 +2,15 @@
 
 ## Giai đoạn hiện tại
 
+**thay doi (2026-06-27) Phase 7 backend REQ#3 + REQ#4 + REQ#5:** Da co
+periodic read-only scan public `run_periodic_scan(...)`, schema
+`periodic_scan_notification_v1`, so sanh baseline de bao issue moi va severity
+cao nhat. Moi selection item co `reason_text` tieng Viet. Rule risk -> cleanup
+decision duoc gom tai `tools/core/cleanup_rules.py`; chi `safe_delete` moi duoc
+de xuat `delete_candidate`, `review_required` luon xem tay, `protected` luon
+giu. Tai lieu boundary: `docs/FILE_CLEANUP_RULES.md`. Verify: Behavior 18/18,
+Tool 48/48, Full System 39/39.
+
 **thay doi (2026-06-27) Phase 7 backend REQ#1 + REQ#2:** System Advisor
 them `explanation` cho moi recommendation va `disk_full_reason` o cap ket qua.
 Natural Command them public API `answer_user_question(text) -> dict`, schema

@@ -11,15 +11,54 @@ file operation still goes through the guarded selection/dry-run/token flows.
 from __future__ import annotations
 
 import time
+from pathlib import Path
 from typing import Any
 
 from config.settings import (
+    DEFAULT_LARGE_FILE_MB,
+    DEFAULT_RESULT_LIMIT,
+    DEFAULT_SCAN_FOLDER,
     STARTUP_AUTO_SCAN_ON_BOOT,
     STARTUP_DELAY_SECONDS,
     STARTUP_OPEN_UI,
     STARTUP_SCAN_MODE,
 )
 from tools.core.assistant_logger import log_action
+
+
+def run_periodic_scan(
+    *,
+    root_drive: str | Path = DEFAULT_SCAN_FOLDER,
+    scan_mode: str | None = None,
+    large_file_mb: int = DEFAULT_LARGE_FILE_MB,
+    result_limit: int = DEFAULT_RESULT_LIMIT,
+    previous_result: dict[str, Any] | None = None,
+    use_latest_baseline: bool = True,
+) -> dict[str, Any]:
+    """Run one scheduled read-only scan tick for the assistant UI."""
+    from tools.core.startup_scan import export_periodic_scan_report
+
+    export = export_periodic_scan_report(
+        root_drive=root_drive,
+        scan_mode=scan_mode,
+        large_file_mb=large_file_mb,
+        result_limit=result_limit,
+        previous_result=previous_result,
+        use_latest_baseline=use_latest_baseline,
+    )
+    notification = export["periodic"]["notification"]
+    log_action(
+        "boot_runner",
+        "run_periodic_scan",
+        "success",
+        {
+            "report": export.get("report"),
+            "new_issue_count": notification["new_issue_count"],
+            "highest_severity": notification["highest_severity"],
+            "file_operations_executed": False,
+        },
+    )
+    return export
 
 
 def run_boot(*, open_ui: bool | None = None) -> dict[str, Any]:

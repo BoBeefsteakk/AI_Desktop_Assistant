@@ -16,6 +16,9 @@ Controller), which keep dry-run + final token + Recycle Bin safety.
 
 from __future__ import annotations
 
+import hashlib
+import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -27,6 +30,7 @@ from config.settings import (
 )
 from tools.core.assistant_logger import log_action
 from tools.core.auto_scan_session import export_auto_scan_session_report
+from tools.core.issue_classifier import build_issue_classifier_result
 from tools.core.bot_controller import (
     FINAL_DELETE_TOKEN,
     build_bot_controller_result,
@@ -37,14 +41,17 @@ from tools.core.bot_controller import (
     print_delete_summary,
     print_selection_session,
 )
-from tools.core.report_manager import create_report
+from tools.core.report_manager import create_report, read_recent_report_index
 from tools.core.safety_utils import format_size
 from tools.storage.wiztree_adapter import is_wiztree_available
 
 
 STARTUP_SCAN_TOOL = "startup_scan"
 STARTUP_SCAN_SCHEMA = "startup_scan_v1"
+PERIODIC_SCAN_TOOL = "periodic_scan"
+PERIODIC_SCAN_SCHEMA = "periodic_scan_notification_v1"
 RESOLVABLE_MODES = {"auto", "light", "python", "wiztree"}
+SEVERITY_ORDER = {"critical": 4, "warning": 3, "info": 2, "unknown": 1, "none": 0}
 
 
 def resolve_scan_mode(scan_mode: str | None = None) -> str:
@@ -91,6 +98,149 @@ def build_advisory(bot_result: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def build_issue_fingerprint(issue: dict[str, Any]) -> str:
+    path = str(issue.get("path") or "").strip().replace("\\", "/").rstrip("/").lower()
+    matched_rule = str(issue.get("matched_rule") or "")
+    identity_parts = [
+        str(issue.get("category") or "unknown"),
+        path,
+        matched_rule,
+    ]
+    if not path and not matched_rule:
+        identity_parts.append(str(issue.get("title") or ""))
+    identity = "|".join(identity_parts)
+    return hashlib.sha256(identity.encode("utf-8")).hexdigest()[:16]
+
+
+def get_highest_severity(items: list[dict[str, Any]]) -> str:
+    if not items:
+        return "none"
+    return max(
+        (str(item.get("severity") or "unknown") for item in items),
+        key=lambda severity: SEVERITY_ORDER.get(severity, 1),
+    )
+
+
+def build_periodic_issue_snapshot(classifier: dict[str, Any]) -> dict[str, Any]:
+    items = []
+    severity_counts: dict[str, int] = {}
+    for issue in classifier.get("issues", []):
+        severity = str(issue.get("severity") or "unknown")
+        severity_counts[severity] = severity_counts.get(severity, 0) + 1
+        items.append({
+            "fingerprint": build_issue_fingerprint(issue),
+            "issue_id": issue.get("issue_id"),
+            "severity": severity,
+            "category": issue.get("category"),
+            "title": issue.get("title"),
+            "path": issue.get("path"),
+            "size": issue.get("size"),
+            "size_text": issue.get("size_text"),
+            "recommended_decision": issue.get("recommended_decision"),
+            "risk": issue.get("risk"),
+            "reason": issue.get("reason"),
+        })
+
+    return {
+        "issue_count": len(items),
+        "highest_severity": get_highest_severity(items),
+        "severity_counts": severity_counts,
+        "items": items,
+    }
+
+
+def extract_periodic_issue_snapshot(result: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not isinstance(result, dict):
+        return None
+    if isinstance(result.get("periodic"), dict):
+        result = result["periodic"]
+    if result.get("schema") == PERIODIC_SCAN_SCHEMA:
+        result = result.get("scan", {})
+    snapshot = result.get("issue_snapshot")
+    return snapshot if isinstance(snapshot, dict) else None
+
+
+def build_periodic_notification_payload(
+    current_startup_result: dict[str, Any],
+    previous_result: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    current_snapshot = extract_periodic_issue_snapshot(current_startup_result) or {
+        "issue_count": 0,
+        "highest_severity": "none",
+        "severity_counts": {},
+        "items": [],
+    }
+    previous_snapshot = extract_periodic_issue_snapshot(previous_result)
+    baseline_available = previous_snapshot is not None
+
+    current_items = current_snapshot.get("items", [])
+    previous_items = previous_snapshot.get("items", []) if previous_snapshot else []
+    previous_by_fingerprint = {
+        item.get("fingerprint"): item
+        for item in previous_items
+        if item.get("fingerprint")
+    }
+    current_by_fingerprint = {
+        item.get("fingerprint"): item
+        for item in current_items
+        if item.get("fingerprint")
+    }
+
+    new_issues = (
+        [item for fingerprint, item in current_by_fingerprint.items() if fingerprint not in previous_by_fingerprint]
+        if baseline_available
+        else []
+    )
+    resolved_issues = (
+        [item for fingerprint, item in previous_by_fingerprint.items() if fingerprint not in current_by_fingerprint]
+        if baseline_available
+        else []
+    )
+    highest_new = get_highest_severity(new_issues)
+    highest_current = str(current_snapshot.get("highest_severity") or "none")
+
+    if not baseline_available:
+        title = "Da tao moc quet dinh ky"
+        message = f"AI da ghi nhan {len(current_items)} van de hien tai lam baseline; chua co van de moi de bao."
+    elif new_issues:
+        title = f"AI tim thay {len(new_issues)} van de moi"
+        message = f"Muc do cao nhat: {highest_new}. Bam vao thong bao de xem danh sach; chua co file nao bi thay doi."
+    else:
+        title = "Khong co van de moi"
+        message = f"AI dang theo doi {len(current_items)} van de hien tai; khong xoa hoac move file."
+
+    return {
+        "schema": PERIODIC_SCAN_SCHEMA,
+        "status": "ready",
+        "created_at": datetime.now().isoformat(timespec="seconds"),
+        "scan": current_startup_result,
+        "notification": {
+            "title": title,
+            "message": message,
+            "should_notify": baseline_available and bool(new_issues),
+            "baseline_available": baseline_available,
+            "new_issue_count": len(new_issues),
+            "resolved_issue_count": len(resolved_issues),
+            "current_issue_count": len(current_items),
+            "highest_severity": highest_new if new_issues else highest_current,
+            "highest_new_severity": highest_new,
+            "highest_current_severity": highest_current,
+            "severity_counts": current_snapshot.get("severity_counts", {}),
+            "new_issues": new_issues,
+            "resolved_issues": resolved_issues,
+        },
+        "safety_contract": {
+            "read_only": True,
+            "executes_file_operations": False,
+            "changes_user_files": False,
+            "delete_enabled": False,
+            "move_enabled": False,
+            "backup_enabled": False,
+            "notification_only": True,
+        },
+    }
+
+
 def build_startup_scan_result(
     *,
     root_drive: str | Path = DEFAULT_SCAN_FOLDER,
@@ -125,6 +275,12 @@ def build_startup_scan_result(
     snapshot = auto_scan.get("snapshot", {})
     storage = snapshot.get("storage", {})
     processes = snapshot.get("processes", {})
+    issue_classifier = build_issue_classifier_result(
+        auto_scan_result=auto_scan,
+        include_items=True,
+        create_fallback_scan=False,
+    )
+    issue_snapshot = build_periodic_issue_snapshot(issue_classifier)
 
     bot_result = build_bot_controller_result(include_items=True)
     advisory = build_advisory(bot_result)
@@ -153,6 +309,8 @@ def build_startup_scan_result(
         "root_drive": str(root_drive),
         "auto_scan_report": auto_scan_report,
         "snapshot_summary": snapshot_summary,
+        "issue_classifier_summary": issue_classifier.get("summary", {}),
+        "issue_snapshot": issue_snapshot,
         "advisory": advisory,
         "bot_summary": bot_result["summary"],
         "decision_screen": bot_result["decision_screen"],
@@ -163,6 +321,110 @@ def build_startup_scan_result(
             "delete_requires_final_token": True,
             "final_delete_token": FINAL_DELETE_TOKEN,
         },
+    }
+
+
+def load_latest_periodic_scan_result(limit: int = 500) -> dict[str, Any] | None:
+    for record in reversed(read_recent_report_index(limit=limit)):
+        if record.get("tool") != PERIODIC_SCAN_TOOL:
+            continue
+        report_path = record.get("report_path")
+        if not report_path:
+            continue
+        try:
+            with Path(report_path).open("r", encoding="utf-8") as file:
+                report_data = json.load(file)
+        except (OSError, json.JSONDecodeError):
+            continue
+        result = report_data.get("results") if isinstance(report_data, dict) else None
+        if isinstance(result, dict) and result.get("schema") == PERIODIC_SCAN_SCHEMA:
+            return result
+    return None
+
+
+def build_periodic_scan_result(
+    *,
+    root_drive: str | Path = DEFAULT_SCAN_FOLDER,
+    scan_mode: str | None = None,
+    large_file_mb: int = DEFAULT_LARGE_FILE_MB,
+    result_limit: int = DEFAULT_RESULT_LIMIT,
+    previous_result: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    current = build_startup_scan_result(
+        root_drive=root_drive,
+        scan_mode=scan_mode,
+        large_file_mb=large_file_mb,
+        result_limit=result_limit,
+        export_scan_report=False,
+    )
+    return build_periodic_notification_payload(current, previous_result)
+
+
+def export_periodic_scan_report(
+    *,
+    root_drive: str | Path = DEFAULT_SCAN_FOLDER,
+    scan_mode: str | None = None,
+    large_file_mb: int = DEFAULT_LARGE_FILE_MB,
+    result_limit: int = DEFAULT_RESULT_LIMIT,
+    previous_result: dict[str, Any] | None = None,
+    use_latest_baseline: bool = True,
+) -> dict[str, Any]:
+    baseline = previous_result
+    if baseline is None and use_latest_baseline:
+        baseline = load_latest_periodic_scan_result()
+
+    result = build_periodic_scan_result(
+        root_drive=root_drive,
+        scan_mode=scan_mode,
+        large_file_mb=large_file_mb,
+        result_limit=result_limit,
+        previous_result=baseline,
+    )
+    notification = result["notification"]
+    report = create_report(
+        tool_name=PERIODIC_SCAN_TOOL,
+        action="periodic_read_only_scan",
+        status="success",
+        risk_level="safe",
+        input_data={
+            "root_drive": str(root_drive),
+            "scan_mode": result["scan"]["scan_mode"],
+            "large_file_mb": large_file_mb,
+            "result_limit": result_limit,
+            "baseline_available": notification["baseline_available"],
+        },
+        results=result,
+        recommendations=[
+            "Periodic scan only reports new issues; it never deletes, moves or backs up files.",
+            "Open the assistant UI to review new issues before choosing any action.",
+        ],
+        summary={
+            "current_issue_count": notification["current_issue_count"],
+            "new_issue_count": notification["new_issue_count"],
+            "resolved_issue_count": notification["resolved_issue_count"],
+            "highest_severity": notification["highest_severity"],
+            "should_notify": notification["should_notify"],
+            "file_operations_executed": False,
+            "undo_available": False,
+        },
+        undo_available=False,
+        tags=["periodic_scan", "notification", "startup_scan", "read_only"],
+    )
+    log_action(
+        PERIODIC_SCAN_TOOL,
+        "export_periodic_scan_report",
+        "success",
+        {
+            "report": str(report),
+            "new_issue_count": notification["new_issue_count"],
+            "highest_severity": notification["highest_severity"],
+            "file_operations_executed": False,
+        },
+    )
+    return {
+        "status": "success",
+        "report": str(report),
+        "periodic": result,
     }
 
 

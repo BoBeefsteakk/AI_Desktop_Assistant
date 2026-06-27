@@ -93,6 +93,8 @@ cảnh báo đổi API giữa Codex và Claude. Worklog vẫn dùng cho trạng 
 
 <!-- WORKLOG: thêm dòng mới ngay dưới đây -->
 
+- [2026-06-27 13:04] codex | codex/phase7-req3-5 | DONE | **thay doi** REQ#3 periodic schema/API, REQ#4 reason_text, REQ#5 cleanup rules/doc; Behavior 18/18, Tool 48/48, Full System 39/39
+- [2026-06-27 12:49] codex | codex/phase7-req3-5 | START | **thay doi** REQ#3 periodic read-only scan, REQ#4 selection reason_text, REQ#5 cleanup rule boundary; không sửa `tools/ui/`
 - [2026-06-27 09:41] codex | codex/backend-collab-bridge | DONE | **thay doi** REQ#1 advisor explanations + disk_full_reason; REQ#2 answer_user_question read-only schema; Behavior 18/18, Tool 48/48, Full System 37/37
 - [2026-06-27 09:00] codex | codex/backend-collab-bridge | START | **thay doi** xử lý REQ#1 rồi REQ#2, giữ nguyên public UI API và safety invariants
 - [2026-06-27 02:10] codex | codex/backend-collab-bridge | DONE | tạo `.agents/AGENT_MAILBOX.md`, cập nhật COLLAB/PROJECT_STATUS, không sửa backend logic

@@ -6,8 +6,9 @@ from typing import Any
 
 from tools.core.assistant_logger import log_action
 from tools.core.auto_scan_session import AUTO_SCAN_SESSION_SCHEMA, build_auto_scan_session_result
+from tools.core.cleanup_rules import get_cleanup_recommendation
 from tools.core.report_manager import create_report, read_recent_report_index
-from tools.core.risk_classifier import PROTECTED, SAFE_DELETE, classify_file_risk
+from tools.core.risk_classifier import classify_file_risk
 from tools.core.safety_utils import format_size
 from tools.storage.system_advisor import (
     ARCHIVE_EXTENSIONS,
@@ -113,8 +114,9 @@ def classify_large_file(file_item: dict[str, Any], *, index: int) -> dict[str, A
     suffix = file_path.suffix.lower()
     size = int(file_item.get("size") or 0)
     risk = classify_file_risk(path)
+    cleanup_recommendation = get_cleanup_recommendation(risk)
 
-    if risk["risk"] == PROTECTED:
+    if cleanup_recommendation["recommended_decision"] == "keep":
         return make_issue(
             index=index,
             severity="info",
@@ -134,7 +136,7 @@ def classify_large_file(file_item: dict[str, Any], *, index: int) -> dict[str, A
             reason=risk["reason"],
         )
 
-    if risk["risk"] == SAFE_DELETE:
+    if cleanup_recommendation["recommended_decision"] == "delete_candidate":
         return make_issue(
             index=index,
             severity="warning",

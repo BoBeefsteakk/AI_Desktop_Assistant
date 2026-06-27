@@ -63,6 +63,7 @@ LATEST_REPORT_TOOLS = {
     "backup_adapter",
     "file_operation_adapter",
     "safe_delete_adapter",
+    "periodic_scan",
 }
 
 
@@ -222,6 +223,28 @@ def get_recommended_selection_decision(item: dict[str, Any], group_name: str) ->
     return mapping.get(plan_action, "manual_review")
 
 
+def build_selection_reason_text(item: dict[str, Any], group_name: str) -> str:
+    plan_action = str(item.get("plan_action") or "review_unknown")
+    risk = str(item.get("risk") or "")
+    candidate_group = str(item.get("candidate_group") or "").lower()
+
+    if group_name == "do_not_touch" or risk == "protected" or plan_action == "keep":
+        return "Khong duoc thay doi vi muc nay thuoc vung bao ve hoac da duoc dat chinh sach giu."
+    if plan_action == "delete_candidate":
+        if risk == "safe_delete" or "safe_delete" in candidate_group:
+            return "File tam/cache duoc xep safe_delete; chi dua vao Recycle Bin sau preview va xac nhan."
+        return "Moi la de xuat xoa; Safe Delete Adapter phai phan loai lai va co the chan muc nay."
+    if plan_action == "backup_first":
+        return "Can copy backup truoc vi file co the la project, tai lieu, archive hoac du lieu con gia tri."
+    if plan_action == "move_later":
+        return "Co the chuyen de giai phong dung luong, nhung ban phai chon dich va co manifest khoi phuc."
+    if plan_action == "manual_review":
+        if "project" in candidate_group:
+            return "Can xem tay vi day co the la file project; khong du dieu kien xoa an toan."
+        return "Can xem tay vi chua du bang chung de xoa hoac move an toan."
+    return "Chua co hanh dong an toan mac dinh; hay giu file va xem chi tiet truoc."
+
+
 def make_selection_item(
     item: dict[str, Any],
     *,
@@ -235,6 +258,7 @@ def make_selection_item(
         "selection_group": group_name,
         "allowed_decisions": allowed_decisions,
         "recommended_decision": get_recommended_selection_decision(item, group_name),
+        "reason_text": build_selection_reason_text(item, group_name),
         "locked": group_name == "do_not_touch",
         "execution_enabled": False,
     }
