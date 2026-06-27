@@ -40,6 +40,7 @@ from tools.core.issue_classifier import export_issue_classifier_report
 from tools.core.report_manager import read_recent_report_index
 from tools.core.safety_utils import format_size
 from tools.search.natural_command import answer_user_question
+from tools.automation.boot_runner import run_periodic_scan
 from tools.core.undo_manager import restore_manifest
 from tools.storage.wiztree_adapter import is_wiztree_available
 
@@ -181,6 +182,7 @@ class BotPanel:
         self.view_mode_var = tk.StringVar(value="Đang xem: chưa quét")
         self.ask_question_var = tk.StringVar(value="")
         self.cleanup_banner_var = tk.StringVar(value="Chưa quét. Bấm 'Kiểm tra máy thật' để AI tìm file rác.")
+        self.periodic_notice_var = tk.StringVar(value="Theo dõi định kỳ: bấm 'Kiểm tra vấn đề mới' để AI so với lần trước.")
         self.confirm_backup_var = tk.BooleanVar(value=False)
         self.confirm_move_var = tk.BooleanVar(value=False)
         self.confirm_delete_var = tk.BooleanVar(value=False)
@@ -311,6 +313,20 @@ class BotPanel:
         ttk.Button(quick, text="Xem thử (file giả)", command=self.create_demo_and_scan, bootstyle="success-outline").pack(fill=X, pady=(0, 6))
         ttk.Button(quick, text="Chạy demo toàn bộ", command=self.run_full_demo_flow, bootstyle="info-outline").pack(fill=X, pady=(0, 6))
         ttk.Button(quick, text="Xem chi tiết kỹ thuật", command=self.open_advanced_tab, bootstyle="secondary-outline").pack(fill=X)
+
+        notice = ttk.LabelFrame(parent, text="Theo dõi định kỳ", padding=10)
+        notice.pack(side=TOP, fill=X, pady=(14, 0))
+        ttk.Button(
+            notice, text="Kiểm tra vấn đề mới", command=self.check_periodic_issues, bootstyle="info-outline"
+        ).pack(side=RIGHT, padx=(8, 0))
+        self.periodic_notice_label = ttk.Label(
+            notice,
+            textvariable=self.periodic_notice_var,
+            style="AssistantCount.TLabel",
+            bootstyle="secondary",
+            wraplength=1000,
+        )
+        self.periodic_notice_label.pack(side=LEFT, fill=X, expand=True)
 
         banner = ttk.LabelFrame(parent, text="Dọn dẹp 1 chạm", padding=10)
         banner.pack(side=TOP, fill=X, pady=(14, 0))
@@ -1139,6 +1155,31 @@ class BotPanel:
                 lines.append(f"- {rec.get('title')}: {detail}")
         self.write_text(self.ask_answer_text, "\n".join(lines))
         self.set_status("AI đã trả lời câu hỏi.")
+
+    def check_periodic_issues(self) -> None:
+        """Quét read-only định kỳ, so với lần trước để báo vấn đề mới."""
+        root_path = self.scan_path_var.get().strip() or DEFAULT_SCAN_FOLDER
+        self.periodic_notice_var.set("Đang kiểm tra vấn đề mới...")
+
+        def worker() -> dict[str, Any]:
+            return run_periodic_scan(root_drive=root_path, use_latest_baseline=True)
+
+        self.run_background("Kiểm tra định kỳ", worker, self.load_periodic_result)
+
+    def load_periodic_result(self, export: dict[str, Any]) -> None:
+        notification = export.get("periodic", {}).get("notification", {})
+        title = notification.get("title", "Đã kiểm tra")
+        message = notification.get("message", "")
+        self.periodic_notice_var.set(f"{title}. {message}")
+        if notification.get("should_notify"):
+            self.periodic_notice_label.configure(bootstyle="warning")
+            self.set_status(f"Có {notification.get('new_issue_count', 0)} vấn đề mới.")
+        elif notification.get("baseline_available"):
+            self.periodic_notice_label.configure(bootstyle="success")
+            self.set_status("Không có vấn đề mới.")
+        else:
+            self.periodic_notice_label.configure(bootstyle="secondary")
+            self.set_status("Đã tạo mốc theo dõi định kỳ.")
 
     # ----- Dọn nhanh: chọn Xóa hoặc Giữ cho từng file rác -----
 
