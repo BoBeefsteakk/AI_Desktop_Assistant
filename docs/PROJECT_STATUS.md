@@ -10,6 +10,8 @@ noi dung can don. Toan bo luong moi la read-only, khong xoa/move file va khong
 doi chu ky public UI dang goi. Verify: Behavior Tester 18/18, Tool Tester
 48/48, Full System Tester 37/37.
 
+**thay doi (2026-06-27) Phase 7 Buoc 1 - Don nhanh inline (branch `claude/ui-inline-delete`):** Them panel "Don nhanh - chon muc roi bam Xoa hoac Giu" tren tab Tro ly cua `tools/ui/bot_panel.py`. Liet ke chi cac file rac AI THUC SU khuyen nghi xoa (`recommended_decision == "delete_candidate"`, tuc risk safe_delete), user chon dong roi bam [Xoa muc da chon] (1 popup xac nhan) hoac [Giu muc da chon]. Nut Xoa chay y het luong safe-delete cu: dry-run -> apply token `DELETE_SELECTION_V1` -> Recycle Bin, sau do tu quet lai. Backend GIU NGUYEN (UI chi goi `export_safe_delete_selection_flow_report`). Da test end-to-end tren file gia: file vao Recycle Bin OK. Tool Tester 48/48, Full System Tester 37/37.
+
 **thay doi (2026-06-27) Codex x Claude collaboration bridge:** Da tao branch
 `codex/backend-collab-bridge`, doc lai `AGENTS.md`, `CLAUDE.md`,
 `docs/COLLAB.md`, `docs/PROJECT_STATUS.md`, `docs/ROADMAP.md`, va them mailbox

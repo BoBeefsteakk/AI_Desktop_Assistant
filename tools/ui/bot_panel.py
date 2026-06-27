@@ -157,6 +157,8 @@ class BotPanel:
         self.last_move_manifest: str | None = None
         self.latest_report_path: str | None = None
         self.last_scan_data: dict[str, Any] | None = None
+        self.quick_item_by_id: dict[str, dict[str, Any]] = {}
+        self.quick_kept_ids: set[str] = set()
         self.last_backup_dry_run_signature: tuple[tuple[str, str], ...] | None = None
         self.last_dry_run_signature: tuple[tuple[str, str], ...] | None = None
         self.last_move_dry_run_signature: tuple[tuple[str, str], ...] | None = None
@@ -351,6 +353,46 @@ class BotPanel:
         health_scroll.configure(command=self.health_text.yview)
         self.health_text.configure(state="disabled")
         self.write_text(self.health_text, "Đang chờ lần quét đầu tiên... AI sẽ tự kiểm tra ổ cứng khi mở app.")
+
+        quick = ttk.LabelFrame(parent, text="Dọn nhanh — chọn mục rồi bấm Xóa hoặc Giữ", padding=8)
+        quick.pack(side=TOP, fill=X, pady=(0, 10))
+        ttk.Label(
+            quick,
+            text="Đây là các file rác AI thấy an toàn để dọn. Chọn 1 hoặc nhiều dòng, rồi bấm Xóa (đưa vào Recycle Bin) hoặc Giữ.",
+            style="Guide.TLabel",
+            wraplength=900,
+        ).pack(anchor="w", pady=(0, 6))
+
+        quick_body = ttk.Frame(quick)
+        quick_body.pack(side=TOP, fill=X)
+        quick_scroll = ttk.Scrollbar(quick_body, orient=tk.VERTICAL)
+        quick_scroll.pack(side=RIGHT, fill=Y)
+        quick_columns = ("size", "name", "path")
+        self.quick_tree = ttk.Treeview(
+            quick_body,
+            columns=quick_columns,
+            show="headings",
+            selectmode="extended",
+            height=7,
+            yscrollcommand=quick_scroll.set,
+        )
+        for col, head, width, stretch in (
+            ("size", "Dung lượng", 100, False),
+            ("name", "Tên file", 220, False),
+            ("path", "Đường dẫn", 640, True),
+        ):
+            self.quick_tree.heading(col, text=head)
+            self.quick_tree.column(col, width=width, stretch=stretch)
+        self.quick_tree.pack(side=LEFT, fill=X, expand=True)
+        quick_scroll.configure(command=self.quick_tree.yview)
+
+        quick_buttons = ttk.Frame(quick)
+        quick_buttons.pack(side=TOP, fill=X, pady=(8, 0))
+        ttk.Button(quick_buttons, text="Chọn tất cả", command=self.quick_select_all, bootstyle="secondary-outline").pack(side=LEFT, padx=(0, 6))
+        ttk.Button(quick_buttons, text="Mở thư mục", command=self.quick_open_selected, bootstyle="secondary-outline").pack(side=LEFT, padx=(0, 6))
+        ttk.Button(quick_buttons, text="Giữ mục đã chọn", command=self.quick_keep_selected, bootstyle=SUCCESS).pack(side=RIGHT)
+        ttk.Button(quick_buttons, text="Xóa mục đã chọn", command=self.quick_delete_selected, bootstyle=DANGER).pack(side=RIGHT, padx=(0, 6))
+        self.write_quick_placeholder()
 
         bottom_frame = ttk.Frame(parent)
         bottom_frame.configure(height=ASSISTANT_RESULT_PANEL_MIN_HEIGHT_PX)
@@ -840,6 +882,7 @@ class BotPanel:
         self.update_summary()
         self.update_reports_text()
         self.update_health_panel()
+        self.populate_quick_actions()
         self.write_assistant_log(
             "Đã quét xong.\n\n"
             f"Scan report:\n{self.last_scan_report or '-'}\n\n"
@@ -1021,6 +1064,168 @@ class BotPanel:
 
         self.write_text(self.health_text, "\n".join(lines))
 
+    # ----- Dọn nhanh: chọn Xóa hoặc Giữ cho từng file rác -----
+
+    def write_quick_placeholder(self, message: str | None = None) -> None:
+        if not hasattr(self, "quick_tree"):
+            return
+        self.quick_tree.delete(*self.quick_tree.get_children())
+        self.quick_item_by_id = {}
+        text = message or "Chưa có dữ liệu. Bấm 'Kiểm tra máy thật' để AI tìm file rác."
+        self.quick_tree.insert("", END, iid="__placeholder__", values=("", "", text))
+
+    def populate_quick_actions(self) -> None:
+        if not hasattr(self, "quick_tree"):
+            return
+        self.quick_tree.delete(*self.quick_tree.get_children())
+        self.quick_item_by_id = {}
+        if not self.selection_session:
+            self.write_quick_placeholder()
+            return
+
+        rows = 0
+        for item in self.iter_selection_items():
+            if item.get("locked"):
+                continue
+            selection_id = item.get("selection_id")
+            if not selection_id or selection_id in self.quick_kept_ids:
+                continue
+            # Chỉ liệt kê file AI THỰC SỰ khuyến nghị xóa (file rác, risk safe_delete),
+            # không phải mọi item tình cờ cho phép xóa như một lựa chọn.
+            if item.get("recommended_decision") != "delete_candidate":
+                continue
+            if "delete_candidate" not in item.get("allowed_decisions", []):
+                continue
+            if not item.get("path"):
+                continue
+            self.quick_item_by_id[selection_id] = item
+            self.quick_tree.insert(
+                "",
+                END,
+                iid=selection_id,
+                values=(
+                    item.get("size_text") or "-",
+                    item.get("name") or "-",
+                    item.get("path") or "-",
+                ),
+            )
+            rows += 1
+
+        if rows == 0:
+            self.write_quick_placeholder("Không tìm thấy file rác nào đủ an toàn để dọn tự động. Mọi thứ ổn!")
+
+    def quick_selected_ids(self) -> list[str]:
+        return [
+            iid for iid in self.quick_tree.selection()
+            if iid in self.quick_item_by_id
+        ]
+
+    def quick_select_all(self) -> None:
+        ids = list(self.quick_item_by_id.keys())
+        if ids:
+            self.quick_tree.selection_set(ids)
+
+    def quick_open_selected(self) -> None:
+        ids = self.quick_selected_ids()
+        if not ids:
+            messagebox.showinfo("Chưa chọn", "Hãy chọn một dòng trước.")
+            return
+        item = self.quick_item_by_id.get(ids[0])
+        path = item.get("path") if item else None
+        if not path:
+            return
+        target = Path(path)
+        if target.exists() and target.is_file():
+            subprocess.Popen(["explorer", "/select,", str(target)])
+        elif target.parent.exists():
+            self.open_path(target.parent)
+        else:
+            messagebox.showwarning("Không tìm thấy", f"Đường dẫn không còn tồn tại:\n{target}")
+
+    def quick_keep_selected(self) -> None:
+        ids = self.quick_selected_ids()
+        if not ids:
+            messagebox.showinfo("Chưa chọn", "Hãy chọn mục muốn giữ.")
+            return
+        for selection_id in ids:
+            self.quick_kept_ids.add(selection_id)
+            self.decisions[selection_id] = "keep"
+        self.populate_quick_actions()
+        self.update_summary()
+        self.set_status(f"Đã giữ {len(ids)} mục; AI sẽ không đụng tới.")
+
+    def quick_delete_selected(self) -> None:
+        if not self.selection_session:
+            messagebox.showinfo("Chưa quét", "Hãy bấm 'Kiểm tra máy thật' trước.")
+            return
+        ids = self.quick_selected_ids()
+        if not ids:
+            messagebox.showinfo("Chưa chọn", "Hãy chọn ít nhất một file để xóa.")
+            return
+
+        total_size = sum(int(self.quick_item_by_id[i].get("size") or 0) for i in ids)
+        confirmed = messagebox.askyesno(
+            "Xác nhận xóa",
+            f"Đưa {len(ids)} file vào Recycle Bin (có thể khôi phục), tổng ~{format_size(total_size)}.\n\n"
+            "AI chỉ xóa file đủ an toàn; file cần xem tay sẽ bị bỏ qua.\nTiếp tục?",
+        )
+        if not confirmed:
+            return
+
+        decisions = {selection_id: "delete_candidate" for selection_id in ids}
+        session = self.selection_session
+
+        def worker() -> dict[str, Any]:
+            dry = export_safe_delete_selection_flow_report(
+                decisions,
+                mode="dry_run",
+                final_token=None,
+                session=session,
+                note="Bot Panel quick-delete dry-run",
+                extra_tags=["bot_panel_ui", "quick_delete"],
+            )
+            deletable = dry["flow"]["summary"].get("deletable_count", 0)
+            errors = dry["flow"]["summary"].get("delete_error_count", 0)
+            applied = None
+            if deletable > 0 and errors == 0:
+                applied = export_safe_delete_selection_flow_report(
+                    decisions,
+                    mode="apply",
+                    final_token=FINAL_DELETE_TOKEN,
+                    session=session,
+                    note="Bot Panel quick-delete apply",
+                    extra_tags=["bot_panel_ui", "quick_delete"],
+                )
+            return {"requested": len(ids), "dry": dry, "applied": applied}
+
+        self.run_background("Dọn nhanh", worker, self.load_quick_delete_result)
+
+    def load_quick_delete_result(self, result: dict[str, Any]) -> None:
+        applied = result.get("applied")
+        dry = result.get("dry", {})
+        requested = result.get("requested", 0)
+        if applied is None:
+            blocked = dry.get("flow", {}).get("summary", {}).get("delete_blocked_count", 0)
+            self.set_status("Dọn nhanh: không có file đủ điều kiện xóa.")
+            messagebox.showinfo(
+                "Không xóa được",
+                f"Trong {requested} mục, không có mục nào đủ an toàn để xóa "
+                f"(bị chặn: {blocked}). AI giữ nguyên tất cả.",
+            )
+            return
+        summary = applied.get("flow", {}).get("summary", {})
+        deleted = summary.get("deleted_count", 0)
+        blocked = summary.get("delete_blocked_count", 0)
+        self.last_flow_report = applied.get("report") or self.last_flow_report
+        self.update_reports_text()
+        self.set_status(f"Đã xóa {deleted} file vào Recycle Bin.")
+        messagebox.showinfo(
+            "Đã dọn xong",
+            f"Đã đưa {deleted} file vào Recycle Bin (có thể khôi phục).\n"
+            f"Bị chặn an toàn: {blocked}.\n\nĐang quét lại để cập nhật danh sách...",
+        )
+        self.root.after(300, self.run_scan_and_classify)
+
     def refresh_from_latest(self) -> None:
         def worker() -> dict[str, Any]:
             bot = build_bot_controller_result(include_items=True)
@@ -1042,10 +1247,12 @@ class BotPanel:
         if self.is_demo_scan_path():
             self.group_filter_var.set("all")
             self.decision_filter_var.set("all")
+        self.quick_kept_ids = set()
         self.populate_table()
         self.update_summary()
         self.update_reports_text()
         self.update_health_panel()
+        self.populate_quick_actions()
 
     def populate_table(self) -> None:
         self.tree.delete(*self.tree.get_children())
