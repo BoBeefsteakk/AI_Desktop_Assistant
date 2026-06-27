@@ -92,6 +92,22 @@ def get_disk_health_snapshot() -> dict[str, Any]:
     }
 
 
+def build_recommendation_explanation(recommendation: dict[str, Any]) -> str:
+    tool_id = recommendation.get("suggested_tool_id")
+    action_by_tool = {
+        "large_file_finder": "mo danh sach file lon va chi chon file chac chan khong con can.",
+        "folder_size_analyzer": "xem cac thu muc lon nhat truoc khi quyet dinh don.",
+        "download_organizer": "sap xep Downloads, bo qua file dang tai va giu file con dung.",
+        "media_organizer": "gom media vao thu muc rieng hoac chuyen sang o luu tru neu can.",
+        "process_monitor": "xem process dang ton RAM/CPU va chi tat app biet chac khong dang dung.",
+        "disk_checker": "kiem tra lai suc khoe o va backup du lieu quan trong truoc.",
+        "external_apps_manager": "cap nhat duong dan app ngoai de cac tool doc thong tin chinh xac hon.",
+        "audit_center": "mo Audit Center de xem report gan day truoc khi chay tiep.",
+    }
+    action = action_by_tool.get(tool_id, "xem lai muc nay va quyet dinh thu cong, khong tu xoa.")
+    return f"Vi sao: {recommendation['detail']} Nen lam: {action}"
+
+
 def make_recommendation(
     recommendation_id: str,
     severity: str,
@@ -103,7 +119,7 @@ def make_recommendation(
 ) -> dict[str, Any]:
     capability = get_capability_by_id(suggested_tool_id) if suggested_tool_id else None
 
-    return {
+    recommendation = {
         "id": recommendation_id,
         "severity": severity,
         "title": title,
@@ -114,6 +130,98 @@ def make_recommendation(
         "suggested_tool_risk": capability["risk_level"] if capability else None,
         "suggested_tool_needs_confirmation": capability["needs_confirmation"] if capability else None,
         "suggestion_only": True,
+    }
+    recommendation["explanation"] = build_recommendation_explanation(recommendation)
+    return recommendation
+
+
+def build_disk_full_reason(snapshot: dict[str, Any]) -> dict[str, Any]:
+    disks = snapshot.get("disk", {}).get("disks", [])
+    storage = snapshot.get("storage", {})
+    top_folders = storage.get("top_folders", [])
+    large_files = storage.get("large_files", [])
+
+    watched_disks = [
+        disk for disk in disks
+        if disk.get("status") in {"critical", "warning"}
+    ]
+    primary_disk = watched_disks[0] if watched_disks else (disks[0] if disks else {})
+    status = primary_disk.get("status") or "unknown"
+    mountpoint = primary_disk.get("mountpoint") or primary_disk.get("device") or snapshot.get("root_drive")
+    percent = primary_disk.get("percent")
+    free = format_size(primary_disk.get("free", 0)) if primary_disk else "unknown"
+
+    contributors: list[dict[str, Any]] = []
+    for folder in top_folders[:5]:
+        contributors.append({
+            "type": "folder",
+            "path": folder.get("path"),
+            "size": folder.get("size", 0),
+            "size_text": format_size(folder.get("size", 0)),
+            "source": folder.get("source", "storage"),
+        })
+    for file_item in large_files[:5]:
+        contributors.append({
+            "type": "file",
+            "path": file_item.get("path"),
+            "size": file_item.get("size", 0),
+            "size_text": format_size(file_item.get("size", 0)),
+            "source": file_item.get("source", "large_file_finder"),
+        })
+
+    downloads = next(
+        (
+            item for item in top_folders
+            if "downloads" in str(item.get("path", "")).lower()
+        ),
+        None,
+    )
+    biggest_folder = top_folders[0] if top_folders else None
+    biggest_file = large_files[0] if large_files else None
+
+    reason_parts = []
+    if percent is not None:
+        reason_parts.append(f"{mountpoint} dang dung {percent}% va con trong {free}.")
+    elif mountpoint:
+        reason_parts.append(f"{mountpoint} can duoc kiem tra dung luong.")
+    else:
+        reason_parts.append("Chua co du lieu o dia du de ket luan.")
+
+    if downloads:
+        reason_parts.append(
+            f"Downloads chiem {format_size(downloads.get('size', 0))}, nen day la diem can xem dau tien."
+        )
+    elif biggest_folder:
+        reason_parts.append(
+            f"Thu muc lon nhat la {biggest_folder.get('path')} ({format_size(biggest_folder.get('size', 0))})."
+        )
+
+    if biggest_file:
+        reason_parts.append(
+            f"File lon nhat thay duoc la {biggest_file.get('path')} ({format_size(biggest_file.get('size', 0))})."
+        )
+
+    if not top_folders and not large_files:
+        reason_parts.append("Snapshot hien tai chua co danh sach folder/file lon.")
+
+    action_text = (
+        "Nen xem top folder/file lon, uu tien Downloads/installer/archive cu, "
+        "sau do chi dua vao flow backup/move/safe-delete co preview va xac nhan."
+    )
+
+    return {
+        "status": status,
+        "primary_disk": {
+            "device": primary_disk.get("device"),
+            "mountpoint": mountpoint,
+            "percent": percent,
+            "free": primary_disk.get("free"),
+            "free_text": free,
+        },
+        "reason_text": " ".join(reason_parts),
+        "action_text": action_text,
+        "contributors": contributors,
+        "read_only": True,
     }
 
 
@@ -453,12 +561,14 @@ def build_system_advisor_result(
         audit_snapshot=audit_snapshot,
     )
     recommendation_summary = summarize_recommendations(recommendations)
+    disk_full_reason = build_disk_full_reason(snapshot)
 
     return {
         "snapshot": snapshot,
         "recommendations": recommendations,
         "recommendation_text": format_recommendations(recommendations),
         "recommendation_summary": recommendation_summary,
+        "disk_full_reason": disk_full_reason,
     }
 
 
@@ -525,8 +635,15 @@ def show_system_advisor_result(result: dict[str, Any]) -> None:
     print_divider()
     print("ADVISOR RECOMMENDATIONS V2")
     print_divider()
+    disk_full_reason = result.get("disk_full_reason", {})
+    if disk_full_reason.get("reason_text"):
+        print(f"Vi sao o day: {disk_full_reason['reason_text']}")
+        print(f"Nen lam: {disk_full_reason.get('action_text', '')}")
+        print()
     for index, recommendation in enumerate(recommendations, start=1):
         print(f"{index}. {recommendation_to_text(recommendation)}")
+        if recommendation.get("explanation"):
+            print(f"   {recommendation['explanation']}")
 
 
 def run_system_advisor() -> None:

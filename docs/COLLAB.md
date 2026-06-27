@@ -86,8 +86,17 @@ Quy ước tên branch: `claude/...` và `codex/...` để nhìn là biết củ
 Mỗi agent ghi 1 dòng trước khi bắt đầu và sau khi xong. Mới nhất ở trên cùng.
 Format: `[YYYY-MM-DD HH:MM] <agent> | <branch> | <trạng thái> | <file/vùng đang đụng>`
 
+**thay doi (2026-06-27):** Kênh nhắn chung dài hơn Worklog là
+`.agents/AGENT_MAILBOX.md`. Dùng file này để lại câu hỏi, handoff ngắn, hoặc
+cảnh báo đổi API giữa Codex và Claude. Worklog vẫn dùng cho trạng thái bắt
+đầu/kết thúc phiên.
+
 <!-- WORKLOG: thêm dòng mới ngay dưới đây -->
 
+- [2026-06-27 09:41] codex | codex/backend-collab-bridge | DONE | **thay doi** REQ#1 advisor explanations + disk_full_reason; REQ#2 answer_user_question read-only schema; Behavior 18/18, Tool 48/48, Full System 37/37
+- [2026-06-27 09:00] codex | codex/backend-collab-bridge | START | **thay doi** xử lý REQ#1 rồi REQ#2, giữ nguyên public UI API và safety invariants
+- [2026-06-27 02:10] codex | codex/backend-collab-bridge | DONE | tạo `.agents/AGENT_MAILBOX.md`, cập nhật COLLAB/PROJECT_STATUS, không sửa backend logic
+- [2026-06-27 02:00] codex | codex/backend-collab-bridge | START | đọc AGENTS/COLLAB/CLAUDE, tạo mailbox chung, không sửa backend logic
 - [2026-06-25] claude | add-claude-md-and-marketing-skills | DONE | tạo AGENTS.md + docs/COLLAB.md, advisory dashboard UI
 - (Codex ghi dòng đầu tiên của mình ở đây)
 

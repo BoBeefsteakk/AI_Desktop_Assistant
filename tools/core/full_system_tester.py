@@ -619,10 +619,21 @@ def test_system_advisor_v2_contract() -> dict[str, Any]:
     assert_condition("large-archive-files" in recommendation_ids, "Advisor should flag large archive files.")
     assert_condition(summary["total"] == len(recommendations), "Advisor summary total should match recommendations.")
     assert_condition(result["snapshot"]["storage"]["provider"] == "python", "Advisor snapshot should keep storage provider.")
+    assert_condition(
+        all(isinstance(item.get("explanation"), str) and item["explanation"] for item in recommendations),
+        "Advisor recommendations should expose Vietnamese explanation text.",
+    )
+    assert_condition(
+        result["disk_full_reason"]["read_only"] is True
+        and isinstance(result["disk_full_reason"].get("reason_text"), str)
+        and result["disk_full_reason"]["contributors"],
+        "Advisor should expose read-only disk_full_reason summary.",
+    )
 
     return {
         "recommendation_ids": sorted(recommendation_ids),
         "summary": summary,
+        "disk_full_reason": result["disk_full_reason"],
     }
 
 
@@ -860,6 +871,7 @@ def test_natural_command_v3_queue_contract() -> dict[str, Any]:
         preview_decision = natural_command.resolve_command("xem goi y")
         open_decision = natural_command.resolve_command("lam goi y so 1")
         handled_decision = natural_command.resolve_command("danh dau muc 1 da xu ly")
+        question_decision = natural_command.resolve_command("tai sao o D day")
 
         assert_condition(
             preview_decision["type"] == "recommendation_queue_preview",
@@ -873,6 +885,37 @@ def test_natural_command_v3_queue_contract() -> dict[str, Any]:
             handled_decision["type"] == "recommendation_state_update"
             and handled_decision["state"] == "handled",
             "Natural Command v3 should resolve handled state update.",
+        )
+        assert_condition(
+            question_decision["type"] == "answer_question"
+            and question_decision["intent"] == "disk_full_reason",
+            "Natural Command should route disk-full questions to its read-only answer API.",
+        )
+
+        question_scan = build_auto_scan_session_result(
+            root_drive=str(sandbox),
+            top_folders=[{
+                "path": str(sandbox / "Downloads"),
+                "size": 4 * 1024 * 1024,
+                "source": "full_system_test",
+            }],
+            large_files=[{
+                "path": str(sandbox / "Downloads" / "archive.zip"),
+                "size": 3 * 1024 * 1024,
+                "source": "full_system_test",
+            }],
+        )
+        question_answer = natural_command.answer_user_question(
+            "tai sao o D day",
+            auto_scan_result=question_scan,
+        )
+        assert_condition(
+            question_answer["schema"] == "natural_command_answer_v1"
+            and question_answer["status"] == "ready"
+            and question_answer["safety_contract"]["read_only"] is True
+            and question_answer["safety_contract"]["delete_enabled"] is False
+            and question_answer["safety_contract"]["move_enabled"] is False,
+            "Natural Command answer API should remain structured and read-only.",
         )
 
         create_report(
@@ -952,6 +995,7 @@ def test_natural_command_v3_queue_contract() -> dict[str, Any]:
             "index": index,
             "dry_run_report": dry_run["report"],
             "handled_state": handled["state"],
+            "answer_schema": question_answer["schema"],
         }
 
     finally:
