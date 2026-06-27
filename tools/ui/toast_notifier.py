@@ -87,6 +87,7 @@ def _show_with_powershell(title: str, message: str, launch_arg: str, timeout: in
         capture_output=True,
         text=True,
         timeout=timeout,
+        creationflags=0x08000000,  # CREATE_NO_WINDOW: không nháy cửa sổ console
     )
     if completed.returncode != 0:
         raise RuntimeError((completed.stderr or completed.stdout or "").strip())
