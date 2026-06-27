@@ -30,16 +30,19 @@ sửa tối thiểu, không nới quyền xóa.
 
 ## Phase 8 — Trợ lý nền (cốt lõi để đạt goal)
 
-### 8.1 — Quét nền theo lịch (không cần mở UI)
-- [ ] Tận dụng `run_periodic_scan` (đã có, read-only) + autorun launcher để chạy quét
+### 8.1 — Quét nền theo lịch (không cần mở UI)  ✅ XONG
+- [x] Tận dụng `run_periodic_scan` (đã có, read-only) + autorun launcher để chạy quét
       ngầm định kỳ khi máy rảnh, KHÔNG bật cửa sổ UI.
+      → `tools/automation/background_assistant.py`: `run_background_assistant_loop(interval_minutes)`
+      + `run_background_assistant_cycle()`; launcher `start_background_assistant.bat`.
   - **Owner:** Claude wiring; backend `run_periodic_scan` đã sẵn (Codex REQ#3).
   - **Acceptance:** có tiến trình/lịch chạy `run_periodic_scan` nền; ghi kết quả ra
     `reports/`; read-only tuyệt đối (không xóa/move); Full System Tester pass.
 
-### 8.2 — Windows toast notification (mảnh thiếu lớn nhất)
-- [ ] Khi quét nền thấy file rác safe_delete → bắn toast Windows:
-      "AI thấy ~X GB rác, bấm để xem".
+### 8.2 — Windows toast notification (mảnh thiếu lớn nhất)  ✅ XONG
+- [x] Khi quét nền thấy vấn đề mới → bắn toast Windows (title/message từ
+      `run_periodic_scan`). → `tools/ui/toast_notifier.py: show_toast(...)`, dùng
+      PowerShell + Windows Runtime, KHÔNG cần dep ngoài, read-only.
   - **Owner:** Claude (UI/OS layer).
   - **Acceptance:** toast hiện thật trên Windows; chỉ bắn khi `should_notify=True` +
     có file `safe_delete`; không bắn spam (1 lần/phiên quét); không tự xóa gì.
@@ -51,9 +54,10 @@ sửa tối thiểu, không nới quyền xóa.
   - **Acceptance:** từ toast tới chỗ chọn xóa/giữ ≤ 1 cú bấm; xóa vẫn qua token +
     Recycle Bin.
 
-### 8.4 — Quiet mode (không làm phiền khi chơi game/fullscreen)
-- [ ] Hoãn quét nền + toast khi đang fullscreen/đang chơi game (tận dụng
-      `game_booster`/process monitor).
+### 8.4 — Quiet mode (không làm phiền khi chơi game/fullscreen)  ✅ XONG (cơ bản)
+- [x] Hoãn toast khi cửa sổ foreground đang fullscreen (game/phim/present).
+      → `background_assistant._is_quiet_mode()` so cửa sổ foreground với màn hình.
+      (Tinh chỉnh sâu theo process game cụ thể để Codex làm sau.)
   - **Owner:** Claude (Codex tinh chỉnh logic sau).
   - **Acceptance:** đang fullscreen → không toast; thoát ra mới báo.
 
