@@ -229,20 +229,20 @@ def build_selection_reason_text(item: dict[str, Any], group_name: str) -> str:
     candidate_group = str(item.get("candidate_group") or "").lower()
 
     if group_name == "do_not_touch" or risk == "protected" or plan_action == "keep":
-        return "Khong duoc thay doi vi muc nay thuoc vung bao ve hoac da duoc dat chinh sach giu."
+        return "Không được thay đổi vì mục này thuộc vùng bảo vệ hoặc đã được đặt chính sách giữ."
     if plan_action == "delete_candidate":
         if risk == "safe_delete" or "safe_delete" in candidate_group:
-            return "File tam/cache duoc xep safe_delete; chi dua vao Recycle Bin sau preview va xac nhan."
-        return "Moi la de xuat xoa; Safe Delete Adapter phai phan loai lai va co the chan muc nay."
+            return "File tạm/cache được xếp safe_delete; chỉ đưa vào Recycle Bin sau preview và xác nhận."
+        return "Mới là đề xuất xóa; Safe Delete Adapter phải phân loại lại và có thể chặn mục này."
     if plan_action == "backup_first":
-        return "Can copy backup truoc vi file co the la project, tai lieu, archive hoac du lieu con gia tri."
+        return "Cần copy backup trước vì file có thể là project, tài liệu, archive hoặc dữ liệu còn giá trị."
     if plan_action == "move_later":
-        return "Co the chuyen de giai phong dung luong, nhung ban phai chon dich va co manifest khoi phuc."
+        return "Có thể chuyển để giải phóng dung lượng, nhưng bạn phải chọn đích và có manifest khôi phục."
     if plan_action == "manual_review":
         if "project" in candidate_group:
-            return "Can xem tay vi day co the la file project; khong du dieu kien xoa an toan."
-        return "Can xem tay vi chua du bang chung de xoa hoac move an toan."
-    return "Chua co hanh dong an toan mac dinh; hay giu file va xem chi tiet truoc."
+            return "Cần xem tay vì đây có thể là file project; không đủ điều kiện xóa an toàn."
+        return "Cần xem tay vì chưa đủ bằng chứng để xóa hoặc move an toàn."
+    return "Chưa có hành động an toàn mặc định; hãy giữ file và xem chi tiết trước."
 
 
 def make_selection_item(

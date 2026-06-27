@@ -591,7 +591,7 @@ def answer_user_question(
             "question": text,
             "normalized": normalize_command(text),
             "intent": intent,
-            "answer_text": "Chua co snapshot de tra loi. Hay chay auto scan read-only truoc.",
+            "answer_text": "Chưa có snapshot để trả lời. Hãy chạy auto scan read-only trước.",
             "recommendations": [],
             "issues": [],
             "evidence": {},
@@ -611,8 +611,8 @@ def answer_user_question(
     top_folders = storage.get("top_folders", [])
 
     if intent == "disk_full_reason":
-        reason = disk_full_reason.get("reason_text") or "Chua co du lieu dung luong chi tiet."
-        action = disk_full_reason.get("action_text") or "Nen chay scan storage-aware de co cau tra loi ro hon."
+        reason = disk_full_reason.get("reason_text") or "Chưa có dữ liệu dung lượng chi tiết."
+        action = disk_full_reason.get("action_text") or "Nên chạy scan storage-aware để có câu trả lời rõ hơn."
         answer_text = f"{reason} {action}"
         related_recommendations = [
             item for item in recommendations
@@ -621,18 +621,18 @@ def answer_user_question(
         ]
     elif intent == "largest_files":
         if large_files:
-            answer_text = "File nang nhat hien thay: " + "; ".join(summarize_items(large_files, limit=5))
+            answer_text = "File nặng nhất hiện thấy: " + "; ".join(summarize_items(large_files, limit=5))
         else:
-            answer_text = "Snapshot hien tai chua co danh sach file lon. Hay chay scan storage-aware neu can cau tra loi chi tiet."
+            answer_text = "Snapshot hiện tại chưa có danh sách file lớn. Hãy chạy scan storage-aware nếu cần câu trả lời chi tiết."
         related_recommendations = [
             item for item in recommendations
             if item.get("suggested_tool_id") in {"large_file_finder", "media_organizer"}
         ]
     elif intent == "largest_folders":
         if top_folders:
-            answer_text = "Thu muc lon nhat hien thay: " + "; ".join(summarize_items(top_folders, limit=5))
+            answer_text = "Thư mục lớn nhất hiện thấy: " + "; ".join(summarize_items(top_folders, limit=5))
         else:
-            answer_text = "Snapshot hien tai chua co danh sach folder lon. Hay chay scan storage-aware neu can cau tra loi chi tiet."
+            answer_text = "Snapshot hiện tại chưa có danh sách folder lớn. Hãy chạy scan storage-aware nếu cần câu trả lời chi tiết."
         related_recommendations = [
             item for item in recommendations
             if item.get("suggested_tool_id") in {"folder_size_analyzer", "download_organizer"}
@@ -640,14 +640,14 @@ def answer_user_question(
     elif intent == "cleanup_overview":
         summary = classifier.get("summary", {})
         answer_text = (
-            f"AI thay {summary.get('issue_count', len(issues))} van de can xem, "
-            f"trong do {summary.get('needs_selection_count', 0)} muc can ban chon va "
-            f"{summary.get('do_not_touch_count', 0)} muc duoc khoa. "
-            "Day chi la goi y; muon xoa/move van phai qua preview va xac nhan."
+            f"AI thấy {summary.get('issue_count', len(issues))} vấn đề cần xem, "
+            f"trong đó {summary.get('needs_selection_count', 0)} mục cần bạn chọn và "
+            f"{summary.get('do_not_touch_count', 0)} mục được khóa. "
+            "Đây chỉ là gợi ý; muốn xóa/move vẫn phải qua preview và xác nhận."
         )
         related_recommendations = recommendations[:issue_limit]
     else:
-        answer_text = "Cau hoi nay chua co intent rieng. Hay hoi ve o dia day, file nang nhat, folder nang nhat, hoac may co gi can don."
+        answer_text = "Câu hỏi này chưa có intent riêng. Hãy hỏi về ổ đĩa đầy, file nặng nhất, folder nặng nhất, hoặc máy có gì cần dọn."
         related_recommendations = []
 
     return {

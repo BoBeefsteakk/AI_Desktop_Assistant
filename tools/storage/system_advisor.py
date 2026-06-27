@@ -57,21 +57,21 @@ def classify_file_advice(file_path: str) -> str:
     lower_path = file_path.lower()
 
     if "download" in lower_path or "downloads" in lower_path:
-        return "Nam trong Downloads, nen xem co can giu lai khong."
+        return "Nằm trong Downloads, nên xem có cần giữ lại không."
 
     if suffix in ARCHIVE_EXTENSIONS:
-        return "File nen/bo cai lon, nen backup hoac xoa neu da giai nen/cai xong."
+        return "File nén/bộ cài lớn, nên backup hoặc xóa nếu đã giải nén/cài xong."
 
     if suffix in VIDEO_EXTENSIONS:
-        return "Video lon, nen gom vao media rieng hoac nen lai neu can."
+        return "Video lớn, nên gom vào media riêng hoặc nén lại nếu cần."
 
     if suffix in INSTALLER_EXTENSIONS:
-        return "File cai dat, neu da cai xong thi co the xoa/backup."
+        return "File cài đặt, nếu đã cài xong thì có thể xóa/backup."
 
     if suffix in PROJECT_EXTENSIONS:
-        return "File project/editing lon, nen backup truoc khi don."
+        return "File project/editing lớn, nên backup trước khi dọn."
 
-    return "Kiem tra thu cong truoc khi xoa."
+    return "Kiểm tra thủ công trước khi xóa."
 
 
 def get_disk_health_snapshot() -> dict[str, Any]:
@@ -95,17 +95,17 @@ def get_disk_health_snapshot() -> dict[str, Any]:
 def build_recommendation_explanation(recommendation: dict[str, Any]) -> str:
     tool_id = recommendation.get("suggested_tool_id")
     action_by_tool = {
-        "large_file_finder": "mo danh sach file lon va chi chon file chac chan khong con can.",
-        "folder_size_analyzer": "xem cac thu muc lon nhat truoc khi quyet dinh don.",
-        "download_organizer": "sap xep Downloads, bo qua file dang tai va giu file con dung.",
-        "media_organizer": "gom media vao thu muc rieng hoac chuyen sang o luu tru neu can.",
-        "process_monitor": "xem process dang ton RAM/CPU va chi tat app biet chac khong dang dung.",
-        "disk_checker": "kiem tra lai suc khoe o va backup du lieu quan trong truoc.",
-        "external_apps_manager": "cap nhat duong dan app ngoai de cac tool doc thong tin chinh xac hon.",
-        "audit_center": "mo Audit Center de xem report gan day truoc khi chay tiep.",
+        "large_file_finder": "mở danh sách file lớn và chỉ chọn file chắc chắn không còn cần.",
+        "folder_size_analyzer": "xem các thư mục lớn nhất trước khi quyết định dọn.",
+        "download_organizer": "sắp xếp Downloads, bỏ qua file đang tải và giữ file còn dùng.",
+        "media_organizer": "gom media vào thư mục riêng hoặc chuyển sang ổ lưu trữ nếu cần.",
+        "process_monitor": "xem process đang tốn RAM/CPU và chỉ tắt app biết chắc không đang dùng.",
+        "disk_checker": "kiểm tra lại sức khỏe ổ và backup dữ liệu quan trọng trước.",
+        "external_apps_manager": "cập nhật đường dẫn app ngoài để các tool đọc thông tin chính xác hơn.",
+        "audit_center": "mở Audit Center để xem report gần đây trước khi chạy tiếp.",
     }
-    action = action_by_tool.get(tool_id, "xem lai muc nay va quyet dinh thu cong, khong tu xoa.")
-    return f"Vi sao: {recommendation['detail']} Nen lam: {action}"
+    action = action_by_tool.get(tool_id, "xem lại mục này và quyết định thủ công, không tự xóa.")
+    return f"Vì sao: {recommendation['detail']} Nên làm: {action}"
 
 
 def make_recommendation(
@@ -181,32 +181,32 @@ def build_disk_full_reason(snapshot: dict[str, Any]) -> dict[str, Any]:
 
     reason_parts = []
     if percent is not None:
-        reason_parts.append(f"{mountpoint} dang dung {percent}% va con trong {free}.")
+        reason_parts.append(f"{mountpoint} đang dùng {percent}% và còn trống {free}.")
     elif mountpoint:
-        reason_parts.append(f"{mountpoint} can duoc kiem tra dung luong.")
+        reason_parts.append(f"{mountpoint} cần được kiểm tra dung lượng.")
     else:
-        reason_parts.append("Chua co du lieu o dia du de ket luan.")
+        reason_parts.append("Chưa có dữ liệu ổ đĩa đủ để kết luận.")
 
     if downloads:
         reason_parts.append(
-            f"Downloads chiem {format_size(downloads.get('size', 0))}, nen day la diem can xem dau tien."
+            f"Downloads chiếm {format_size(downloads.get('size', 0))}, nên đây là điểm cần xem đầu tiên."
         )
     elif biggest_folder:
         reason_parts.append(
-            f"Thu muc lon nhat la {biggest_folder.get('path')} ({format_size(biggest_folder.get('size', 0))})."
+            f"Thư mục lớn nhất là {biggest_folder.get('path')} ({format_size(biggest_folder.get('size', 0))})."
         )
 
     if biggest_file:
         reason_parts.append(
-            f"File lon nhat thay duoc la {biggest_file.get('path')} ({format_size(biggest_file.get('size', 0))})."
+            f"File lớn nhất thấy được là {biggest_file.get('path')} ({format_size(biggest_file.get('size', 0))})."
         )
 
     if not top_folders and not large_files:
-        reason_parts.append("Snapshot hien tai chua co danh sach folder/file lon.")
+        reason_parts.append("Snapshot hiện tại chưa có danh sách folder/file lớn.")
 
     action_text = (
-        "Nen xem top folder/file lon, uu tien Downloads/installer/archive cu, "
-        "sau do chi dua vao flow backup/move/safe-delete co preview va xac nhan."
+        "Nên xem top folder/file lớn, ưu tiên Downloads/installer/archive cũ, "
+        "sau đó chỉ dựa vào flow backup/move/safe-delete có preview và xác nhận."
     )
 
     return {
@@ -312,8 +312,8 @@ def build_structured_recommendations(
         add(make_recommendation(
             "smart-health-failed",
             "critical",
-            "SMART health co canh bao",
-            f"Cac thiet bi khong PASS: {devices}. Nen backup du lieu quan trong som.",
+            "SMART health có cảnh báo",
+            f"Các thiết bị không PASS: {devices}. Nên backup dữ liệu quan trọng sớm.",
             suggested_tool_id="disk_checker",
             source="smartctl",
         ))
@@ -323,10 +323,10 @@ def build_structured_recommendations(
         add(make_recommendation(
             "largest-folder-review",
             "info",
-            "Folder lon nhat can review",
+            "Folder lớn nhất cần review",
             (
-                f"{biggest['path']} dang chiem {format_size(biggest.get('size', 0))}. "
-                "Neu o dia sap day, nen kiem tra folder nay truoc."
+                f"{biggest['path']} đang chiếm {format_size(biggest.get('size', 0))}. "
+                "Nếu ổ đĩa sắp đầy, nên kiểm tra folder này trước."
             ),
             suggested_tool_id="folder_size_analyzer",
             source=biggest.get("source", "storage"),
@@ -340,10 +340,10 @@ def build_structured_recommendations(
         add(make_recommendation(
             "downloads-folder-heavy",
             "warning",
-            "Downloads dang chiem dung luong",
+            "Downloads đang chiếm dung lượng",
             (
-                f"Downloads dang chiem {format_size(downloads_folder.get('size', 0))}. "
-                "Nen sap xep file tai ve va bo qua file dang tai do."
+                f"Downloads đang chiếm {format_size(downloads_folder.get('size', 0))}. "
+                "Nên sắp xếp file tải về và bỏ qua file đang tải dở."
             ),
             suggested_tool_id="download_organizer",
             source=downloads_folder.get("source", "storage"),
@@ -358,10 +358,10 @@ def build_structured_recommendations(
         add(make_recommendation(
             "large-archive-files",
             "warning",
-            "Co file nen/bo cai lon",
+            "Có file nén/bộ cài lớn",
             (
-                f"{len(archive_files)} file nen/bo cai lon, tong khoang "
-                f"{format_size(total_archive)}. Nen review truoc khi xoa."
+                f"{len(archive_files)} file nén/bộ cài lớn, tổng khoảng "
+                f"{format_size(total_archive)}. Nên review trước khi xóa."
             ),
             suggested_tool_id="large_file_finder",
             source="large_file_finder",
@@ -376,10 +376,10 @@ def build_structured_recommendations(
         add(make_recommendation(
             "large-video-files",
             "info",
-            "Co video lon",
+            "Có video lớn",
             (
-                f"{len(video_files)} video lon, tong khoang {format_size(total_video)}. "
-                "Nen gom vao thu muc media rieng hoac chuyen sang o luu tru."
+                f"{len(video_files)} video lớn, tổng khoảng {format_size(total_video)}. "
+                "Nên gom vào thư mục media riêng hoặc chuyển sang ổ lưu trữ."
             ),
             suggested_tool_id="media_organizer",
             source="large_file_finder",
@@ -392,10 +392,10 @@ def build_structured_recommendations(
             add(make_recommendation(
                 "ram-critical",
                 "critical",
-                "RAM toan he thong rat cao",
+                "RAM toàn hệ thống rất cao",
                 (
-                    f"RAM dang dung {system_ram:.1f}%. Nen dong bot browser/tab nang "
-                    "hoac app edit/game launcher neu khong dung."
+                    f"RAM đang dùng {system_ram:.1f}%. Nên đóng bớt browser/tab nặng "
+                    "hoặc app edit/game launcher nếu không dùng."
                 ),
                 suggested_tool_id="process_monitor",
                 source="process_monitor",
@@ -404,8 +404,8 @@ def build_structured_recommendations(
             add(make_recommendation(
                 "ram-warning",
                 "warning",
-                "RAM dang cao",
-                f"RAM dang dung {system_ram:.1f}%. Nen theo doi neu may bat dau lag.",
+                "RAM đang cao",
+                f"RAM đang dùng {system_ram:.1f}%. Nên theo dõi nếu máy bắt đầu lag.",
                 suggested_tool_id="process_monitor",
                 source="process_monitor",
             ))
@@ -421,8 +421,8 @@ def build_structured_recommendations(
             add(make_recommendation(
                 "heavy-processes",
                 "info",
-                "Co process an RAM nhieu",
-                f"Cac process dang an RAM nhieu: {names}. Chi tat neu biet chac khong dang dung.",
+                "Có process ăn RAM nhiều",
+                f"Các process đang ăn RAM nhiều: {names}. Chỉ tắt nếu biết chắc không đang dùng.",
                 suggested_tool_id="process_monitor",
                 source="process_monitor",
             ))

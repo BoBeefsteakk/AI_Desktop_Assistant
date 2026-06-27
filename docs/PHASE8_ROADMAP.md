@@ -47,9 +47,14 @@ sửa tối thiểu, không nới quyền xóa.
   - **Acceptance:** toast hiện thật trên Windows; chỉ bắn khi `should_notify=True` +
     có file `safe_delete`; không bắn spam (1 lần/phiên quét); không tự xóa gì.
 
-### 8.3 — Click toast → mở thẳng banner "Dọn 1 chạm"
-- [ ] Bấm toast → mở `bot_panel` nhảy thẳng tới banner Dọn 1 chạm, danh sách + nút
+### 8.3 — Click toast → mở thẳng banner "Dọn 1 chạm"  ✅ XONG
+- [x] Bấm toast → mở `bot_panel` nhảy thẳng tới banner Dọn 1 chạm, danh sách + nút
       [Đồng ý dọn]/[Giữ] sẵn sàng. User không phải tự quét lại.
+      → toast có `launch='aidesktop:cleanup'`; protocol đăng ký HKCU qua
+      `tools/automation/toast_protocol.py` (register/unregister/status, reversible);
+      launcher `open_cleanup.bat` → `bot_panel --cleanup` → `_focus_cleanup_on_open()`
+      chuyển tab Trợ lý + highlight file rác sau auto-scan.
+      **Lưu ý:** cần chạy `register_toast_protocol()` một lần để bật click-to-open.
   - **Owner:** Claude.
   - **Acceptance:** từ toast tới chỗ chọn xóa/giữ ≤ 1 cú bấm; xóa vẫn qua token +
     Recycle Bin.

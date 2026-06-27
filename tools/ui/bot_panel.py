@@ -132,18 +132,27 @@ def default_storage_mode() -> str:
 
 
 def run_bot_panel() -> None:
+    import sys
+
+    # 8.3: khi mo tu toast (protocol aidesktop:cleanup), launcher truyen --cleanup
+    # de app nhay thang toi banner Don 1 cham sau khi auto-scan xong.
+    cleanup_on_open = any(
+        "--cleanup" in arg or "cleanup" in arg.lower().replace("aidesktop:", "")
+        for arg in sys.argv[1:]
+    )
     root = ttk.Window(themename="cosmo")
-    BotPanel(root)
+    BotPanel(root, cleanup_on_open=cleanup_on_open)
     root.mainloop()
 
 
 class BotPanel:
-    def __init__(self, root: tk.Tk) -> None:
+    def __init__(self, root: tk.Tk, *, cleanup_on_open: bool = False) -> None:
         self.root = root
         self.root.title(BOT_PANEL_TITLE)
         self.root.geometry("1680x1040")
         self.root.minsize(1360, 920)
 
+        self.cleanup_on_open = cleanup_on_open
         self.busy = False
         self.bot_result: dict[str, Any] | None = None
         self.selection_session: dict[str, Any] | None = None
@@ -1457,6 +1466,22 @@ class BotPanel:
         self.update_reports_text()
         self.update_health_panel()
         self.populate_quick_actions()
+        if self.cleanup_on_open:
+            self.cleanup_on_open = False
+            self.root.after(300, self._focus_cleanup_on_open)
+
+    def _focus_cleanup_on_open(self) -> None:
+        """8.3: mo tu toast -> chuyen tab Tro ly va highlight file rac de don."""
+        try:
+            self.notebook.select(self.assistant_tab)
+            ids = self.recommended_delete_ids()
+            if ids:
+                self.quick_tree.selection_set(ids)
+                self.quick_tree.see(ids[0])
+                self.quick_tree.focus(ids[0])
+                self.set_status("AI da mo san danh sach file rac — chon xoa hoac giu.")
+        except Exception:
+            pass
 
     def populate_table(self) -> None:
         self.tree.delete(*self.tree.get_children())
