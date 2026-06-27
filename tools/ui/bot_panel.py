@@ -224,11 +224,14 @@ class BotPanel:
         self.notebook.pack(fill=BOTH, expand=True, padx=12, pady=(0, 12))
 
         self.assistant_tab = ttk.Frame(self.notebook, padding=10)
+        self.organizer_tab = ttk.Frame(self.notebook, padding=10)
         self.advanced_tab = ttk.Frame(self.notebook, padding=(0, 8, 0, 0))
         self.notebook.add(self.assistant_tab, text="Trợ lý")
+        self.notebook.add(self.organizer_tab, text="Sắp xếp")
         self.notebook.add(self.advanced_tab, text="Chi tiết")
 
         self._build_assistant_panel(self.assistant_tab)
+        self._build_organizer_tab(self.organizer_tab)
 
         self._build_advanced_scan_controls(self.advanced_tab)
 
@@ -748,6 +751,174 @@ class BotPanel:
         self.set_busy(False, f"{label} failed.")
         self.write_detail(f"{label} failed:\n{error}\n\n{trace}")
         messagebox.showerror(label, str(error))
+
+    # ---------------- Tab "Sắp xếp" (4 organizer tools) ----------------
+
+    @staticmethod
+    def _fmt_size(num: int) -> str:
+        size = float(num or 0)
+        for unit in ("B", "KB", "MB", "GB", "TB"):
+            if size < 1024 or unit == "TB":
+                return f"{size:.1f} {unit}"
+            size /= 1024
+        return f"{size:.1f} TB"
+
+    def _build_organizer_tab(self, parent: ttk.Frame) -> None:
+        self.org_sections: dict[str, dict[str, Any]] = {}
+        intro = ttk.Label(
+            parent,
+            text="Sắp xếp & dọn nâng cao — quét trước rồi chọn mục để áp dụng. "
+                 "Di chuyển có thể khôi phục (manifest); xóa vào Recycle Bin.",
+            style="Guide.TLabel",
+        )
+        intro.pack(side=TOP, fill=X, pady=(0, 8))
+
+        specs = [
+            ("download", "Sắp xếp Downloads (theo loại/ngày)", "move", False),
+            ("media", "Gom ảnh/video vào thư mục riêng", "move", True),
+            ("duplicate", "Tìm & xóa file trùng (giữ bản gốc)", "delete", True),
+            ("empty", "Tìm & xóa folder rỗng", "delete", True),
+        ]
+        for key, title, action, needs_folder in specs:
+            self._build_organizer_section(parent, key, title, action, needs_folder)
+
+    def _build_organizer_section(self, parent, key, title, action, needs_folder) -> None:
+        frame = ttk.LabelFrame(parent, text=title, padding=8)
+        frame.pack(side=TOP, fill=BOTH, expand=True, pady=(0, 8))
+
+        folder_var = tk.StringVar(
+            value=self.scan_path_var.get() or DEFAULT_SCAN_FOLDER
+        )
+        top = ttk.Frame(frame)
+        top.pack(side=TOP, fill=X)
+        if needs_folder:
+            ttk.Label(top, text="Thư mục:").pack(side=LEFT)
+            entry = ttk.Entry(top, textvariable=folder_var)
+            entry.pack(side=LEFT, fill=X, expand=True, padx=6)
+            ttk.Button(
+                top, text="Chọn",
+                command=lambda v=folder_var: self._org_browse(v),
+            ).pack(side=LEFT, padx=(0, 6))
+        else:
+            ttk.Label(top, text="Thư mục Downloads (mặc định)").pack(side=LEFT)
+
+        ttk.Button(top, text="Quét", bootstyle="primary",
+                   command=lambda k=key: self._org_scan(k)).pack(side=RIGHT)
+        apply_text = "Áp dụng (di chuyển)" if action == "move" else "Áp dụng (xóa → Recycle Bin)"
+        apply_style = "success" if action == "move" else "danger"
+        ttk.Button(top, text=apply_text, bootstyle=apply_style,
+                   command=lambda k=key: self._org_apply(k)).pack(side=RIGHT, padx=6)
+
+        status_var = tk.StringVar(value="Chưa quét.")
+        ttk.Label(frame, textvariable=status_var, style="Guide.TLabel").pack(
+            side=TOP, fill=X, pady=(4, 4)
+        )
+
+        columns = ("size", "risk", "path")
+        tree = ttk.Treeview(frame, columns=columns, show="headings",
+                            height=5, selectmode="extended")
+        tree.heading("size", text="Kích thước")
+        tree.heading("risk", text="Mức rủi ro")
+        tree.heading("path", text="Đường dẫn")
+        tree.column("size", width=90, anchor="e")
+        tree.column("risk", width=110)
+        tree.column("path", width=620)
+        tree.pack(side=TOP, fill=BOTH, expand=True)
+
+        self.org_sections[key] = {
+            "action": action,
+            "folder_var": folder_var,
+            "status_var": status_var,
+            "tree": tree,
+            "items": [],
+        }
+
+    def _org_browse(self, var: tk.StringVar) -> None:
+        folder = filedialog.askdirectory(initialdir=var.get() or DEFAULT_SCAN_FOLDER)
+        if folder:
+            var.set(folder)
+
+    def _org_scan(self, key: str) -> None:
+        from tools.core import organizer_bridge as ob
+
+        sec = self.org_sections[key]
+        folder = sec["folder_var"].get().strip()
+        scanners = {
+            "download": lambda: ob.scan_downloads(),
+            "media": lambda: ob.scan_media(folder),
+            "duplicate": lambda: ob.scan_duplicates(folder),
+            "empty": lambda: ob.scan_empty_folders(folder),
+        }
+        self.run_background(
+            f"Quét {key}",
+            scanners[key],
+            on_success=lambda res, k=key: self._org_populate(k, res),
+        )
+
+    def _org_populate(self, key: str, result: dict) -> None:
+        sec = self.org_sections[key]
+        tree = sec["tree"]
+        tree.delete(*tree.get_children())
+        items = result.get("items", [])
+        sec["items"] = items
+        for idx, item in enumerate(items):
+            if key == "duplicate":
+                path = item.get("duplicate", "")
+            else:
+                path = item.get("path", "")
+            size = self._fmt_size(item.get("size", 0)) if key != "empty" else "-"
+            risk = item.get("risk", "-")
+            tree.insert("", "end", iid=str(idx), values=(size, risk, path))
+        total = self._fmt_size(result.get("total_size", 0))
+        if items:
+            sec["status_var"].set(
+                f"Tìm thấy {len(items)} mục ({total}). Chọn mục rồi bấm Áp dụng."
+            )
+        else:
+            sec["status_var"].set("Không tìm thấy mục nào.")
+
+    def _org_selected_items(self, key: str) -> list:
+        sec = self.org_sections[key]
+        tree = sec["tree"]
+        chosen = tree.selection()
+        items = sec["items"]
+        return [items[int(i)] for i in chosen if i.isdigit() and int(i) < len(items)]
+
+    def _org_apply(self, key: str) -> None:
+        from tools.core import organizer_bridge as ob
+
+        sec = self.org_sections[key]
+        selected = self._org_selected_items(key)
+        if not selected:
+            messagebox.showinfo("Chưa chọn", "Hãy chọn ít nhất một mục (giữ Ctrl/Shift để chọn nhiều).")
+            return
+        action = sec["action"]
+        if action == "move":
+            verb = "di chuyển (có thể khôi phục)"
+        else:
+            verb = "đưa vào Recycle Bin (khôi phục được)"
+        if not messagebox.askyesno("Xác nhận", f"Sẽ {verb} {len(selected)} mục đã chọn. Tiếp tục?"):
+            return
+
+        folder = sec["folder_var"].get().strip()
+        appliers = {
+            "download": lambda: ob.apply_downloads(selected),
+            "media": lambda: ob.apply_media(selected, folder),
+            "duplicate": lambda: ob.apply_duplicate_delete(selected),
+            "empty": lambda: ob.apply_empty_delete(selected),
+        }
+        self.run_background(
+            f"Áp dụng {key}",
+            appliers[key],
+            on_success=lambda res, k=key: self._org_after_apply(k, res),
+        )
+
+    def _org_after_apply(self, key: str, result: dict) -> None:
+        moved = result.get("moved_count")
+        deleted = result.get("deleted")
+        done = moved if moved is not None else deleted
+        messagebox.showinfo("Xong", f"Đã xử lý {done} mục.")
+        self._org_scan(key)  # quét lại để cập nhật danh sách
 
     def browse_scan_folder(self) -> None:
         folder = filedialog.askdirectory(initialdir=self.scan_path_var.get() or DEFAULT_SCAN_FOLDER)
