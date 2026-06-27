@@ -2,6 +2,14 @@
 
 ## Giai đoạn hiện tại
 
+**thay doi (2026-06-27) Phase 7 backend REQ#6:** Da them public
+`tools.core.one_click_cleanup.build_one_click_cleanup_plan(...)`, schema
+`one_click_cleanup_plan_v1`. Plan doc selection session hien co, reclassify tung
+path qua Risk Classifier + cleanup rule registry, gop duplicate va chi giu file
+`safe_delete` dang ton tai. Output co `files`, `count`, `total_size`,
+`summary_text`, `severity`, `selection_decisions` va safety contract read-only.
+Verify: Behavior 18/18, Tool 48/48, Full System 40/40.
+
 **thay doi (2026-06-27) Phase 7 backend REQ#3 + REQ#4 + REQ#5:** Da co
 periodic read-only scan public `run_periodic_scan(...)`, schema
 `periodic_scan_notification_v1`, so sanh baseline de bao issue moi va severity

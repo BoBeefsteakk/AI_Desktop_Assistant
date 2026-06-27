@@ -42,3 +42,10 @@ Safe Delete Adapter phan loai lai va goi `safe_executor.safe_delete()`.
 - `validate_cleanup_rule_registry() -> dict`
 
 Tat ca API tren read-only va khong thuc hien file operation.
+
+## One-click cleanup plan
+
+**thay doi (2026-06-27):** `tools/core/one_click_cleanup.py` doc selection
+session va reclassify tung path qua Risk Classifier + cleanup rule registry.
+Chi file dang ton tai, co de xuat `delete_candidate` va van duoc xep
+`safe_delete` moi vao plan. Plan chi tra du lieu cho UI; khong execute xoa.

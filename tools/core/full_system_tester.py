@@ -87,6 +87,10 @@ from tools.core.obsidian_exporter import (
     OBSIDIAN_EXPORT_SCHEMA,
     build_obsidian_export_result,
 )
+from tools.core.one_click_cleanup import (
+    ONE_CLICK_CLEANUP_SCHEMA,
+    build_one_click_cleanup_plan,
+)
 from tools.core.risk_classifier import PROTECTED, REVIEW_REQUIRED, SAFE_DELETE, classify_file_risk
 from tools.core.scenario_tester import run_sandbox_scenarios
 from tools.core.safe_delete_adapter import (
@@ -390,6 +394,75 @@ def test_cleanup_rule_boundary_contract() -> dict[str, Any]:
         "review_decision": review_decision,
         "protected_decision": protected_decision,
     }
+
+
+def test_one_click_cleanup_plan_contract() -> dict[str, Any]:
+    sandbox = make_sandbox()
+    try:
+        safe_file = sandbox / "Downloads" / "old_cache.tmp"
+        review_file = sandbox / "Workspace" / "old_cache.tmp"
+        project_file = sandbox / "Workspace" / "edit_project.prproj"
+        missing_file = sandbox / "Downloads" / "missing_cache.tmp"
+        protected_file = BASE_DIR / "README.md"
+        write_text(safe_file, "safe one-click candidate")
+        write_text(review_file, "review one-click candidate")
+        write_text(project_file, "project one-click candidate")
+
+        def candidate(path: Path) -> dict[str, Any]:
+            return {
+                "path": str(path),
+                "name": path.name,
+                "plan_action": "delete_candidate",
+                "candidate_group": "one_click_contract",
+                "requires_user_input": True,
+                "can_execute_now": False,
+            }
+
+        session = build_selection_session_from_groups({
+            "safe_to_execute": [],
+            "needs_selection": [
+                candidate(safe_file),
+                candidate(safe_file),
+                candidate(review_file),
+                candidate(project_file),
+                candidate(protected_file),
+                candidate(missing_file),
+            ],
+            "do_not_touch": [],
+            "review_only": [],
+        })
+        plan = build_one_click_cleanup_plan(selection_session=session)
+
+        assert_condition(plan["schema"] == ONE_CLICK_CLEANUP_SCHEMA, "One-click plan should expose v1 schema.")
+        assert_condition(plan["count"] == 1, "One-click plan should include only one unique safe_delete file.")
+        assert_condition(plan["total_size"] == safe_file.stat().st_size, "One-click total size should use current file size.")
+        assert_condition(plan["files"][0]["path"] == str(safe_file), "One-click plan should keep the safe file only.")
+        assert_condition(
+            all(item["risk"] == SAFE_DELETE for item in plan["files"]),
+            "Every one-click file must be reclassified as safe_delete.",
+        )
+        assert_condition(
+            plan["safety_contract"]["read_only"] is True
+            and plan["safety_contract"]["executes_file_operations"] is False
+            and plan["safety_contract"]["requires_final_delete_token"] is True
+            and plan["safety_contract"]["delete_enabled"] is False,
+            "One-click plan must remain a read-only proposal.",
+        )
+        assert_condition(
+            safe_file.exists() and review_file.exists() and project_file.exists() and protected_file.exists(),
+            "Building one-click plan must not change any file.",
+        )
+
+        return {
+            "schema": plan["schema"],
+            "count": plan["count"],
+            "total_size": plan["total_size"],
+            "excluded_count": plan["excluded_count"],
+            "summary_text": plan["summary_text"],
+            "safety_contract": plan["safety_contract"],
+        }
+    finally:
+        cleanup_sandbox(sandbox)
 
 
 def test_report_manager_and_audit_index() -> dict[str, Any]:
@@ -2738,6 +2811,7 @@ FULL_SYSTEM_TESTS: list[tuple[str, Callable[[], dict[str, Any]]]] = [
     ("Safety Static Audit", test_safety_static_audit),
     ("Risk Classifier Guardrails", test_risk_classifier_guardrails),
     ("Cleanup Rule Boundary Contract", test_cleanup_rule_boundary_contract),
+    ("One-click Cleanup Plan Contract", test_one_click_cleanup_plan_contract),
     ("Report Manager and Audit Index", test_report_manager_and_audit_index),
     ("Report Schema Validation", test_report_schema_validation),
     ("Audit Center Health", test_audit_center_health),
