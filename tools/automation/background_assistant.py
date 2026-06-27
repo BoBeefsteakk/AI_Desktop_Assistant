@@ -161,5 +161,25 @@ def run_background_assistant() -> dict[str, Any]:
     return run_background_assistant_cycle()
 
 
+def run_background_assistant_service() -> dict[str, Any]:
+    """Entry point dịch vụ nền (dùng cho tự-chạy-khi-khởi-động).
+
+    Đọc chu kỳ quét từ config (`background.interval_minutes`, mặc định 60) và
+    chạy vòng lặp ẩn vô hạn. Read-only.
+    """
+    try:
+        from config.settings import get_setting
+
+        interval = float(get_setting("background.interval_minutes", 60) or 60)
+    except Exception:
+        interval = 60.0
+    return run_background_assistant_loop(interval_minutes=interval)
+
+
 if __name__ == "__main__":
-    print(run_background_assistant())
+    import sys
+
+    if "--service" in sys.argv[1:]:
+        run_background_assistant_service()
+    else:
+        print(run_background_assistant())

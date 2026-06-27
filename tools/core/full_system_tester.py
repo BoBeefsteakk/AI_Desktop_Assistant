@@ -138,6 +138,7 @@ STATIC_AUDIT_ALLOWLIST = {
     ("tools/core/scenario_tester.py", "shutil.rmtree"),
     ("tools/ui/bot_panel.py", "shutil.rmtree"),
     ("tools/automation/startup_registration.py", ".unlink("),
+    ("tools/automation/background_registration.py", ".unlink("),
 }
 
 
