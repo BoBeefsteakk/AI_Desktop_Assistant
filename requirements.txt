@@ -4,3 +4,6 @@ winshell
 pywin32
 watchdog
 ttkbootstrap
+winotify
+pystray
+Pillow

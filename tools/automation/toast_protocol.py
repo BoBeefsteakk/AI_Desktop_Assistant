@@ -1,14 +1,14 @@
-"""Đăng ký custom URI protocol `aidesktop:` để toast click mở app (8.3).
+"""Đăng ký protocol cho toast click mở app (8.3) — dùng winotify.
 
-Khi user bấm vào toast của trợ lý nền (launch='aidesktop:cleanup'), Windows kích
-hoạt protocol này → chạy `open_cleanup.bat` → mở Bot Panel với `--cleanup` →
-nhảy thẳng tới banner Dọn 1 chạm.
+Khi user bấm toast của trợ lý nền (launch=`CLEANUP_URI`), Windows kích hoạt
+protocol `AI-Desktop-Assistant:` → chạy `pythonw open_cleanup.py` → mở Bot Panel
+với `--cleanup` → nhảy thẳng banner Dọn 1 chạm.
 
-Đăng ký nằm ở HKEY_CURRENT_USER (không cần quyền admin, gỡ được). Module này KHÔNG
-xóa/move file của user — chỉ ghi/đọc registry key của chính protocol này.
+Đăng ký do `winotify.Registry` ghi ở HKEY_CURRENT_USER (không cần admin, gỡ được).
+Module này KHÔNG xóa/move file user — chỉ ghi/đọc registry key của protocol này.
 
 Entry point: `register_toast_protocol()`, `unregister_toast_protocol()`,
-`get_toast_protocol_status()`, `run_toast_protocol()` (in trạng thái).
+`get_toast_protocol_status()`, `run_toast_protocol()`.
 """
 
 from __future__ import annotations
@@ -16,19 +16,88 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-PROTOCOL_NAME = "aidesktop"
+APP_ID = "AI Desktop Assistant"
+PROTOCOL_NAME = "AI-Desktop-Assistant"  # winotify.format_name(APP_ID)
+CLEANUP_URI = f"{PROTOCOL_NAME}:cleanup"
+# AppUserModelID ổn định — toast phải đến từ một shortcut Start Menu mang AUMID
+# này thì Windows mới cho click toast kích hoạt protocol (yêu cầu của Microsoft).
+AUMID = "BoBeefsteakk.AIDesktopAssistant"
+SHORTCUT_NAME = "AI Desktop Assistant.lnk"
+
 _BASE_DIR = Path(__file__).resolve().parents[2]
-_LAUNCHER = _BASE_DIR / "open_cleanup.bat"
-_KEY_PATH = rf"Software\Classes\{PROTOCOL_NAME}"
+_LAUNCHER = _BASE_DIR / "open_cleanup.py"
+_KEY_PATH = rf"SOFTWARE\Classes\{PROTOCOL_NAME}"
 _COMMAND_KEY_PATH = rf"{_KEY_PATH}\shell\open\command"
 
 
-def _command_value() -> str:
-    return f'"{_LAUNCHER}" "%1"'
+def _shortcut_path() -> Path:
+    import os
+
+    appdata = os.environ.get("APPDATA", "")
+    return (
+        Path(appdata)
+        / "Microsoft"
+        / "Windows"
+        / "Start Menu"
+        / "Programs"
+        / SHORTCUT_NAME
+    )
+
+
+def _pythonw_path() -> str:
+    import sys
+
+    exe = Path(sys.executable)
+    candidate = exe.with_name("pythonw.exe")
+    return str(candidate if candidate.exists() else exe)
+
+
+def create_app_shortcut() -> dict[str, Any]:
+    """Tạo shortcut Start Menu mang AppUserModelID (cần cho toast click).
+
+    Shortcut trỏ pythonw.exe + open_cleanup.py, gắn AUMID ổn định. Gỡ được
+    (xóa file .lnk). Không đụng dữ liệu user.
+    """
+    result: dict[str, Any] = {
+        "action": "create_shortcut",
+        "shortcut": str(_shortcut_path()),
+        "aumid": AUMID,
+        "created": False,
+        "error": None,
+    }
+    try:
+        import pythoncom
+        from win32com.propsys import propsys
+        from win32com.shell import shell
+
+        link = pythoncom.CoCreateInstance(
+            shell.CLSID_ShellLink,
+            None,
+            pythoncom.CLSCTX_INPROC_SERVER,
+            shell.IID_IShellLink,
+        )
+        link.SetPath(_pythonw_path())
+        link.SetArguments(f'"{_LAUNCHER}"')
+        link.SetWorkingDirectory(str(_BASE_DIR))
+        link.SetDescription("AI Desktop Assistant")
+
+        store = link.QueryInterface(propsys.IID_IPropertyStore)
+        key = propsys.PSGetPropertyKeyFromName("System.AppUserModel.ID")
+        store.SetValue(key, propsys.PROPVARIANTType(AUMID, pythoncom.VT_LPWSTR))
+        store.Commit()
+
+        persist = link.QueryInterface(pythoncom.IID_IPersistFile)
+        shortcut = _shortcut_path()
+        shortcut.parent.mkdir(parents=True, exist_ok=True)
+        persist.Save(str(shortcut), 0)
+        result["created"] = True
+    except Exception as exc:  # pragma: no cover - phụ thuộc môi trường
+        result["error"] = f"{type(exc).__name__}: {exc}"
+    return result
 
 
 def register_toast_protocol() -> dict[str, Any]:
-    """Đăng ký protocol aidesktop: ở HKCU. Trả về dict trạng thái."""
+    """Đăng ký protocol qua winotify.Registry (pythonw + open_cleanup.py)."""
     result: dict[str, Any] = {
         "schema_version": "toast_protocol_v1",
         "action": "register",
@@ -41,21 +110,22 @@ def register_toast_protocol() -> dict[str, Any]:
         result["error"] = f"Khong tim thay launcher: {_LAUNCHER}"
         return result
     try:
-        import winreg
+        from winotify import PYW_EXE, Registry
 
-        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, _KEY_PATH) as key:
-            winreg.SetValueEx(key, None, 0, winreg.REG_SZ, "URL:AI Desktop Assistant")
-            winreg.SetValueEx(key, "URL Protocol", 0, winreg.REG_SZ, "")
-        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, _COMMAND_KEY_PATH) as cmd_key:
-            winreg.SetValueEx(cmd_key, None, 0, winreg.REG_SZ, _command_value())
+        # force_override để cập nhật nếu trước đó đã đăng ký (vd trỏ .bat cũ).
+        Registry(APP_ID, PYW_EXE, str(_LAUNCHER), force_override=True)
         result["registered"] = True
     except Exception as exc:  # pragma: no cover - phụ thuộc môi trường
         result["error"] = f"{type(exc).__name__}: {exc}"
+        return result
+
+    # Bắt buộc cho toast click: shortcut Start Menu mang AUMID.
+    result["shortcut"] = create_app_shortcut()
     return result
 
 
 def unregister_toast_protocol() -> dict[str, Any]:
-    """Gỡ protocol aidesktop: khỏi HKCU."""
+    """Gỡ protocol khỏi HKCU."""
     result: dict[str, Any] = {
         "schema_version": "toast_protocol_v1",
         "action": "unregister",
@@ -66,7 +136,6 @@ def unregister_toast_protocol() -> dict[str, Any]:
     try:
         import winreg
 
-        # Xóa từ key con lên key cha (DeleteKey yêu cầu key rỗng con).
         for sub in (
             _COMMAND_KEY_PATH,
             rf"{_KEY_PATH}\shell\open",
@@ -89,6 +158,7 @@ def get_toast_protocol_status() -> dict[str, Any]:
         "schema_version": "toast_protocol_v1",
         "action": "status",
         "protocol": PROTOCOL_NAME,
+        "cleanup_uri": CLEANUP_URI,
         "registered": False,
         "command": None,
         "launcher_exists": _LAUNCHER.exists(),

@@ -1,8 +1,9 @@
-"""Windows toast notifier (read-only, no extra dependency).
+"""Windows toast notifier (read-only).
 
-Hiển thị thông báo toast trên Windows 10/11 thông qua Windows Runtime
-(`Windows.UI.Notifications`) gọi qua PowerShell. Không cần thư viện ngoài
-(không winotify/win10toast/plyer); chỉ cần PowerShell có sẵn trên Windows.
+Hiển thị thông báo toast trên Windows 10/11. Ưu tiên thư viện `winotify` (toast
+click mở được app qua protocol đã đăng ký — xem `tools.automation.toast_protocol`).
+Nếu môi trường không có winotify thì fallback sang PowerShell + Windows Runtime
+(toast vẫn hiện, nhưng click có thể không mở app).
 
 Module này CHỈ hiển thị thông báo — không xóa, move hay đụng file của user.
 Entry point: `run_toast_notifier()` (demo) và `show_toast(...)`.
@@ -13,10 +14,12 @@ from __future__ import annotations
 import base64
 import subprocess
 
-# AppUserModelID hiển thị tên nguồn trên toast. Dùng PowerShell làm host AUMID
-# để không phải đăng ký shortcut riêng (đủ cho mục đích thông báo read-only).
-_DEFAULT_APP_ID = "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe"
+# Phải khớp AUMID của shortcut Start Menu (tools.automation.toast_protocol.AUMID)
+# thì Windows mới cho click toast kích hoạt protocol.
+_APP_ID = "BoBeefsteakk.AIDesktopAssistant"
 _APP_LABEL = "AI Desktop Assistant"
+# AUMID host dùng cho fallback PowerShell.
+_PS_APP_ID = "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe"
 
 
 def _escape_xml(text: str) -> str:
@@ -29,13 +32,21 @@ def _escape_xml(text: str) -> str:
     )
 
 
-def _build_script(title: str, message: str, app_id: str, launch_arg: str = "") -> str:
-    """Tạo script PowerShell bắn toast bằng Windows Runtime.
+def _show_with_winotify(title: str, message: str, launch_arg: str) -> dict:
+    """Bắn toast bằng winotify. Raise nếu winotify không khả dụng."""
+    from winotify import Notification
 
-    `launch_arg` (vd "aidesktop:cleanup") biến cả toast thành nút bấm: click vào
-    sẽ kích hoạt protocol đó (8.3 — mở app tới banner Dọn). Cần đăng ký protocol
-    trước qua `tools.automation.toast_protocol.register_toast_protocol()`.
-    """
+    toast = Notification(
+        app_id=_APP_ID,
+        title=title,
+        msg=message,
+        launch=launch_arg or "",
+    )
+    toast.show()
+    return {"backend": "winotify"}
+
+
+def _show_with_powershell(title: str, message: str, launch_arg: str, timeout: int) -> dict:
     safe_title = _escape_xml(title)
     safe_message = _escape_xml(message)
     safe_label = _escape_xml(_APP_LABEL)
@@ -51,7 +62,7 @@ def _build_script(title: str, message: str, app_id: str, launch_arg: str = "") -
         f"<text placement='attribution'>{safe_label}</text>"
         "</binding></visual></toast>"
     )
-    return (
+    script = (
         "[Windows.UI.Notifications.ToastNotificationManager, "
         "Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null\n"
         "[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom, "
@@ -59,27 +70,46 @@ def _build_script(title: str, message: str, app_id: str, launch_arg: str = "") -
         "$xml = New-Object Windows.Data.Xml.Dom.XmlDocument\n"
         f"$xml.LoadXml(@'\n{toast_xml}\n'@)\n"
         "$toast = New-Object Windows.UI.Notifications.ToastNotification $xml\n"
-        f"$notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('{app_id}')\n"
+        f"$notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('{_PS_APP_ID}')\n"
         "$notifier.Show($toast)\n"
     )
+    encoded = base64.b64encode(script.encode("utf-16-le")).decode("ascii")
+    completed = subprocess.run(
+        [
+            "powershell",
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-EncodedCommand",
+            encoded,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError((completed.stderr or completed.stdout or "").strip())
+    return {"backend": "powershell"}
 
 
 def show_toast(
     title: str,
     message: str,
     *,
-    app_id: str = _DEFAULT_APP_ID,
     launch_arg: str = "",
     timeout: int = 15,
 ) -> dict:
     """Hiển thị một toast notification. Read-only, không đụng file user.
 
-    `launch_arg`: protocol kích hoạt khi user bấm vào toast (8.3).
-    Trả về dict: {shown, title, message, error, safety_contract}.
+    `launch_arg`: protocol kích hoạt khi user bấm vào toast (8.3),
+    vd "AI-Desktop-Assistant:cleanup".
+    Trả về dict: {shown, backend, title, message, error, safety_contract}.
     """
     result = {
         "schema_version": "toast_notification_v1",
         "shown": False,
+        "backend": None,
         "title": title,
         "message": message,
         "error": None,
@@ -90,31 +120,22 @@ def show_toast(
         },
     }
 
-    script = _build_script(title, message, app_id, launch_arg)
-    # Truyền script qua -EncodedCommand (base64 UTF-16LE) để không cần temp file
-    # và tránh mọi vấn đề escape dấu nháy.
-    encoded = base64.b64encode(script.encode("utf-16-le")).decode("ascii")
     try:
-        completed = subprocess.run(
-            [
-                "powershell",
-                "-NoProfile",
-                "-NonInteractive",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-EncodedCommand",
-                encoded,
-            ],
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
-        if completed.returncode == 0:
+        info = _show_with_winotify(title, message, launch_arg)
+        result["shown"] = True
+        result["backend"] = info["backend"]
+        return result
+    except Exception as winotify_exc:
+        # winotify thiếu hoặc lỗi -> thử PowerShell.
+        try:
+            info = _show_with_powershell(title, message, launch_arg, timeout)
             result["shown"] = True
-        else:
-            result["error"] = (completed.stderr or completed.stdout or "").strip()
-    except Exception as exc:  # pragma: no cover - phụ thuộc môi trường
-        result["error"] = f"{type(exc).__name__}: {exc}"
+            result["backend"] = info["backend"]
+        except Exception as ps_exc:
+            result["error"] = (
+                f"winotify: {type(winotify_exc).__name__}: {winotify_exc}; "
+                f"powershell: {type(ps_exc).__name__}: {ps_exc}"
+            )
 
     return result
 
