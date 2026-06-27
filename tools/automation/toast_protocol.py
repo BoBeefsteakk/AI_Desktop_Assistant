@@ -13,18 +13,28 @@ Entry point: `register_toast_protocol()`, `unregister_toast_protocol()`,
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Any
 
 PROTOCOL_NAME = "aidesktop"
 _BASE_DIR = Path(__file__).resolve().parents[2]
-_LAUNCHER = _BASE_DIR / "open_cleanup.bat"
+# Windows KHÔNG chấp nhận .bat làm handler cho URL protocol -> dùng pythonw.exe
+# (file thực thi) chạy script .py launcher.
+_LAUNCHER = _BASE_DIR / "open_cleanup.py"
 _KEY_PATH = rf"Software\Classes\{PROTOCOL_NAME}"
 _COMMAND_KEY_PATH = rf"{_KEY_PATH}\shell\open\command"
 
 
+def _pythonw_path() -> str:
+    """Đường dẫn pythonw.exe (chạy không cửa sổ); fallback python.exe."""
+    exe = Path(sys.executable)
+    candidate = exe.with_name("pythonw.exe")
+    return str(candidate if candidate.exists() else exe)
+
+
 def _command_value() -> str:
-    return f'"{_LAUNCHER}" "%1"'
+    return f'"{_pythonw_path()}" "{_LAUNCHER}" "%1"'
 
 
 def register_toast_protocol() -> dict[str, Any]:
