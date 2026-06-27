@@ -34,6 +34,11 @@ from tools.core.bot_controller import (
 )
 from tools.core.auto_scan_session import AUTO_SCAN_SESSION_SCHEMA, build_auto_scan_session_result
 from tools.core.candidate_review import build_candidate_review
+from tools.core.cleanup_rules import (
+    CLEANUP_RULE_SCHEMA,
+    get_cleanup_recommendation,
+    validate_cleanup_rule_registry,
+)
 from tools.core.capability_registry import (
     get_capabilities,
     validate_capability_registry,
@@ -72,6 +77,12 @@ from tools.core.file_operation_adapter import (
     build_file_operation_adapter_result,
 )
 from tools.core.issue_classifier import ISSUE_CLASSIFIER_SCHEMA, build_issue_classifier_result
+from tools.core.startup_scan import (
+    PERIODIC_SCAN_SCHEMA,
+    build_issue_fingerprint,
+    build_periodic_issue_snapshot,
+    build_periodic_notification_payload,
+)
 from tools.core.obsidian_exporter import (
     OBSIDIAN_EXPORT_SCHEMA,
     build_obsidian_export_result,
@@ -101,6 +112,7 @@ from tools.storage.wiztree_adapter import (
     parse_wiztree_csv,
 )
 from tools.storage.system_advisor import build_system_advisor_result
+from tools.automation.boot_runner import run_periodic_scan
 
 
 DANGEROUS_PATTERNS = {
@@ -338,6 +350,45 @@ def test_risk_classifier_guardrails() -> dict[str, Any]:
         "dev_artifact": dev_artifact,
         "browser_cache": browser_cache,
         "windows_temp": windows_temp,
+    }
+
+
+def test_cleanup_rule_boundary_contract() -> dict[str, Any]:
+    safe_risk = classify_file_risk(Path(r"D:\Downloads\old_cache.tmp"))
+    review_risk = classify_file_risk(Path(r"D:\Workspace\old_cache.tmp"))
+    protected_risk = classify_file_risk(BASE_DIR / "README.md")
+
+    safe_decision = get_cleanup_recommendation(safe_risk)
+    review_decision = get_cleanup_recommendation(review_risk)
+    protected_decision = get_cleanup_recommendation(protected_risk)
+    validation = validate_cleanup_rule_registry()
+
+    assert_condition(validation["status"] == "valid", "Cleanup rule registry should be internally safe.")
+    assert_condition(validation["schema"] == CLEANUP_RULE_SCHEMA, "Cleanup rule registry should expose v1 schema.")
+    assert_condition(
+        safe_risk["risk"] == SAFE_DELETE
+        and safe_decision["recommended_decision"] == "delete_candidate"
+        and safe_decision["can_recommend_delete"] is True,
+        "Only a safe-zone junk file should become delete_candidate.",
+    )
+    assert_condition(
+        review_risk["risk"] == REVIEW_REQUIRED
+        and review_decision["recommended_decision"] == "manual_review"
+        and review_decision["can_recommend_delete"] is False,
+        "The same extension outside a safe zone must remain review_required.",
+    )
+    assert_condition(
+        protected_risk["risk"] == PROTECTED
+        and protected_decision["recommended_decision"] == "keep"
+        and protected_decision["can_recommend_delete"] is False,
+        "Protected files must remain locked to keep.",
+    )
+
+    return {
+        "validation": validation,
+        "safe_decision": safe_decision,
+        "review_decision": review_decision,
+        "protected_decision": protected_decision,
     }
 
 
@@ -1242,6 +1293,15 @@ def test_bot_controller_contract() -> dict[str, Any]:
         selection_ui["decision_contract"]["executes_file_operations"] is False,
         "Selection UI should be decision-report-only.",
     )
+    all_selection_items = [
+        item
+        for group_items in selection_ui["groups"].values()
+        for item in group_items
+    ]
+    assert_condition(
+        all(isinstance(item.get("reason_text"), str) and item["reason_text"] for item in all_selection_items),
+        "Every selection item should expose a non-empty Vietnamese reason_text.",
+    )
     ok_result = execute_bot_decision("ok", bot_result=result)
     assert_condition(
         ok_result["executed"] is False,
@@ -1303,6 +1363,36 @@ def test_bot_controller_contract() -> dict[str, Any]:
             "Selection decision should block locked do-not-touch items.",
         )
 
+    reason_session = build_selection_session_from_groups({
+        "safe_to_execute": [],
+        "needs_selection": [
+            {
+                "path": "D:/Downloads/cache.tmp",
+                "candidate_group": "safe_delete_candidate",
+                "plan_action": "delete_candidate",
+                "risk": SAFE_DELETE,
+            },
+            {
+                "path": "D:/Work/edit.prproj",
+                "candidate_group": "large_project_file",
+                "plan_action": "manual_review",
+                "risk": REVIEW_REQUIRED,
+            },
+        ],
+        "do_not_touch": [{
+            "path": "D:/tool/config/settings.py",
+            "candidate_group": "protected_file",
+            "plan_action": "keep",
+            "risk": PROTECTED,
+        }],
+        "review_only": [],
+    })
+    safe_reason, project_reason = reason_session["groups"]["needs_selection"]
+    protected_reason = reason_session["groups"]["do_not_touch"][0]
+    assert_condition("Recycle Bin" in safe_reason["reason_text"], "Safe-delete reason should explain guarded deletion.")
+    assert_condition("project" in project_reason["reason_text"], "Project reason should require manual review.")
+    assert_condition("bao ve" in protected_reason["reason_text"], "Protected reason should explain the lock.")
+
     return {
         "summary": summary,
         "decision_screen": decision_screen,
@@ -1310,6 +1400,7 @@ def test_bot_controller_contract() -> dict[str, Any]:
         "ok_result": ok_result,
         "move_later_result_status": move_later_result["status"],
         "delete_result_status": delete_result["status"],
+        "reason_text_contract": True,
     }
 
 
@@ -1399,6 +1490,94 @@ def test_auto_scan_and_issue_classifier_contract() -> dict[str, Any]:
         }
     finally:
         cleanup_sandbox(sandbox)
+
+
+def test_periodic_scan_notification_contract() -> dict[str, Any]:
+    previous_classifier = {
+        "issues": [{
+            "issue_id": "I0001",
+            "severity": "warning",
+            "category": "large_file_review",
+            "title": "File lon can review",
+            "path": "D:/Downloads/archive.zip",
+            "matched_rule": "extension:.zip",
+            "source": "full_system_test",
+            "recommended_decision": "manual_review",
+            "risk": REVIEW_REQUIRED,
+            "reason": "Can xem tay.",
+        }],
+    }
+    current_classifier = {
+        "issues": [
+            *previous_classifier["issues"],
+            {
+                "issue_id": "I0002",
+                "severity": "critical",
+                "category": "safe_delete_candidate",
+                "title": "File tam moi",
+                "path": "D:/Downloads/new_cache.tmp",
+                "matched_rule": "safe_zone_names+safe_junk_extensions:.tmp",
+                "source": "full_system_test",
+                "recommended_decision": "delete_candidate",
+                "risk": SAFE_DELETE,
+                "reason": "File tam nam trong vung an toan.",
+            },
+        ],
+    }
+    provider_variant = {
+        **previous_classifier["issues"][0],
+        "source": "different_storage_provider",
+    }
+    assert_condition(
+        build_issue_fingerprint(previous_classifier["issues"][0]) == build_issue_fingerprint(provider_variant),
+        "Issue fingerprint should stay stable when the storage provider changes.",
+    )
+    previous_startup = {
+        "schema": "startup_scan_v1",
+        "issue_snapshot": build_periodic_issue_snapshot(previous_classifier),
+    }
+    current_startup = {
+        "schema": "startup_scan_v1",
+        "issue_snapshot": build_periodic_issue_snapshot(current_classifier),
+    }
+
+    initial = build_periodic_notification_payload(previous_startup)
+    compared = build_periodic_notification_payload(current_startup, initial)
+    compared_from_export_wrapper = build_periodic_notification_payload(
+        current_startup,
+        {"status": "success", "periodic": initial},
+    )
+
+    assert_condition(initial["schema"] == PERIODIC_SCAN_SCHEMA, "Periodic scan should expose a stable schema.")
+    assert_condition(
+        initial["notification"]["new_issue_count"] == 0
+        and initial["notification"]["should_notify"] is False,
+        "First periodic scan should establish a baseline without a false new-issue alert.",
+    )
+    assert_condition(
+        compared["notification"]["new_issue_count"] == 1
+        and compared["notification"]["highest_severity"] == "critical"
+        and compared["notification"]["should_notify"] is True,
+        "Periodic scan should report new issues and their highest severity.",
+    )
+    assert_condition(
+        compared_from_export_wrapper["notification"]["new_issue_count"] == 1,
+        "Periodic scan should accept the previous run_periodic_scan export wrapper as baseline.",
+    )
+    assert_condition(
+        compared["safety_contract"]["read_only"] is True
+        and compared["safety_contract"]["executes_file_operations"] is False
+        and compared["safety_contract"]["delete_enabled"] is False
+        and compared["safety_contract"]["move_enabled"] is False,
+        "Periodic notification flow must remain read-only.",
+    )
+    assert_condition(callable(run_periodic_scan), "Boot Runner should expose public run_periodic_scan().")
+
+    return {
+        "schema": compared["schema"],
+        "notification": compared["notification"],
+        "safety_contract": compared["safety_contract"],
+    }
 
 
 def write_fake_selection_decision_report(path: Path, target_file: Path) -> None:
@@ -2558,6 +2737,7 @@ FULL_SYSTEM_TESTS: list[tuple[str, Callable[[], dict[str, Any]]]] = [
     ("Config Health", test_config_health),
     ("Safety Static Audit", test_safety_static_audit),
     ("Risk Classifier Guardrails", test_risk_classifier_guardrails),
+    ("Cleanup Rule Boundary Contract", test_cleanup_rule_boundary_contract),
     ("Report Manager and Audit Index", test_report_manager_and_audit_index),
     ("Report Schema Validation", test_report_schema_validation),
     ("Audit Center Health", test_audit_center_health),
@@ -2576,6 +2756,7 @@ FULL_SYSTEM_TESTS: list[tuple[str, Callable[[], dict[str, Any]]]] = [
     ("Pre-feed Bundle Contract", test_pre_feed_bundle_contract),
     ("AI Bot Controller Contract", test_bot_controller_contract),
     ("Auto Scan and Issue Classifier Contract", test_auto_scan_and_issue_classifier_contract),
+    ("Periodic Scan Notification Contract", test_periodic_scan_notification_contract),
     ("Execution Adapter Contract", test_execution_adapter_contract),
     ("Backup Adapter Contract", test_backup_adapter_contract),
     ("File Operation Adapter Contract", test_file_operation_adapter_contract),
