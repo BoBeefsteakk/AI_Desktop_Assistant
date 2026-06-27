@@ -14,7 +14,9 @@ from __future__ import annotations
 import base64
 import subprocess
 
-_APP_ID = "AI Desktop Assistant"
+# Phải khớp AUMID của shortcut Start Menu (tools.automation.toast_protocol.AUMID)
+# thì Windows mới cho click toast kích hoạt protocol.
+_APP_ID = "BoBeefsteakk.AIDesktopAssistant"
 _APP_LABEL = "AI Desktop Assistant"
 # AUMID host dùng cho fallback PowerShell.
 _PS_APP_ID = "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe"
