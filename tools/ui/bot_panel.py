@@ -180,6 +180,7 @@ class BotPanel:
         self.assistant_counts_var = tk.StringVar(value="Backup 0 | Move 0 | Safe cleanup 0 | Review 0 | Protected 0")
         self.view_mode_var = tk.StringVar(value="Đang xem: chưa quét")
         self.ask_question_var = tk.StringVar(value="")
+        self.cleanup_banner_var = tk.StringVar(value="Chưa quét. Bấm 'Kiểm tra máy thật' để AI tìm file rác.")
         self.confirm_backup_var = tk.BooleanVar(value=False)
         self.confirm_move_var = tk.BooleanVar(value=False)
         self.confirm_delete_var = tk.BooleanVar(value=False)
@@ -311,12 +312,29 @@ class BotPanel:
         ttk.Button(quick, text="Chạy demo toàn bộ", command=self.run_full_demo_flow, bootstyle="info-outline").pack(fill=X, pady=(0, 6))
         ttk.Button(quick, text="Xem chi tiết kỹ thuật", command=self.open_advanced_tab, bootstyle="secondary-outline").pack(fill=X)
 
+        banner = ttk.LabelFrame(parent, text="Dọn dẹp 1 chạm", padding=10)
+        banner.pack(side=TOP, fill=X, pady=(14, 0))
+        self.one_click_button = ttk.Button(
+            banner, text="Đồng ý dọn", command=self.one_click_cleanup, bootstyle=DANGER
+        )
+        self.one_click_button.pack(side=RIGHT, padx=(8, 0))
+        ttk.Button(
+            banner, text="Xem từng file", command=self.focus_quick_panel, bootstyle="secondary-outline"
+        ).pack(side=RIGHT)
+        ttk.Label(
+            banner,
+            textvariable=self.cleanup_banner_var,
+            style="AssistantCount.TLabel",
+            wraplength=1100,
+        ).pack(side=LEFT, fill=X, expand=True)
+
         steps = ttk.LabelFrame(parent, text="Luồng sử dụng", padding=8)
-        steps.pack(side=TOP, fill=X, pady=(14, 10))
+        steps.pack(side=TOP, fill=X, pady=(10, 10))
         ttk.Label(
             steps,
-            text="1. Quét thư mục  ->  2. AI lập đề xuất  ->  3. Bạn xem preview rồi xác nhận",
-            style="AssistantCount.TLabel",
+            text="Cách nhanh: bấm 'Đồng ý dọn' ở trên. Muốn kiểm soát kỹ: chọn từng file ở 'Dọn nhanh' hoặc vào tab Chi tiết.",
+            style="Guide.TLabel",
+            wraplength=1100,
         ).pack(anchor="w")
 
         path_panel = ttk.LabelFrame(parent, text="Thư mục cần kiểm tra", padding=8)
@@ -385,7 +403,7 @@ class BotPanel:
         quick_body.pack(side=TOP, fill=X)
         quick_scroll = ttk.Scrollbar(quick_body, orient=tk.VERTICAL)
         quick_scroll.pack(side=RIGHT, fill=Y)
-        quick_columns = ("size", "name", "path")
+        quick_columns = ("size", "name", "reason", "path")
         self.quick_tree = ttk.Treeview(
             quick_body,
             columns=quick_columns,
@@ -395,9 +413,10 @@ class BotPanel:
             yscrollcommand=quick_scroll.set,
         )
         for col, head, width, stretch in (
-            ("size", "Dung lượng", 100, False),
-            ("name", "Tên file", 220, False),
-            ("path", "Đường dẫn", 640, True),
+            ("size", "Dung lượng", 90, False),
+            ("name", "Tên file", 180, False),
+            ("reason", "Lý do an toàn xóa", 320, False),
+            ("path", "Đường dẫn", 520, True),
         ):
             self.quick_tree.heading(col, text=head)
             self.quick_tree.column(col, width=width, stretch=stretch)
@@ -1129,7 +1148,7 @@ class BotPanel:
         self.quick_tree.delete(*self.quick_tree.get_children())
         self.quick_item_by_id = {}
         text = message or "Chưa có dữ liệu. Bấm 'Kiểm tra máy thật' để AI tìm file rác."
-        self.quick_tree.insert("", END, iid="__placeholder__", values=("", "", text))
+        self.quick_tree.insert("", END, iid="__placeholder__", values=("", "", "", text))
 
     def populate_quick_actions(self) -> None:
         if not hasattr(self, "quick_tree"):
@@ -1138,6 +1157,7 @@ class BotPanel:
         self.quick_item_by_id = {}
         if not self.selection_session:
             self.write_quick_placeholder()
+            self.update_cleanup_banner()
             return
 
         rows = 0
@@ -1163,6 +1183,7 @@ class BotPanel:
                 values=(
                     item.get("size_text") or "-",
                     item.get("name") or "-",
+                    item.get("reason_text") or "File rác an toàn dọn.",
                     item.get("path") or "-",
                 ),
             )
@@ -1170,6 +1191,91 @@ class BotPanel:
 
         if rows == 0:
             self.write_quick_placeholder("Không tìm thấy file rác nào đủ an toàn để dọn tự động. Mọi thứ ổn!")
+        self.update_cleanup_banner()
+
+    def recommended_delete_ids(self) -> list[str]:
+        """Các file rác AI thực sự khuyến nghị xóa (an toàn), chưa bị user giữ lại."""
+        ids: list[str] = []
+        for item in self.iter_selection_items():
+            if item.get("locked"):
+                continue
+            selection_id = item.get("selection_id")
+            if not selection_id or selection_id in self.quick_kept_ids:
+                continue
+            if item.get("recommended_decision") != "delete_candidate":
+                continue
+            if "delete_candidate" not in item.get("allowed_decisions", []):
+                continue
+            if not item.get("path"):
+                continue
+            ids.append(str(selection_id))
+        return ids
+
+    def update_cleanup_banner(self) -> None:
+        if not hasattr(self, "one_click_button"):
+            return
+        if not self.selection_session:
+            self.cleanup_banner_var.set("Chưa quét. Bấm 'Kiểm tra máy thật' để AI tìm file rác.")
+            self.one_click_button.configure(state="disabled")
+            return
+        ids = self.recommended_delete_ids()
+        if not ids:
+            self.cleanup_banner_var.set("Máy sạch — AI không tìm thấy file rác nào cần dọn.")
+            self.one_click_button.configure(state="disabled")
+            return
+        total = sum(int(self.quick_item_by_id.get(i, {}).get("size") or 0) for i in ids)
+        scope = "DỮ LIỆU THỬ" if self.is_demo_scan_path() else "máy thật"
+        self.cleanup_banner_var.set(
+            f"AI đề nghị dọn {len(ids)} file rác (~{format_size(total)}) trên {scope}. "
+            "Bấm 'Đồng ý dọn' để đưa vào Recycle Bin (có thể khôi phục)."
+        )
+        self.one_click_button.configure(state="normal")
+
+    def focus_quick_panel(self) -> None:
+        ids = self.recommended_delete_ids()
+        if not ids:
+            messagebox.showinfo("Không có file rác", "AI không tìm thấy file rác nào để xem.")
+            return
+        self.quick_tree.selection_set(ids)
+        self.quick_tree.see(ids[0])
+        self.quick_tree.focus(ids[0])
+
+    def one_click_cleanup(self) -> None:
+        if not self.selection_session:
+            messagebox.showinfo("Chưa quét", "Hãy bấm 'Kiểm tra máy thật' trước.")
+            return
+        ids = self.recommended_delete_ids()
+        if not ids:
+            messagebox.showinfo("Máy sạch", "Không có file rác nào cần dọn.")
+            return
+        total = sum(int(self.quick_item_by_id.get(i, {}).get("size") or 0) for i in ids)
+        confirmed = messagebox.askyesno(
+            "Đồng ý dọn",
+            f"AI sẽ đưa {len(ids)} file rác (~{format_size(total)}) vào Recycle Bin (có thể khôi phục).\n\n"
+            "Chỉ file đủ an toàn mới bị xóa; file cần xem tay luôn được giữ.\nTiếp tục?",
+        )
+        if not confirmed:
+            return
+
+        decisions = {selection_id: "delete_candidate" for selection_id in ids}
+        session = self.selection_session
+
+        def worker() -> dict[str, Any]:
+            dry = export_safe_delete_selection_flow_report(
+                decisions, mode="dry_run", final_token=None, session=session,
+                note="Bot Panel one-click cleanup dry-run", extra_tags=["bot_panel_ui", "one_click"],
+            )
+            deletable = dry["flow"]["summary"].get("deletable_count", 0)
+            errors = dry["flow"]["summary"].get("delete_error_count", 0)
+            applied = None
+            if deletable > 0 and errors == 0:
+                applied = export_safe_delete_selection_flow_report(
+                    decisions, mode="apply", final_token=FINAL_DELETE_TOKEN, session=session,
+                    note="Bot Panel one-click cleanup apply", extra_tags=["bot_panel_ui", "one_click"],
+                )
+            return {"requested": len(ids), "dry": dry, "applied": applied}
+
+        self.run_background("Dọn 1 chạm", worker, self.load_quick_delete_result)
 
     def quick_selected_ids(self) -> list[str]:
         return [
