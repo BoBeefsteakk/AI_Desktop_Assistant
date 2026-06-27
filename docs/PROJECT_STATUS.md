@@ -2,6 +2,12 @@
 
 ## Giai đoạn hiện tại
 
+**thay doi (2026-06-27) Phase 7 gan nhu HOAN TAT (Claude solo, Codex het token tuan nay):** Da noi xong toan bo backend cua Codex vao UI:
+- Buoc 2 (PR #6): panel suc khoe hien `explanation` + `disk_full_reason`; o "Hoi AI" goi `answer_user_question`.
+- Buoc 3 (PR #9): banner "Don dep 1 cham" + nut [Dong y don] xoa file rac safe_delete qua token/Recycle Bin; cot "Ly do an toan xoa" (reason_text).
+- Buoc 5 (PR #11): banner "Theo doi dinh ky" + nut "Kiem tra van de moi" goi `run_periodic_scan` (read-only), bao van de moi so voi baseline.
+Tat ca giu nguyen safety: xoa/move/backup luon qua Selection Decision Report + token + Recycle Bin. Full System Tester 40/40 trong `D:\tool`.
+
 **thay doi (2026-06-27) Phase 7 backend REQ#6:** Da them public
 `tools.core.one_click_cleanup.build_one_click_cleanup_plan(...)`, schema
 `one_click_cleanup_plan_v1`. Plan doc selection session hien co, reclassify tung
