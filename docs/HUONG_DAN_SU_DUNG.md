@@ -74,6 +74,15 @@ Mỗi mục: bấm **`Quét`** → chọn dòng (giữ Ctrl/Shift chọn nhiều
 
 ---
 
+## 3c. Tab "Lịch sử" (AI đã làm gì + hiệu quả)
+
+- **Hiệu quả 7 ngày qua**: tổng file đã sắp xếp / dọn-xóa / số lần thao tác.
+- **Hành động gần đây**: mỗi dòng là một lần bạn dùng app, kèm thời gian.
+- Chỉ tính **hành động thật bạn bấm trong app** (không tính chạy test/CLI).
+- Bấm **`Làm mới`** để cập nhật.
+
+---
+
 ## 4. Hỏi AI (tab Trợ lý)
 
 Gõ câu hỏi tiếng Việt, vd:

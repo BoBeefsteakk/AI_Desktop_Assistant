@@ -225,13 +225,16 @@ class BotPanel:
 
         self.assistant_tab = ttk.Frame(self.notebook, padding=10)
         self.organizer_tab = ttk.Frame(self.notebook, padding=10)
+        self.history_tab = ttk.Frame(self.notebook, padding=10)
         self.advanced_tab = ttk.Frame(self.notebook, padding=(0, 8, 0, 0))
         self.notebook.add(self.assistant_tab, text="Trợ lý")
         self.notebook.add(self.organizer_tab, text="Sắp xếp")
+        self.notebook.add(self.history_tab, text="Lịch sử")
         self.notebook.add(self.advanced_tab, text="Chi tiết")
 
         self._build_assistant_panel(self.assistant_tab)
         self._build_organizer_tab(self.organizer_tab)
+        self._build_history_tab(self.history_tab)
 
         self._build_advanced_scan_controls(self.advanced_tab)
 
@@ -920,6 +923,57 @@ class BotPanel:
         done = moved if moved is not None else deleted
         messagebox.showinfo("Xong", f"Đã xử lý {done} mục.")
         self._org_scan(key)  # quét lại để cập nhật danh sách
+
+    # ---------------- Tab "Lịch sử" (AI đã làm gì + hiệu quả) ----------------
+
+    def _build_history_tab(self, parent: ttk.Frame) -> None:
+        top = ttk.Frame(parent)
+        top.pack(side=TOP, fill=X, pady=(0, 8))
+        ttk.Label(top, text="Lịch sử & hiệu quả",
+                  font=("Segoe UI", 13, "bold")).pack(side=LEFT)
+        ttk.Button(top, text="Làm mới", bootstyle="primary",
+                   command=self._refresh_history).pack(side=RIGHT)
+
+        self.metrics_var = tk.StringVar(value="Đang tải...")
+        metrics = ttk.LabelFrame(parent, text="Hiệu quả 7 ngày qua", padding=10)
+        metrics.pack(side=TOP, fill=X, pady=(0, 8))
+        ttk.Label(metrics, textvariable=self.metrics_var,
+                  font=("Segoe UI", 11)).pack(anchor="w")
+
+        hist = ttk.LabelFrame(parent, text="AI đã làm gì (gần đây)", padding=8)
+        hist.pack(side=TOP, fill=BOTH, expand=True)
+        cols = ("time", "text")
+        self.history_tree = ttk.Treeview(hist, columns=cols, show="headings",
+                                         height=14)
+        self.history_tree.heading("time", text="Thời gian")
+        self.history_tree.heading("text", text="Hành động")
+        self.history_tree.column("time", width=160)
+        self.history_tree.column("text", width=560)
+        self.history_tree.pack(side=TOP, fill=BOTH, expand=True)
+
+        self._refresh_history()
+
+    def _refresh_history(self) -> None:
+        def work():
+            from tools.core.history_metrics import build_history, build_metrics
+            return {"metrics": build_metrics(), "history": build_history(limit=100)}
+
+        self.run_background("Lịch sử", work, on_success=self._load_history)
+
+    def _load_history(self, data: dict) -> None:
+        m = data["metrics"]
+        self.metrics_var.set(
+            f"Sắp xếp {m['moved_total']} file · Dọn/xóa {m['deleted_total']} mục · "
+            f"{m['sessions']} lần thao tác"
+        )
+        tree = self.history_tree
+        tree.delete(*tree.get_children())
+        items = data["history"]["items"]
+        if not items:
+            tree.insert("", "end", values=("—", "Chưa có hoạt động nào. Hãy thử tab 'Sắp xếp' hoặc 'Dọn 1 chạm'."))
+            return
+        for it in items:
+            tree.insert("", "end", values=(it["time"], it["text"]))
 
     def browse_scan_folder(self) -> None:
         folder = filedialog.askdirectory(initialdir=self.scan_path_var.get() or DEFAULT_SCAN_FOLDER)
