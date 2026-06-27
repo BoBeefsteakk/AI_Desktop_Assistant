@@ -7,8 +7,15 @@ import threading
 import traceback
 from datetime import datetime
 from pathlib import Path
-from tkinter import END, BOTH, LEFT, RIGHT, TOP, X, Y, filedialog, messagebox, ttk
+from tkinter import END, BOTH, LEFT, RIGHT, TOP, X, Y, filedialog, messagebox
 import tkinter as tk
+import ttkbootstrap as ttk
+from ttkbootstrap.constants import DANGER, PRIMARY, SUCCESS
+
+# ttkbootstrap exposes the themed label frame as `Labelframe`; `LabelFrame` falls back
+# to the unthemed tk widget that rejects `padding`/`bootstyle`. Alias so existing
+# `ttk.LabelFrame(...)` calls use the themed widget.
+ttk.LabelFrame = ttk.Labelframe
 from typing import Any, Callable
 
 from config.settings import (
@@ -31,7 +38,9 @@ from tools.core.file_operation_adapter import FINAL_MOVE_TOKEN
 from tools.core.safe_delete_adapter import FINAL_DELETE_TOKEN
 from tools.core.issue_classifier import export_issue_classifier_report
 from tools.core.report_manager import read_recent_report_index
+from tools.core.safety_utils import format_size
 from tools.core.undo_manager import restore_manifest
+from tools.storage.wiztree_adapter import is_wiztree_available
 
 
 BOT_PANEL_SCHEMA = "bot_panel_ui_v2"
@@ -110,8 +119,18 @@ def cleanup_demo_sandbox(sandbox: str | Path) -> None:
         shutil.rmtree(target)
 
 
+def default_storage_mode() -> str:
+    """Pick a storage-aware default so the assistant surfaces heavy/junk files on open."""
+    try:
+        if is_wiztree_available():
+            return "wiztree"
+    except Exception:
+        pass
+    return "python"
+
+
 def run_bot_panel() -> None:
-    root = tk.Tk()
+    root = ttk.Window(themename="cosmo")
     BotPanel(root)
     root.mainloop()
 
@@ -137,6 +156,7 @@ class BotPanel:
         self.pending_backup_run_dir: str | None = None
         self.last_move_manifest: str | None = None
         self.latest_report_path: str | None = None
+        self.last_scan_data: dict[str, Any] | None = None
         self.last_backup_dry_run_signature: tuple[tuple[str, str], ...] | None = None
         self.last_dry_run_signature: tuple[tuple[str, str], ...] | None = None
         self.last_move_dry_run_signature: tuple[tuple[str, str], ...] | None = None
@@ -144,7 +164,7 @@ class BotPanel:
 
         self.scan_path_var = tk.StringVar(value=DEFAULT_SCAN_FOLDER)
         self.move_destination_var = tk.StringVar(value="")
-        self.mode_var = tk.StringVar(value="light")
+        self.mode_var = tk.StringVar(value=default_storage_mode())
         self.large_file_mb_var = tk.StringVar(value=str(DEFAULT_LARGE_FILE_MB))
         self.limit_var = tk.StringVar(value=str(DEFAULT_RESULT_LIMIT))
         self.group_filter_var = tk.StringVar(value="all")
@@ -155,6 +175,7 @@ class BotPanel:
         self.assistant_status_var = tk.StringVar(value="No scan loaded yet.")
         self.assistant_next_step_var = tk.StringVar(value="Choose a folder or try the demo sandbox, then run scan.")
         self.assistant_counts_var = tk.StringVar(value="Backup 0 | Move 0 | Safe cleanup 0 | Review 0 | Protected 0")
+        self.view_mode_var = tk.StringVar(value="Đang xem: chưa quét")
         self.confirm_backup_var = tk.BooleanVar(value=False)
         self.confirm_move_var = tk.BooleanVar(value=False)
         self.confirm_delete_var = tk.BooleanVar(value=False)
@@ -163,15 +184,25 @@ class BotPanel:
 
         self._build_layout()
         self.refresh_from_latest()
+        self.root.after(600, self.auto_start_scan)
 
     def _build_layout(self) -> None:
         self._configure_style()
 
-        header = ttk.Frame(self.root, padding=(12, 10, 12, 8))
+        header = ttk.Frame(self.root, padding=(16, 12), bootstyle=PRIMARY)
         header.pack(side=TOP, fill=X)
 
-        ttk.Label(header, text=BOT_PANEL_TITLE, style="Title.TLabel").pack(side=LEFT)
-        ttk.Label(header, textvariable=self.status_var, style="Status.TLabel").pack(side=RIGHT)
+        ttk.Label(
+            header,
+            text=BOT_PANEL_TITLE,
+            font=("Segoe UI", 16, "bold"),
+            bootstyle="inverse-primary",
+        ).pack(side=LEFT)
+        ttk.Label(
+            header,
+            textvariable=self.status_var,
+            bootstyle="inverse-primary",
+        ).pack(side=RIGHT)
 
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(fill=BOTH, expand=True, padx=12, pady=(0, 12))
@@ -190,7 +221,7 @@ class BotPanel:
         guide = ttk.Label(self.advanced_tab, textvariable=self.guide_var, style="Guide.TLabel", padding=(0, 0, 0, 8))
         guide.pack(side=TOP, fill=X)
 
-        body = ttk.PanedWindow(self.advanced_tab, orient=tk.HORIZONTAL)
+        body = ttk.Panedwindow(self.advanced_tab, orient=tk.HORIZONTAL)
         body.pack(fill=BOTH, expand=True)
 
         left = ttk.Frame(body)
@@ -203,20 +234,18 @@ class BotPanel:
 
     def _configure_style(self) -> None:
         style = ttk.Style()
-        try:
-            style.theme_use("clam")
-        except tk.TclError:
-            pass
         style.configure("Title.TLabel", font=("Segoe UI", 15, "bold"))
         style.configure("Status.TLabel", font=("Segoe UI", 9))
         style.configure("Summary.TLabel", font=("Segoe UI", 10))
         style.configure("Guide.TLabel", font=("Segoe UI", 9))
-        style.configure("AssistantTitle.TLabel", font=("Segoe UI", 17, "bold"))
+        style.configure("AssistantTitle.TLabel", font=("Segoe UI", 18, "bold"))
         style.configure("AssistantStatus.TLabel", font=("Segoe UI", 11))
         style.configure("AssistantCount.TLabel", font=("Segoe UI", 10, "bold"))
-        style.configure("Danger.TButton", foreground="#8a1c1c")
+        style.configure("ViewMode.TLabel", font=("Segoe UI", 10, "bold"))
+        style.configure("Danger.TButton", font=("Segoe UI", 10, "bold"))
         style.configure("Primary.TButton", font=("Segoe UI", 10, "bold"))
-        style.configure("Panel.TLabelframe", padding=8)
+        # Larger, more readable text for monospace report/health panels.
+        self.mono_font = ("Consolas", 10)
 
     def _build_advanced_scan_controls(self, parent: ttk.Frame) -> None:
         controls = ttk.LabelFrame(parent, text="Advanced scan controls", padding=8)
@@ -273,10 +302,10 @@ class BotPanel:
 
         quick = ttk.Frame(top)
         quick.pack(side=RIGHT, anchor="ne")
-        ttk.Button(quick, text="Chạy thử an toàn", command=self.create_demo_and_scan, style="Primary.TButton").pack(fill=X, pady=(0, 6))
-        ttk.Button(quick, text="Chạy full demo", command=self.run_full_demo_flow).pack(fill=X, pady=(0, 6))
-        ttk.Button(quick, text="Quét thư mục", command=self.run_scan_and_classify).pack(fill=X, pady=(0, 6))
-        ttk.Button(quick, text="Xem chi tiết", command=self.open_advanced_tab).pack(fill=X)
+        ttk.Button(quick, text="Kiểm tra máy thật", command=self.run_scan_and_classify, bootstyle=PRIMARY, width=22).pack(fill=X, pady=(0, 6))
+        ttk.Button(quick, text="Xem thử (file giả)", command=self.create_demo_and_scan, bootstyle="success-outline").pack(fill=X, pady=(0, 6))
+        ttk.Button(quick, text="Chạy demo toàn bộ", command=self.run_full_demo_flow, bootstyle="info-outline").pack(fill=X, pady=(0, 6))
+        ttk.Button(quick, text="Xem chi tiết kỹ thuật", command=self.open_advanced_tab, bootstyle="secondary-outline").pack(fill=X)
 
         steps = ttk.LabelFrame(parent, text="Luồng sử dụng", padding=8)
         steps.pack(side=TOP, fill=X, pady=(14, 10))
@@ -295,6 +324,33 @@ class BotPanel:
         counts = ttk.LabelFrame(parent, text="Tóm tắt AI tìm thấy", padding=8)
         counts.pack(side=TOP, fill=X, pady=(0, 10))
         ttk.Label(counts, textvariable=self.assistant_counts_var, style="AssistantCount.TLabel").pack(anchor="w")
+
+        health = ttk.LabelFrame(parent, text="Sức khỏe ổ cứng & tư vấn của AI", padding=8)
+        health.pack(side=TOP, fill=X, pady=(0, 10))
+        self.view_mode_label = ttk.Label(
+            health,
+            textvariable=self.view_mode_var,
+            style="ViewMode.TLabel",
+            bootstyle="secondary",
+        )
+        self.view_mode_label.pack(side=TOP, anchor="w", pady=(0, 6))
+        health_body = ttk.Frame(health)
+        health_body.pack(side=TOP, fill=BOTH, expand=True)
+        health_scroll = ttk.Scrollbar(health_body, orient=tk.VERTICAL)
+        health_scroll.pack(side=RIGHT, fill=Y)
+        self.health_text = tk.Text(
+            health_body,
+            height=14,
+            wrap="word",
+            font=self.mono_font,
+            relief="flat",
+            background="#f7f9fc",
+            yscrollcommand=health_scroll.set,
+        )
+        self.health_text.pack(side=LEFT, fill=BOTH, expand=True)
+        health_scroll.configure(command=self.health_text.yview)
+        self.health_text.configure(state="disabled")
+        self.write_text(self.health_text, "Đang chờ lần quét đầu tiên... AI sẽ tự kiểm tra ổ cứng khi mở app.")
 
         bottom_frame = ttk.Frame(parent)
         bottom_frame.configure(height=ASSISTANT_RESULT_PANEL_MIN_HEIGHT_PX)
@@ -360,28 +416,29 @@ class BotPanel:
             right,
             text="1. Dùng đề xuất AI",
             command=self.use_recommended_for_all,
-            style="Primary.TButton",
+            bootstyle=SUCCESS,
         ).pack(fill=X, pady=(0, 8))
         ttk.Button(
             right,
             text="2. Xem kế hoạch AI",
             command=self.preview_ai_plan,
-            style="Primary.TButton",
+            bootstyle=PRIMARY,
         ).pack(fill=X, pady=(0, 6))
         ttk.Checkbutton(
             right,
             text="Tôi đã xem kế hoạch",
             variable=self.confirm_plan_var,
+            bootstyle="round-toggle",
         ).pack(anchor="w", pady=(0, 6))
         ttk.Button(
             right,
             text="3. Áp dụng kế hoạch",
             command=self.apply_ai_plan,
-            style="Danger.TButton",
+            bootstyle=DANGER,
         ).pack(fill=X, pady=(0, 12))
-        ttk.Button(right, text="Chạy full demo", command=self.run_full_demo_flow).pack(fill=X, pady=(0, 8))
-        ttk.Button(right, text="Hủy lựa chọn", command=self.clear_all_decisions).pack(fill=X, pady=(0, 8))
-        ttk.Button(right, text="Chi tiết kỹ thuật", command=self.open_advanced_tab).pack(fill=X)
+        ttk.Button(right, text="Chạy demo toàn bộ", command=self.run_full_demo_flow, bootstyle="info-outline").pack(fill=X, pady=(0, 8))
+        ttk.Button(right, text="Hủy lựa chọn", command=self.clear_all_decisions, bootstyle="secondary-outline").pack(fill=X, pady=(0, 8))
+        ttk.Button(right, text="Chi tiết kỹ thuật", command=self.open_advanced_tab, bootstyle="secondary-outline").pack(fill=X)
 
     def _build_table_panel(self, parent: ttk.Frame) -> None:
         toolbar = ttk.Frame(parent)
@@ -753,6 +810,7 @@ class BotPanel:
 
     def load_full_demo_flow(self, result: dict[str, Any]) -> None:
         self.last_scan_report = result.get("scan", {}).get("report")
+        self.last_scan_data = result.get("scan", {}).get("scan")
         self.last_classifier_report = result.get("classifier", {}).get("report")
         self.bot_result = result.get("bot")
         self.selection_session = result.get("session")
@@ -781,6 +839,7 @@ class BotPanel:
         self.populate_table()
         self.update_summary()
         self.update_reports_text()
+        self.update_health_panel()
         self.write_assistant_log(
             "Đã quét xong.\n\n"
             f"Scan report:\n{self.last_scan_report or '-'}\n\n"
@@ -881,6 +940,87 @@ class BotPanel:
 
         self.run_background("Auto scan + classify", worker, self.load_scan_result)
 
+    def auto_start_scan(self) -> None:
+        """Run a full read-only scan automatically when the app opens."""
+        if self.busy:
+            self.root.after(700, self.auto_start_scan)
+            return
+        scan_path = Path(self.scan_path_var.get().strip() or DEFAULT_SCAN_FOLDER)
+        if scan_path.exists():
+            self.set_status("AI đang tự động kiểm tra máy...")
+            self.run_scan_and_classify()
+
+    def update_health_panel(self) -> None:
+        if not hasattr(self, "health_text"):
+            return
+        data = self.last_scan_data
+        if not data:
+            return
+        if self.is_demo_scan_path():
+            self.view_mode_var.set("Đang xem: DỮ LIỆU THỬ (file giả, không phải máy thật)")
+            self.view_mode_label.configure(bootstyle="warning")
+        else:
+            self.view_mode_var.set("Đang xem: MÁY THẬT")
+            self.view_mode_label.configure(bootstyle="success")
+        snapshot = data.get("snapshot", {})
+        advisor = data.get("advisor", {})
+        disk = snapshot.get("disk", {})
+        storage = snapshot.get("storage", {})
+
+        lines: list[str] = ["== Ổ ĐĨA =="]
+        status_label = {"ok": "Tốt", "warning": "Cần theo dõi", "critical": "Sắp đầy"}
+        for item in disk.get("disks", []):
+            status_text = status_label.get(item.get("status"), str(item.get("status")))
+            lines.append(
+                f"{item.get('mountpoint')}  {item.get('percent')}% đã dùng  | "
+                f"còn trống {format_size(item.get('free', 0))} / {format_size(item.get('total', 0))}  -> {status_text}"
+            )
+
+        smart = disk.get("smart_health", {})
+        devices = smart.get("devices", [])
+        if devices:
+            lines.append("")
+            lines.append("== SMART (sức khỏe phần cứng) ==")
+            for dev in devices:
+                passed = dev.get("smart_passed")
+                health_text = "PASS" if passed is True else "CẢNH BÁO" if passed is False else "Không rõ"
+                temp = dev.get("temperature")
+                temp_text = f" | {temp}°C" if temp is not None else ""
+                lines.append(
+                    f"[{health_text}] {dev.get('device')} "
+                    f"{dev.get('model') or dev.get('comment') or ''}{temp_text}"
+                )
+
+        large_files = storage.get("large_files", [])
+        if large_files:
+            total = sum(item.get("size", 0) for item in large_files)
+            lines.append("")
+            lines.append(f"== FILE NẶNG ({len(large_files)} file, ~{format_size(total)}) ==")
+            for item in large_files[:8]:
+                lines.append(f"{format_size(item.get('size', 0)):>10}  {item.get('path')}")
+
+        top_folders = storage.get("top_folders", [])
+        if top_folders:
+            lines.append("")
+            lines.append("== THƯ MỤC LỚN NHẤT ==")
+            for item in top_folders[:6]:
+                lines.append(f"{format_size(item.get('size', 0)):>10}  {item.get('path')}")
+
+        recommendations = advisor.get("recommendations", [])
+        if recommendations:
+            lines.append("")
+            lines.append("== AI TƯ VẤN ==")
+            sev_label = {"critical": "NGHIÊM TRỌNG", "warning": "CẢNH BÁO", "info": "Thông tin"}
+            for rec in recommendations:
+                sev = sev_label.get(rec.get("severity"), str(rec.get("severity")))
+                lines.append(f"[{sev}] {rec.get('title')}: {rec.get('detail')}")
+
+        if storage.get("provider") in {"skipped", None} and not large_files and not top_folders:
+            lines.append("")
+            lines.append("(Chế độ quét nhanh không đọc chi tiết file. Chọn mode python/wiztree ở tab Chi tiết để xem file nặng.)")
+
+        self.write_text(self.health_text, "\n".join(lines))
+
     def refresh_from_latest(self) -> None:
         def worker() -> dict[str, Any]:
             bot = build_bot_controller_result(include_items=True)
@@ -894,6 +1034,7 @@ class BotPanel:
         self.selection_session = result.get("session")
         if result.get("scan"):
             self.last_scan_report = result["scan"].get("report")
+            self.last_scan_data = result["scan"].get("scan")
         if result.get("classifier"):
             self.last_classifier_report = result["classifier"].get("report")
         self.decisions = {}
@@ -904,6 +1045,7 @@ class BotPanel:
         self.populate_table()
         self.update_summary()
         self.update_reports_text()
+        self.update_health_panel()
 
     def populate_table(self) -> None:
         self.tree.delete(*self.tree.get_children())
@@ -1065,7 +1207,15 @@ class BotPanel:
         meaning: str,
         button_text: str,
     ) -> None:
-        card = ttk.LabelFrame(parent, text=title, padding=8)
+        card_style = {
+            "needs_backup": "warning",
+            "move_later": "info",
+            "delete_candidate": "danger",
+            "manual_review": "secondary",
+            "do_not_touch": "secondary",
+        }.get(decision, "secondary")
+
+        card = ttk.LabelFrame(parent, text=title, padding=8, bootstyle=card_style)
         card.pack(side=TOP, fill=X, pady=(0, 8))
 
         top = ttk.Frame(card)
@@ -1074,11 +1224,13 @@ class BotPanel:
             top,
             text=f"{count} item | {selected_count} đã chọn",
             style="AssistantCount.TLabel",
+            bootstyle=card_style,
         ).pack(side=LEFT)
         ttk.Button(
             top,
             text=button_text,
             command=lambda value=decision: self.show_assistant_group(value),
+            bootstyle=f"{card_style}-outline",
         ).pack(side=RIGHT)
 
         ttk.Label(
@@ -1093,6 +1245,7 @@ class BotPanel:
                 card,
                 text="Chọn theo đề xuất này",
                 command=lambda value=decision: self.prepare_and_focus_recommended(value),
+                bootstyle=card_style,
             ).pack(anchor="e", pady=(6, 0))
 
     def update_reports_text(self) -> None:

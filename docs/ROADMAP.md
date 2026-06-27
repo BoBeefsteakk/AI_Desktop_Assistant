@@ -211,11 +211,11 @@ Bao gồm:
 
 ---
 
-## Phase 7 - AI Assistant
+## Phase 7 - AI Assistant (ĐÍCH CUỐI)
 
-Mục tiêu cuối cùng.
+**Mục tiêu cuối cùng:** AI tự động chạy full tool khi mở app, tự tư vấn sức khỏe ổ cứng / file rác / file nặng bằng ngôn ngữ người dùng, và user chỉ cần chọn xóa hoặc giữ. User KHÔNG phải tự chạy tool nào.
 
-Ví dụ:
+Ví dụ trải nghiệm mong muốn:
 
 "Dọn cache trình duyệt"
 
@@ -223,4 +223,21 @@ Ví dụ:
 
 "Cho tôi biết vì sao ổ D đầy"
 
-Assistant tự chọn tool phù hợp và giải thích kết quả.
+Assistant tự chọn tool phù hợp, giải thích kết quả, và đề xuất hành động an toàn.
+
+### Đã làm (2026-06-25) - Advisory Dashboard v1
+
+* **thay doi** Bot Panel UI tự động quét khi mở app (`auto_start_scan`), không cần user bấm.
+* **thay doi** Default storage mode = WizTree/Python (`default_storage_mode`) để file nặng/file rác hiện ngay.
+* **thay doi** Panel "Sức khỏe ổ cứng & tư vấn của AI" (`update_health_panel`): ổ đĩa, SMART, file nặng, thư mục lớn, AI tư vấn theo mức độ - tất cả tiếng Việt.
+* **thay doi** Phân biệt rõ DEMO (file giả) vs MÁY THẬT bằng nhãn màu + đổi tên nút.
+* **thay doi** UI hiện đại bằng ttkbootstrap (theme cosmo).
+* **thay doi** Vẫn token-gated qua adapter; user chọn xóa/giữ bằng flow an toàn sẵn có.
+
+### Dự kiến để đạt đích cuối
+
+* **Bước 1 (UI polish):** Gộp 3 bước "Dùng đề xuất AI → Xem kế hoạch → Áp dụng" gọn hơn; thêm nút "Xóa file rác này" ngay trên từng dòng file để user chọn nhanh không cần hiểu khái niệm decision/token.
+* **Bước 2 (giải thích bằng ngôn ngữ tự nhiên):** Với mỗi recommendation, sinh câu giải thích "vì sao" (vd "Ổ D đầy vì Downloads chiếm 44GB, trong đó X file cài đặt cũ có thể xóa") thay vì chỉ liệt kê số liệu.
+* **Bước 3 (intent engine):** Mở rộng Natural Command v3 thành intent engine: user gõ/nói "tại sao ổ D đầy" → assistant tự chạy auto-scan + advisor + trả lời + đề xuất action.
+* **Bước 4 (lịch tự động):** Tùy chọn cho assistant tự quét định kỳ (tận dụng boot_runner/startup_scan đã có) và báo cáo khi phát hiện vấn đề.
+* **Bước 5 (an toàn vẫn là số 1):** Mọi thao tác xóa/move/backup tiếp tục qua Selection Decision Report + token + Recycle Bin; không bao giờ "OK là xóa luôn" mà bỏ qua confirmation.

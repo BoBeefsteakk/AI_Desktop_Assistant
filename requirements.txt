@@ -3,3 +3,4 @@ send2trash
 winshell
 pywin32
 watchdog
+ttkbootstrap
