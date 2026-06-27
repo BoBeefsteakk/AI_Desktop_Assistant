@@ -2,6 +2,14 @@
 
 ## Giai đoạn hiện tại
 
+**thay doi (2026-06-27) Phase 7 Buoc 1 - Don nhanh inline (branch `claude/ui-inline-delete`):** Them panel "Don nhanh - chon muc roi bam Xoa hoac Giu" tren tab Tro ly cua `tools/ui/bot_panel.py`. Liet ke chi cac file rac AI THUC SU khuyen nghi xoa (`recommended_decision == "delete_candidate"`, tuc risk safe_delete), user chon dong roi bam [Xoa muc da chon] (1 popup xac nhan) hoac [Giu muc da chon]. Nut Xoa chay y het luong safe-delete cu: dry-run -> apply token `DELETE_SELECTION_V1` -> Recycle Bin, sau do tu quet lai. Backend GIU NGUYEN (UI chi goi `export_safe_delete_selection_flow_report`). Da test end-to-end tren file gia: file vao Recycle Bin OK. Tool Tester 48/48, Full System Tester 37/37.
+
+**thay doi (2026-06-27) Codex x Claude collaboration bridge:** Da tao branch
+`codex/backend-collab-bridge`, doc lai `AGENTS.md`, `CLAUDE.md`,
+`docs/COLLAB.md`, `docs/PROJECT_STATUS.md`, `docs/ROADMAP.md`, va them mailbox
+chung `.agents/AGENT_MAILBOX.md` de Codex/Claude de lai request, handoff, canh
+bao doi API. Buoc nay chi ket noi phoi hop agent, khong sua backend logic/UI.
+
 **thay doi (2026-06-25) Advisory Dashboard v1 - huong toi dich cuoi Phase 7:** Bot Panel UI (`tools/ui/bot_panel.py`) gio tu dong kiem tra may khi mo app va tu van suc khoe o cung bang tieng Viet, dung muc tieu user: "AI tu dong chay full tool, tu van file rac/file nang, user chi chon xoa hoac giu".
 
 Da lam duoc:
