@@ -775,9 +775,9 @@ class BotPanel:
 
         specs = [
             ("download", "Sắp xếp Downloads (theo loại/ngày)", "move", False),
-            ("media", "Gom ảnh/video vào thư mục riêng", "move", True),
-            ("duplicate", "Tìm & xóa file trùng (giữ bản gốc)", "delete", True),
-            ("empty", "Tìm & xóa folder rỗng", "delete", True),
+            ("organize", "Sắp xếp theo loại — gom mọi file cùng loại vào 1 folder", "move", True),
+            ("duplicate", "Tìm & xóa file trùng (luôn giữ file gốc cũ nhất)", "delete", True),
+            ("empty", "Tìm & xóa folder rỗng (gồm folder lồng nhau)", "delete", True),
         ]
         for key, title, action, needs_folder in specs:
             self._build_organizer_section(parent, key, title, action, needs_folder)
@@ -845,7 +845,7 @@ class BotPanel:
         folder = sec["folder_var"].get().strip()
         scanners = {
             "download": lambda: ob.scan_downloads(),
-            "media": lambda: ob.scan_media(folder),
+            "organize": lambda: ob.scan_organize_by_type(folder),
             "duplicate": lambda: ob.scan_duplicates(folder),
             "empty": lambda: ob.scan_empty_folders(folder),
         }
@@ -863,7 +863,8 @@ class BotPanel:
         sec["items"] = items
         for idx, item in enumerate(items):
             if key == "duplicate":
-                path = item.get("duplicate", "")
+                # Hiện rõ: sẽ XÓA bản sao, GIỮ file gốc.
+                path = f"XÓA: {item.get('duplicate','')}   |   GIỮ: {item.get('keep','')}"
             else:
                 path = item.get("path", "")
             size = self._fmt_size(item.get("size", 0)) if key != "empty" else "-"
@@ -903,7 +904,7 @@ class BotPanel:
         folder = sec["folder_var"].get().strip()
         appliers = {
             "download": lambda: ob.apply_downloads(selected),
-            "media": lambda: ob.apply_media(selected, folder),
+            "organize": lambda: ob.apply_organize_by_type(selected, folder),
             "duplicate": lambda: ob.apply_duplicate_delete(selected),
             "empty": lambda: ob.apply_empty_delete(selected),
         }

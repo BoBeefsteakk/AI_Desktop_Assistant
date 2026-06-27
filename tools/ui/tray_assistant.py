@@ -82,7 +82,9 @@ class TrayAssistant:
         try:
             from tools.automation.background_assistant import run_background_assistant_cycle
 
-            result = run_background_assistant_cycle()
+            # scan_mode="python" = quét in-process, KHÔNG gọi WizTree (subprocess)
+            # nên không nháy cửa sổ terminal khi chạy nền.
+            result = run_background_assistant_cycle(scan_mode="python")
             alert = bool(result.get("notification", {}).get("should_notify"))
             self._set_alert(alert)
             return result

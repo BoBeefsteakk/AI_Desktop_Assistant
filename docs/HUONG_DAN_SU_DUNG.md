@@ -12,11 +12,17 @@ việc **chọn xóa hay giữ** — không phải tự chạy tool nào.
 - Thấy file rác mới → bắn **toast thông báo** + icon khay đổi **màu cam**.
 - **Click icon khay** (hoặc chuột phải → **"Mở dọn dẹp"**) → mở app tới chỗ dọn.
 
-Bật trợ lý nền:
+Bật trợ lý nền (cách **ẩn hẳn, không nháy terminal** — khuyến nghị):
+```
+Double-click  start_hidden.vbs
+```
+Hoặc bằng lệnh (cũng không có console vì dùng pythonw):
 ```
 pythonw -m tools.ui.tray_assistant
 ```
 Menu chuột phải ở icon khay: **Mở dọn dẹp · Quét ngay · Thoát**.
+
+> Quét nền dùng scanner Python (in-process) nên **không bật cửa sổ terminal** lúc quét.
 
 ### B. Mở app trực tiếp (khi muốn kiểm tra ngay)
 ```
@@ -58,10 +64,10 @@ Mỗi mục: bấm **`Quét`** → chọn dòng (giữ Ctrl/Shift chọn nhiều
 
 | Mục | Làm gì | Áp dụng |
 |---|---|---|
-| **Sắp xếp Downloads** | Gom file trong Downloads theo loại/ngày | Di chuyển (khôi phục được) |
-| **Gom ảnh/video** | Gom audio/video vào 1 thư mục | Di chuyển (khôi phục được) |
-| **Tìm file trùng** | Tìm bản sao (giữ bản gốc) | Xóa bản sao → Recycle Bin |
-| **Tìm folder rỗng** | Tìm thư mục rỗng | Xóa → Recycle Bin |
+| **Sắp xếp Downloads** | Gom file Downloads theo loại/ngày | Di chuyển (khôi phục được) |
+| **Sắp xếp theo loại** | Gom **mọi** file cùng loại vào 1 folder (Ảnh / Video / Audio / Tài liệu / Nén / Cài đặt / Khác) | Di chuyển (khôi phục được) |
+| **Tìm file trùng** | Tìm bản sao — **luôn giữ file gốc (cũ nhất)**, xóa bản mới | Xóa → Recycle Bin |
+| **Tìm folder rỗng** | Tìm folder rỗng (gồm cả folder lồng nhau toàn rỗng) | Xóa → Recycle Bin |
 
 > Di chuyển có **manifest** trong `backups/` để hoàn tác. Xóa vào **Recycle Bin**.
 > File PROTECTED luôn bị loại khỏi danh sách.

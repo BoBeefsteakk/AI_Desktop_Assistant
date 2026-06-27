@@ -24,8 +24,10 @@ from tools.core.assistant_logger import log_action
 from tools.core.report_manager import create_report
 
 BACKGROUND_REGISTRATION_TOOL = "background_registration"
-LAUNCHER_NAME = "AI_Desktop_Assistant_Background.cmd"
-SERVICE_ENTRY = "tools.automation.background_assistant"
+# Dùng .vbs để chạy ẩn HOÀN TOÀN khi đăng nhập (không nháy cửa sổ cmd/terminal).
+LAUNCHER_NAME = "AI_Desktop_Assistant_Background.vbs"
+# Chạy tray assistant (có icon khay để click mở) thay vì loop headless.
+SERVICE_ENTRY = "tools.ui.tray_assistant"
 
 
 def get_startup_folder() -> Path:
@@ -38,11 +40,12 @@ def get_launcher_path() -> Path:
 
 
 def build_launcher_content() -> str:
-    # pythonw = chạy không cửa sổ console (ẩn hoàn toàn).
+    # VBS chạy pythonw với cửa sổ ẩn (0) -> không nháy terminal khi đăng nhập.
+    base = str(BASE_DIR).replace('"', '""')
     return (
-        "@echo off\r\n"
-        f"cd /d \"{BASE_DIR}\"\r\n"
-        f"start \"AI Desktop Assistant Background\" pythonw -m {SERVICE_ENTRY} --service\r\n"
+        'Set sh = CreateObject("WScript.Shell")\r\n'
+        f'sh.CurrentDirectory = "{base}"\r\n'
+        f'sh.Run "pythonw -m {SERVICE_ENTRY}", 0, False\r\n'
     )
 
 
