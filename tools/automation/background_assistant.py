@@ -95,10 +95,12 @@ def run_background_assistant_cycle(
         # banner Dọn 1 chạm (8.3). Chỉ có tác dụng nếu protocol đã đăng ký
         # (tools.automation.toast_protocol.register_toast_protocol); nếu chưa,
         # toast vẫn hiện bình thường, chỉ là click không mở app.
+        from tools.automation.toast_protocol import CLEANUP_URI
+
         toast = show_toast(
             notification["title"],
             notification["message"],
-            launch_arg="aidesktop:cleanup",
+            launch_arg=CLEANUP_URI,
         )
         result["toast"] = toast
         result["notified"] = bool(toast.get("shown"))
