@@ -1,5 +1,9 @@
 # Roadmap AI Desktop Assistant
 
+> **Roadmap đang hoạt động: [`docs/PHASE8_ROADMAP.md`](PHASE8_ROADMAP.md)** — Phase 8 (trợ lý
+> nền: quét ngầm + toast notification + one-click từ toast) là hướng hiện tại để đạt đích cuối.
+> Phase 1–7 bên dưới là lịch sử đã hoàn thành.
+
 **thay doi** Ban handoff tong hop moi nhat nam tai `D:\tool\docs\AI_ASSISTANT_HANDOFF_2026_06_15.md`. Doc file nay truoc khi tiep tuc build AI Assistant.
 
 ## Phase 1 - Refactor
