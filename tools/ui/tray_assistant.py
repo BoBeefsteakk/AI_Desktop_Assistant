@@ -21,7 +21,6 @@ from pathlib import Path
 from typing import Any, Optional
 
 BASE_DIR = Path(__file__).resolve().parents[2]
-LAUNCHER = BASE_DIR / "open_cleanup.py"
 
 
 def _pythonw_path() -> str:
@@ -31,9 +30,11 @@ def _pythonw_path() -> str:
 
 
 def open_cleanup_panel() -> None:
-    """Mở Bot Panel ở chế độ --cleanup (tiến trình riêng, không chặn tray)."""
+    """Mở dashboard mới (tiến trình riêng, không chặn tray)."""
     try:
-        subprocess.Popen([_pythonw_path(), str(LAUNCHER)], cwd=str(BASE_DIR))
+        subprocess.Popen(
+            [_pythonw_path(), "-m", "tools.ui.dashboard_app"], cwd=str(BASE_DIR)
+        )
     except Exception:
         pass
 
@@ -115,7 +116,7 @@ class TrayAssistant:
         import pystray
 
         menu = pystray.Menu(
-            pystray.MenuItem("Mở dọn dẹp", self._on_open, default=True),
+            pystray.MenuItem("Mở trợ lý", self._on_open, default=True),
             pystray.MenuItem("Quét ngay", self._on_scan_now),
             pystray.MenuItem("Thoát", self._on_quit),
         )

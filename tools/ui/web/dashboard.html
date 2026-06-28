@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Desktop Assistant</title>
+<style>
+  :root {
+    --black:#000; --base:#121212; --elev:#181818; --elev-h:#282828;
+    --tile:rgba(255,255,255,.07); --tile-h:rgba(255,255,255,.1);
+    --green:#1ed760; --green-d:#1db954; --text:#fff; --sub:#b3b3b3; --dim:#6a6a6a;
+    --amber:#f0a92b; --red:#e24b4a; --blue:#5599ff; --violet:#9085e9; --track:#2a2a32;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html,body { height:100%; }
+  body { background:var(--black); color:var(--text); overflow:hidden; user-select:none;
+    font-family:"Segoe UI","Circular",system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  .app { display:grid; grid-template-columns:236px 1fr; gap:8px; height:100vh; padding:8px; background:var(--black); }
+  svg { display:block; }
+  .ic { width:22px; height:22px; fill:currentColor; }
+
+  /* Sidebar */
+  .sidebar { display:flex; flex-direction:column; gap:8px; min-height:0; }
+  .panel { background:var(--base); border-radius:8px; }
+  .topnav { padding:8px 12px; display:flex; flex-direction:column; gap:4px; }
+  .topnav .item { display:flex; align-items:center; gap:16px; padding:9px 8px; color:var(--sub); font-size:15px; font-weight:700; cursor:pointer; border-radius:4px; }
+  .topnav .item:hover { color:var(--text); }
+  .topnav .item.active { color:var(--text); }
+  .library { flex:1; display:flex; flex-direction:column; min-height:0; padding:4px 0; }
+  .lib-head { display:flex; align-items:center; gap:14px; padding:12px 16px 8px; color:var(--sub); font-size:15px; font-weight:700; }
+  .lib-list { overflow-y:auto; padding:0 8px; flex:1; }
+  .row { display:flex; align-items:center; gap:12px; padding:8px; border-radius:6px; cursor:pointer; }
+  .row:hover { background:var(--tile); }
+  .row.active { background:var(--tile-h); }
+  .thumb { width:48px; height:48px; border-radius:6px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:22px; color:#fff; }
+  .row-title { font-size:15px; font-weight:600; }
+  .row-sub { font-size:12.5px; color:var(--sub); margin-top:2px; }
+
+  /* Main */
+  .main { background:var(--base); border-radius:8px; overflow:hidden; position:relative; display:flex; flex-direction:column; min-height:0; }
+  .hero-bg { position:absolute; top:0; left:0; right:0; height:300px; background:linear-gradient(180deg,#1f6b46 0%,#1a4a36 28%,rgba(18,18,18,0) 90%); z-index:0; pointer-events:none; }
+  .topbar { position:relative; z-index:3; display:flex; align-items:center; justify-content:space-between; padding:14px 22px; flex-shrink:0; }
+  .nav-circ { display:flex; gap:10px; }
+  .circ { width:32px; height:32px; border-radius:50%; background:rgba(0,0,0,.5); color:var(--text); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .circ:hover { background:rgba(0,0,0,.7); }
+  .topbar-right { display:flex; align-items:center; gap:14px; }
+  .pill-btn { background:var(--text); color:#000; border:none; font-weight:700; font-size:13px; padding:8px 16px; border-radius:22px; cursor:pointer; }
+  .pill-btn:hover { transform:scale(1.04); }
+  .pill-green { background:var(--green); }
+  .avatar { width:30px; height:30px; border-radius:50%; background:#535353; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; }
+
+  .scroll { position:relative; z-index:2; overflow-y:auto; padding:0 22px 26px; flex:1; min-height:0; }
+  .greeting { font-size:30px; font-weight:800; letter-spacing:-.5px; margin:6px 0 20px; }
+
+  .block { background:var(--elev); border-radius:10px; padding:18px 20px; margin-bottom:22px; }
+  .block-title { font-size:16px; font-weight:700; margin-bottom:16px; color:var(--text); }
+  .sec-head { display:flex; align-items:baseline; justify-content:space-between; margin:2px 0 14px; }
+  .sec-title { font-size:22px; font-weight:800; letter-spacing:-.3px; }
+  .sec-more { font-size:12px; font-weight:700; color:var(--sub); cursor:pointer; }
+  .sec-more:hover { text-decoration:underline; color:var(--text); }
+
+  /* Gauges */
+  .gauges { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .gcard { display:flex; flex-direction:column; align-items:center; }
+  .gauge { position:relative; width:140px; height:140px; }
+  .gauge svg { width:140px; height:140px; transform:rotate(-90deg); }
+  .g-bg { fill:none; stroke:var(--track); stroke-width:12; }
+  .g-fg { fill:none; stroke-width:12; stroke-linecap:round; transition:stroke-dashoffset .7s ease; }
+  .g-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .g-val { font-size:28px; font-weight:800; line-height:1; }
+  .g-unit { font-size:14px; color:var(--sub); font-weight:600; }
+  .g-name { font-size:14px; font-weight:600; margin-top:12px; }
+  .g-sub { font-size:12px; color:var(--sub); margin-top:3px; }
+
+  /* Horizontal bars */
+  .hbars { display:flex; flex-direction:column; gap:15px; }
+  .hb-row { display:grid; grid-template-columns:150px 1fr 130px; align-items:center; gap:14px; }
+  .hb-label { font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .hb-track { height:13px; background:var(--track); border-radius:7px; overflow:hidden; }
+  .hb-fill { height:100%; border-radius:7px; transition:width .7s ease; min-width:2px; }
+  .hb-val { font-size:12.5px; color:var(--sub); text-align:right; }
+
+  /* area chart */
+  .area-wrap { margin-top:6px; }
+  .legend2 { display:flex; gap:18px; font-size:12px; color:var(--sub); margin-bottom:8px; }
+  .legend2 .ld { width:10px; height:10px; border-radius:2px; display:inline-block; margin-right:6px; vertical-align:-1px; }
+
+  /* nav cards */
+  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(168px,1fr)); gap:16px; }
+  .card { background:var(--elev); border-radius:8px; padding:16px; cursor:pointer; transition:background .25s; position:relative; }
+  .card:hover { background:var(--elev-h); }
+  .card-art { width:100%; aspect-ratio:1; border-radius:6px; margin-bottom:14px; display:flex; align-items:center; justify-content:center; font-size:46px; box-shadow:0 8px 24px rgba(0,0,0,.4); position:relative; }
+  .card-title { font-size:15px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .card-sub { font-size:13px; color:var(--sub); margin-top:5px; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:36px; }
+  .play { position:absolute; right:10px; bottom:96px; width:48px; height:48px; border-radius:50%; background:var(--green); color:#000; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 16px rgba(0,0,0,.4); opacity:0; transform:translateY(8px); transition:opacity .2s, transform .2s; }
+  .card:hover .play { opacity:1; transform:translateY(0); }
+
+  /* metric cards + file list */
+  .metrics { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:22px; }
+  .mcard { background:var(--elev); border-radius:10px; padding:16px 18px; }
+  .m-val { font-size:30px; font-weight:800; }
+  .m-label { font-size:12.5px; color:var(--sub); margin-top:4px; }
+  .flist { display:flex; flex-direction:column; gap:1px; }
+  .fitem { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:9px 12px; border-radius:6px; font-size:13.5px; }
+  .fitem:hover { background:var(--tile); }
+  .fname { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .fsize { color:var(--sub); flex-shrink:0; }
+  .empty { padding:50px 20px; text-align:center; color:var(--sub); }
+  .empty .big { font-size:50px; margin-bottom:14px; }
+  .actions { display:flex; gap:12px; margin-top:18px; }
+
+  .loading { display:flex; align-items:center; justify-content:center; height:60vh; color:var(--sub); font-size:14px; }
+  ::-webkit-scrollbar { width:12px; } ::-webkit-scrollbar-thumb { background:#5a5a5a; border-radius:6px; border:3px solid transparent; background-clip:content-box; }
+  ::-webkit-scrollbar-track { background:transparent; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="panel topnav">
+      <div class="item" data-view="home"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3.3 3 10.2V21h6v-6h6v6h6V10.2L12 3.3Z"/></svg>Trang chủ</div>
+      <div class="item" data-view="clean"><svg class="ic" viewBox="0 0 24 24"><path d="M10.5 2 9 4l8 8-2 2-8-8-2 1.5L11 14l-6 6 1.4 1.4 6-6 4.6 4.6 4-4L10.5 2Z"/></svg>Dọn dẹp</div>
+    </div>
+    <div class="panel library">
+      <div class="lib-head"><svg class="ic" viewBox="0 0 24 24"><path d="M3 22V4h2v18H3Zm4 0V4h2v18H7Zm5.5-1.2L18 4.2l1.9.6-5.5 16.6-1.9-.6Z"/></svg>Thư viện của bạn</div>
+      <div class="lib-list" id="libList"></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="hero-bg"></div>
+    <div class="topbar">
+      <div class="nav-circ">
+        <div class="circ"><svg class="ic" style="width:18px;height:18px" viewBox="0 0 24 24"><path d="M15.5 4 7 12l8.5 8 1.4-1.4L9.8 12l7.1-6.6L15.5 4Z"/></svg></div>
+        <div class="circ"><svg class="ic" style="width:18px;height:18px" viewBox="0 0 24 24"><path d="M8.5 4 7.1 5.4 14.2 12l-7.1 6.6L8.5 20 17 12 8.5 4Z"/></svg></div>
+      </div>
+      <div class="topbar-right">
+        <button class="pill-btn" onclick="refresh()">Kiểm tra ngay</button>
+        <div class="avatar">AI</div>
+      </div>
+    </div>
+    <div class="scroll" id="scroll"><div class="loading">Đang đọc tình trạng máy…</div></div>
+  </div>
+</div>
+
+<script>
+const SVG_PLAY='<svg class="ic" viewBox="0 0 24 24" style="width:20px;height:20px;margin-left:2px"><path d="M8 5v14l11-7L8 5Z"/></svg>';
+const fmtBytes=(b)=>{ if(!b||b<0)return"0 B"; const u=["B","KB","MB","GB","TB"]; let i=0,n=b; while(n>=1024&&i<u.length-1){n/=1024;i++;} return n.toFixed(n>=100||i===0?0:1).replace(".",",")+" "+u[i]; };
+const fmtGB=(b)=>(b/1024**3).toFixed(0);
+const barColor=(p,w=70,c=85)=>p>=c?"var(--red)":p>=w?"var(--amber)":"var(--green)";
+const grad=(a,b)=>`linear-gradient(135deg,${a},${b})`;
+const CAT={video:{l:"Video",c:"#5599ff"},image:{l:"Ảnh",c:"#1ed760"},audio:{l:"Âm thanh",c:"#9085e9"},doc:{l:"Tài liệu",c:"#f0a92b"},archive:{l:"Nén",c:"#e87ba4"},installer:{l:"Cài đặt",c:"#5dcaa5"},other:{l:"Khác",c:"#777"}};
+const api=()=>window.pywebview.api;
+let CUR="home";
+
+function gauge(pct, color, valHtml, name, sub){
+  const r=58, c=2*Math.PI*r, off=c*(1-Math.min(Math.max(pct,0),100)/100);
+  return `<div class="gcard">
+    <div class="gauge">
+      <svg viewBox="0 0 140 140">
+        <circle class="g-bg" cx="70" cy="70" r="${r}"/>
+        <circle class="g-fg" cx="70" cy="70" r="${r}" stroke="${color}" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/>
+      </svg>
+      <div class="g-center">${valHtml}</div>
+    </div>
+    <div class="g-name">${name}</div><div class="g-sub">${sub}</div>
+  </div>`;
+}
+const gVal=(v,unit)=>`<div class="g-val">${v}<span class="g-unit">${unit}</span></div>`;
+function hbars(rows){ return `<div class="hbars">`+rows.map(r=>`
+  <div class="hb-row">
+    <div class="hb-label">${r.label}</div>
+    <div class="hb-track"><div class="hb-fill" style="width:${Math.min(r.pct,100)}%;background:${r.color}"></div></div>
+    <div class="hb-val">${r.val}</div>
+  </div>`).join("")+`</div>`; }
+
+/* ---------- live area chart (CPU/RAM) ---------- */
+let LIVE={cpu:[],ram:[]}, liveTimer=null;
+function pushLive(cpu,ram){ LIVE.cpu.push(cpu); LIVE.ram.push(ram); if(LIVE.cpu.length>40){LIVE.cpu.shift();LIVE.ram.shift();} }
+function areaChart(){
+  const W=600,H=170;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:${H}px">`;
+  for(let g=0;g<=100;g+=25){ const y=(H-g/100*H).toFixed(1); svg+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="var(--track)" stroke-width="1" vector-effect="non-scaling-stroke"/>`; }
+  const n=Math.max(LIVE.cpu.length,2), sx=W/Math.max(n-1,1);
+  [{p:LIVE.ram,c:"#9085e9"},{p:LIVE.cpu,c:"#1ed760"}].forEach(s=>{
+    const p=s.p; if(p.length<1)return;
+    let d=`M 0 ${(H-p[0]/100*H).toFixed(1)}`;
+    p.forEach((v,i)=>{ d+=` L ${(i*sx).toFixed(1)} ${(H-v/100*H).toFixed(1)}`; });
+    const area=d+` L ${((p.length-1)*sx).toFixed(1)} ${H} L 0 ${H} Z`;
+    svg+=`<path d="${area}" fill="${s.c}" fill-opacity="0.16"/><path d="${d}" fill="none" stroke="${s.c}" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
+  });
+  return svg+`</svg>`;
+}
+function drawLive(){ const el=document.getElementById("liveChart"); if(el) el.innerHTML=areaChart(); }
+function startLive(){ stopLive(); drawLive(); liveTimer=setInterval(async()=>{ try{const l=await api().get_live(); pushLive(l.cpu,l.ram); drawLive();}catch(e){} },2000); }
+function stopLive(){ if(liveTimer){clearInterval(liveTimer);liveTimer=null;} }
+
+function renderLibrary(){
+  const items=[
+    {v:"clean",t:"Dọn file rác",s:"Trợ lý · dọn an toàn",g:grad("#f0a92b","#7a3f00"),e:"🧹"},
+    {v:"organize",t:"Sắp xếp file",s:"Trợ lý · gom theo loại",g:grad("#5599ff","#16306b"),e:"🗂️"},
+    {v:"history",t:"Lịch sử",s:"Trợ lý · AI đã làm gì",g:grad("#9085e9","#2e2168"),e:"🕘"},
+    {v:"settings",t:"Cài đặt",s:"Trợ lý · tùy chỉnh",g:grad("#535353","#1a1a1a"),e:"⚙️"},
+  ];
+  document.getElementById("libList").innerHTML=items.map(it=>`
+    <div class="row" data-view="${it.v}"><div class="thumb" style="background:${it.g}">${it.e}</div>
+    <div><div class="row-title">${it.t}</div><div class="row-sub">${it.s}</div></div></div>`).join("");
+  bindNav();
+}
+function setActive(view){ document.querySelectorAll("[data-view]").forEach(n=>n.classList.toggle("active",n.dataset.view===view)); }
+function bindNav(){ document.querySelectorAll("[data-view]").forEach(n=>n.onclick=()=>go(n.dataset.view)); }
+
+/* ---------- HOME ---------- */
+function renderHome(d){
+  const disk=d.disk_primary||{free:0,percent:0,mountpoint:"C:"};
+  const diskN=(disk.mountpoint||"C").replace(/[:\\]/g,"");
+  const ram=d.ram||{percent:0}; const cpu=d.cpu_percent||0; const m=d.metrics||{};
+  const gaugeBlock=`<div class="block"><div class="block-title">Tổng quan máy</div><div class="gauges">
+    ${gauge(disk.percent, barColor(disk.percent), gVal(disk.percent,"%"), "Ổ "+diskN+" đã dùng", fmtGB(disk.free)+" GB còn trống")}
+    ${gauge(ram.percent, barColor(ram.percent), gVal(ram.percent,"%"), "RAM", fmtBytes((ram.total||0)-(ram.available||0))+" đang dùng")}
+    ${gauge(cpu, barColor(cpu,60,85), gVal(cpu,"%"), "CPU", "tải hiện tại")}
+  </div></div>`;
+
+  pushLive(cpu, ram.percent||0);
+  const liveBlock=`<div class="block"><div class="block-title">Hiệu năng thời gian thực</div>
+    <div class="legend2"><span><i class="ld" style="background:#1ed760"></i>CPU</span><span><i class="ld" style="background:#9085e9"></i>RAM</span></div>
+    <div id="liveChart" class="area-wrap"></div></div>`;
+
+  const disks=d.disks||[];
+  const driveRows=disks.map(dk=>{ const n=(dk.mountpoint||"?").replace(/[\\]/g,""); return {
+    label:"Ổ "+n, pct:dk.percent||0, color:barColor(dk.percent||0),
+    val:fmtBytes(dk.free)+" trống / "+fmtBytes(dk.total)}; });
+  const driveBlock=`<div class="block"><div class="block-title">Dung lượng các ổ đĩa</div>${hbars(driveRows)}</div>`;
+
+  const junk=d.junk||{count:0,total_size:0};
+  const cleanSub=junk.count>0?`${junk.count} file rác · ${fmtBytes(junk.total_size)}`:"Máy đang gọn gàng";
+  const cards=`<div class="sec-head"><div class="sec-title">Trợ lý cho máy bạn</div><div class="sec-more" onclick="openCleanup()">Mở bảng đầy đủ</div></div>
+  <div class="cards">
+    ${navCard(junk.count>0?"🧹":"✓",junk.count>0?grad("#f0a92b","#7a3f00"):grad("#1db954","#0c5b2b"),"Dọn file rác",cleanSub,"go('clean')")}
+    ${navCard("🗂️",grad("#5599ff","#16306b"),"Sắp xếp file","Gom theo loại, tìm trùng, dọn rỗng.","go('organize')")}
+    ${navCard("🕘",grad("#9085e9","#2e2168"),"Lịch sử","Đã sắp xếp "+(m.moved_total||0)+" · dọn "+(m.deleted_total||0)+" / 7 ngày.","go('history')")}
+    ${navCard("🩺",grad("#1db954","#0c5b2b"),"Sức khỏe ổ","SMART: "+smartTxt(d.smart),"go('home')")}
+  </div>`;
+  document.getElementById("scroll").innerHTML=`<div class="greeting">${d.greeting||"Xin chào"}</div>${gaugeBlock}${liveBlock}${driveBlock}${cards}`;
+  startLive();
+}
+const smartTxt=(s)=>{ s=s||{}; if(s.status==="unavailable")return"chưa đo được"; return ["success","ok","passed"].includes(s.status)?"Tốt":"cần chú ý"; };
+function navCard(art,g,title,sub,action){ return `<div class="card" onclick="${action}"><div class="card-art" style="background:${g}">${art}<div class="play">${SVG_PLAY}</div></div><div class="card-title">${title}</div><div class="card-sub">${sub}</div></div>`; }
+
+/* ---------- CLEAN ---------- */
+function renderClean(c){
+  const total=c.total_size||0, count=c.count||0;
+  let body;
+  if(count>0){
+    const gaugeRow=`<div class="block"><div class="gauges" style="grid-template-columns:repeat(2,1fr)">
+      ${gauge(100, "var(--amber)", `<div class="g-val">${count}</div>`, "File rác", "an toàn để dọn")}
+      ${gauge(100, "var(--green)", `<div class="g-val" style="font-size:20px">${fmtBytes(total)}</div>`, "Tổng dung lượng", "sẽ vào Thùng rác")}
+    </div></div>`;
+    const list=c.items.map(f=>`<div class="fitem"><span class="fname">${f.name}</span><span class="fsize">${fmtBytes(f.size)}</span></div>`).join("");
+    body=`${gaugeRow}<div class="block"><div class="block-title">Danh sách file rác (${count})</div><div class="flist">${list}</div>
+      <div class="actions"><button class="pill-btn pill-green" onclick="openCleanup()">Dọn an toàn (mở bảng xác nhận)</button></div></div>`;
+  } else {
+    body=`<div class="block"><div class="empty"><div class="big">✓</div><div style="font-size:16px;color:var(--text)">Không có file rác cần dọn</div>
+      <div style="margin-top:8px">Thư mục Downloads đang gọn gàng.</div></div></div>`;
+  }
+  document.getElementById("scroll").innerHTML=`<div class="greeting">Dọn file rác</div>${body}`;
+}
+
+/* ---------- ORGANIZE ---------- */
+function renderOrganize(o){
+  const dl=o.downloads||{count:0}, dup=o.duplicates||{count:0}, em=o.empty||{count:0};
+  const maxC=Math.max(dl.count,dup.count,em.count,1);
+  const taskRows=[
+    {label:"File chưa sắp xếp",pct:dl.count/maxC*100,color:"#5599ff",val:dl.count+" file"},
+    {label:"Bản trùng lặp",pct:dup.count/maxC*100,color:"#e87ba4",val:dup.count+" bản"},
+    {label:"Folder rỗng",pct:em.count/maxC*100,color:"#9085e9",val:em.count+" folder"},
+  ];
+  const taskBlock=`<div class="block"><div class="block-title">Việc cần sắp xếp trong Downloads</div>${hbars(taskRows)}
+    <div class="actions"><button class="pill-btn pill-green" onclick="openCleanup()">Mở bảng sắp xếp đầy đủ</button></div></div>`;
+
+  const cats=o.categories||[]; const tot=cats.reduce((s,x)=>s+x.size,0)||1;
+  const catRows=cats.map(x=>{const m=CAT[x.group]||CAT.other; return {label:m.l,pct:x.size/tot*100,color:m.c,val:fmtBytes(x.size)};});
+  const catBlock=cats.length?`<div class="block"><div class="block-title">Dung lượng Downloads theo loại</div>${hbars(catRows)}</div>`
+    :`<div class="block"><div class="block-title">Dung lượng theo loại</div><div class="empty" style="padding:24px"><div>Downloads chưa có file để phân loại.</div></div></div>`;
+  document.getElementById("scroll").innerHTML=`<div class="greeting">Sắp xếp file</div>${taskBlock}${catBlock}`;
+}
+
+/* ---------- HISTORY ---------- */
+function renderHistory(h){
+  const m=h.metrics||{}; const hist=(h.history&&h.history.items)||[];
+  const metrics=`<div class="metrics">
+    <div class="mcard"><div class="m-val">${m.moved_total||0}</div><div class="m-label">File đã sắp xếp / 7 ngày</div></div>
+    <div class="mcard"><div class="m-val">${m.deleted_total||0}</div><div class="m-label">Mục đã dọn / 7 ngày</div></div>
+    <div class="mcard"><div class="m-val">${m.sessions||0}</div><div class="m-label">Lần thao tác / 7 ngày</div></div>
+  </div>`;
+  const bt=m.by_tool||{}; const keys=Object.keys(bt); const maxV=Math.max(...keys.map(k=>bt[k]),1);
+  const palette=["#1ed760","#5599ff","#9085e9","#f0a92b","#e87ba4"];
+  const btRows=keys.map((k,i)=>({label:k,pct:bt[k]/maxV*100,color:palette[i%palette.length],val:bt[k]+" mục"}));
+  const chart=keys.length?`<div class="block"><div class="block-title">AI đã làm gì (7 ngày)</div>${hbars(btRows)}</div>`
+    :`<div class="block"><div class="empty" style="padding:30px"><div class="big">🕘</div><div>Chưa có hoạt động nào trong 7 ngày.</div></div></div>`;
+  const list=hist.length?`<div class="block"><div class="block-title">Gần đây</div><div class="flist">`+
+    hist.map(it=>`<div class="fitem"><span class="fname">${it.text}</span><span class="fsize">${it.time}</span></div>`).join("")+`</div></div>`:"";
+  document.getElementById("scroll").innerHTML=`<div class="greeting">Lịch sử</div>${metrics}${chart}${list}`;
+}
+
+/* ---------- SETTINGS ---------- */
+function renderSettings(){
+  document.getElementById("scroll").innerHTML=`<div class="greeting">Cài đặt</div>
+    <div class="block"><div class="block-title">Trợ lý nền</div>
+      <div style="font-size:14px;color:var(--sub);line-height:1.7">
+        Trợ lý chạy ẩn dưới khay đồng hồ và tự khởi động cùng Windows (không hiện terminal).<br>
+        Bấm icon "AI" ở khay → <b>Mở trợ lý</b> để mở cửa sổ này bất cứ lúc nào.
+      </div>
+      <div class="actions"><button class="pill-btn" onclick="openCleanup()">Mở app cũ (bản đầy đủ)</button></div>
+    </div>`;
+}
+
+/* ---------- router ---------- */
+async function go(view){
+  CUR=view; setActive(view); stopLive();
+  document.getElementById("scroll").innerHTML=`<div class="loading">Đang tải…</div>`;
+  try{
+    if(view==="home") renderHome(await api().get_dashboard());
+    else if(view==="clean") renderClean(await api().get_clean());
+    else if(view==="organize") renderOrganize(await api().get_organizer());
+    else if(view==="history") renderHistory(await api().get_history());
+    else renderSettings();
+  }catch(e){ document.getElementById("scroll").innerHTML=`<div class="loading">Lỗi đọc dữ liệu: ${e}</div>`; }
+}
+function refresh(){ go(CUR); }
+function openCleanup(){ if(window.pywebview) api().open_cleanup(); }
+
+renderLibrary();
+window.addEventListener("pywebviewready", ()=>go("home"));
+</script>
+</body>
+</html>

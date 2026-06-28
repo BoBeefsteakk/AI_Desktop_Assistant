@@ -16,6 +16,7 @@ Entry point: `enable_background_autostart()`, `disable_background_autostart()`,
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +30,12 @@ LAUNCHER_NAME = "AI_Desktop_Assistant_Background.vbs"
 # Chạy tray assistant (có icon khay để click mở) thay vì loop headless.
 SERVICE_ENTRY = "tools.ui.tray_assistant"
 
+# Launcher cũ cần dọn khi bật lại (tránh nháy terminal / chạy trùng).
+_LEGACY_LAUNCHERS = (
+    "AI_Desktop_Assistant_Background.cmd",  # bản .cmd cũ (nháy console)
+    "AI_Desktop_Assistant_Boot.cmd",        # boot_runner cũ (terminal + UI demo)
+)
+
 
 def get_startup_folder() -> Path:
     appdata = os.environ.get("APPDATA", "")
@@ -39,14 +46,34 @@ def get_launcher_path() -> Path:
     return get_startup_folder() / LAUNCHER_NAME
 
 
+def _pythonw_path() -> str:
+    """Đường dẫn tuyệt đối tới pythonw.exe (Python không cửa sổ console)."""
+    exe = Path(sys.executable)
+    candidate = exe.with_name("pythonw.exe")
+    return str(candidate if candidate.exists() else exe)
+
+
 def build_launcher_content() -> str:
     # VBS chạy pythonw với cửa sổ ẩn (0) -> không nháy terminal khi đăng nhập.
     base = str(BASE_DIR).replace('"', '""')
+    pythonw = _pythonw_path().replace('"', '""')
     return (
         'Set sh = CreateObject("WScript.Shell")\r\n'
         f'sh.CurrentDirectory = "{base}"\r\n'
-        f'sh.Run "pythonw -m {SERVICE_ENTRY}", 0, False\r\n'
+        f'sh.Run Chr(34) & "{pythonw}" & Chr(34) & " -m {SERVICE_ENTRY}", 0, False\r\n'
     )
+
+
+def _remove_legacy_launchers() -> list[str]:
+    """Gỡ các launcher cũ (managed file, không phải dữ liệu user)."""
+    removed: list[str] = []
+    folder = get_startup_folder()
+    for name in _LEGACY_LAUNCHERS:
+        old = folder / name
+        if old.exists():
+            old.unlink()
+            removed.append(name)
+    return removed
 
 
 def get_background_autostart_status() -> dict[str, Any]:
@@ -78,6 +105,9 @@ def enable_background_autostart() -> dict[str, Any]:
 
     launcher.write_text(build_launcher_content(), encoding="utf-8")
 
+    # Dọn launcher cũ (Boot.cmd / .cmd) để không còn nháy terminal lúc đăng nhập.
+    removed_legacy = _remove_legacy_launchers()
+
     # Bật luôn protocol click-to-open (8.3) để click toast mở được app.
     protocol_result = None
     try:
@@ -94,7 +124,7 @@ def enable_background_autostart() -> dict[str, Any]:
         status="success",
         risk_level="medium",
         input_data={"method": "shell_startup"},
-        results={"startup": status, "toast_protocol": protocol_result},
+        results={"startup": status, "toast_protocol": protocol_result, "removed_legacy": removed_legacy},
         recommendations=[
             "Tro ly nen se tu chay an moi lan dang nhap Windows (read-only).",
             "Tat bat ky luc nao bang cach go launcher khoi Startup folder.",
