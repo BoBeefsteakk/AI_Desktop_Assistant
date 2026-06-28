@@ -35,6 +35,12 @@ class DashboardApi:
 
         return get_dashboard_snapshot()
 
+    def get_live(self) -> dict:
+        """Số liệu nhanh CPU/RAM (read-only) cho biểu đồ thời gian thực."""
+        from tools.ui.dashboard_data import get_live_metrics
+
+        return get_live_metrics()
+
     def get_clean(self) -> dict:
         """Danh sách file rác an toàn (read-only)."""
         from tools.ui.dashboard_data import get_clean_details

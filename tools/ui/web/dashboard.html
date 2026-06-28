@@ -80,6 +80,11 @@
   .hb-fill { height:100%; border-radius:7px; transition:width .7s ease; min-width:2px; }
   .hb-val { font-size:12.5px; color:var(--sub); text-align:right; }
 
+  /* area chart */
+  .area-wrap { margin-top:6px; }
+  .legend2 { display:flex; gap:18px; font-size:12px; color:var(--sub); margin-bottom:8px; }
+  .legend2 .ld { width:10px; height:10px; border-radius:2px; display:inline-block; margin-right:6px; vertical-align:-1px; }
+
   /* nav cards */
   .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(168px,1fr)); gap:16px; }
   .card { background:var(--elev); border-radius:8px; padding:16px; cursor:pointer; transition:background .25s; position:relative; }
@@ -169,6 +174,27 @@ function hbars(rows){ return `<div class="hbars">`+rows.map(r=>`
     <div class="hb-val">${r.val}</div>
   </div>`).join("")+`</div>`; }
 
+/* ---------- live area chart (CPU/RAM) ---------- */
+let LIVE={cpu:[],ram:[]}, liveTimer=null;
+function pushLive(cpu,ram){ LIVE.cpu.push(cpu); LIVE.ram.push(ram); if(LIVE.cpu.length>40){LIVE.cpu.shift();LIVE.ram.shift();} }
+function areaChart(){
+  const W=600,H=170;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:${H}px">`;
+  for(let g=0;g<=100;g+=25){ const y=(H-g/100*H).toFixed(1); svg+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="var(--track)" stroke-width="1" vector-effect="non-scaling-stroke"/>`; }
+  const n=Math.max(LIVE.cpu.length,2), sx=W/Math.max(n-1,1);
+  [{p:LIVE.ram,c:"#9085e9"},{p:LIVE.cpu,c:"#1ed760"}].forEach(s=>{
+    const p=s.p; if(p.length<1)return;
+    let d=`M 0 ${(H-p[0]/100*H).toFixed(1)}`;
+    p.forEach((v,i)=>{ d+=` L ${(i*sx).toFixed(1)} ${(H-v/100*H).toFixed(1)}`; });
+    const area=d+` L ${((p.length-1)*sx).toFixed(1)} ${H} L 0 ${H} Z`;
+    svg+=`<path d="${area}" fill="${s.c}" fill-opacity="0.16"/><path d="${d}" fill="none" stroke="${s.c}" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
+  });
+  return svg+`</svg>`;
+}
+function drawLive(){ const el=document.getElementById("liveChart"); if(el) el.innerHTML=areaChart(); }
+function startLive(){ stopLive(); drawLive(); liveTimer=setInterval(async()=>{ try{const l=await api().get_live(); pushLive(l.cpu,l.ram); drawLive();}catch(e){} },2000); }
+function stopLive(){ if(liveTimer){clearInterval(liveTimer);liveTimer=null;} }
+
 function renderLibrary(){
   const items=[
     {v:"clean",t:"Dọn file rác",s:"Trợ lý · dọn an toàn",g:grad("#f0a92b","#7a3f00"),e:"🧹"},
@@ -195,6 +221,11 @@ function renderHome(d){
     ${gauge(cpu, barColor(cpu,60,85), gVal(cpu,"%"), "CPU", "tải hiện tại")}
   </div></div>`;
 
+  pushLive(cpu, ram.percent||0);
+  const liveBlock=`<div class="block"><div class="block-title">Hiệu năng thời gian thực</div>
+    <div class="legend2"><span><i class="ld" style="background:#1ed760"></i>CPU</span><span><i class="ld" style="background:#9085e9"></i>RAM</span></div>
+    <div id="liveChart" class="area-wrap"></div></div>`;
+
   const disks=d.disks||[];
   const driveRows=disks.map(dk=>{ const n=(dk.mountpoint||"?").replace(/[\\]/g,""); return {
     label:"Ổ "+n, pct:dk.percent||0, color:barColor(dk.percent||0),
@@ -210,7 +241,8 @@ function renderHome(d){
     ${navCard("🕘",grad("#9085e9","#2e2168"),"Lịch sử","Đã sắp xếp "+(m.moved_total||0)+" · dọn "+(m.deleted_total||0)+" / 7 ngày.","go('history')")}
     ${navCard("🩺",grad("#1db954","#0c5b2b"),"Sức khỏe ổ","SMART: "+smartTxt(d.smart),"go('home')")}
   </div>`;
-  document.getElementById("scroll").innerHTML=`<div class="greeting">${d.greeting||"Xin chào"}</div>${gaugeBlock}${driveBlock}${cards}`;
+  document.getElementById("scroll").innerHTML=`<div class="greeting">${d.greeting||"Xin chào"}</div>${gaugeBlock}${liveBlock}${driveBlock}${cards}`;
+  startLive();
 }
 const smartTxt=(s)=>{ s=s||{}; if(s.status==="unavailable")return"chưa đo được"; return ["success","ok","passed"].includes(s.status)?"Tốt":"cần chú ý"; };
 function navCard(art,g,title,sub,action){ return `<div class="card" onclick="${action}"><div class="card-art" style="background:${g}">${art}<div class="play">${SVG_PLAY}</div></div><div class="card-title">${title}</div><div class="card-sub">${sub}</div></div>`; }
@@ -285,7 +317,7 @@ function renderSettings(){
 
 /* ---------- router ---------- */
 async function go(view){
-  CUR=view; setActive(view);
+  CUR=view; setActive(view); stopLive();
   document.getElementById("scroll").innerHTML=`<div class="loading">Đang tải…</div>`;
   try{
     if(view==="home") renderHome(await api().get_dashboard());

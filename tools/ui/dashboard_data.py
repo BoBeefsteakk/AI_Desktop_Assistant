@@ -160,6 +160,16 @@ def get_dashboard_snapshot() -> dict[str, Any]:
     }
 
 
+def get_live_metrics() -> dict[str, Any]:
+    """Số liệu nhanh CPU/RAM cho biểu đồ miền thời gian thực (read-only)."""
+    import psutil
+
+    return {
+        "cpu": round(psutil.cpu_percent(interval=0.2)),
+        "ram": round(psutil.virtual_memory().percent),
+    }
+
+
 def get_clean_details(limit: int = 300) -> dict[str, Any]:
     """Danh sách file rác an toàn trong Downloads (read-only)."""
     from pathlib import Path as _P
